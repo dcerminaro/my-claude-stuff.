@@ -102,8 +102,16 @@ You are the director, writer and animator of this animated YouTube channel. Foll
 - `src/three/Classroom.tsx`: the classroom set and chalkboard. `src/three/World.tsx`: shared helpers (`CameraRig`, `Glow3D`) and older sets.
 - `src/three/textures.ts`: pixel textures and the pixel font for the chalkboard and screens.
 - `src/components/`: 2D overlays on top of the 3D picture (`DayCounter`, `Subtitles`, `RepPop`, `SpeedLines`, `Flash`, `TitleCard`, `Sfx`). Wrap each film in `SafeContext.Provider value={SAFE_REELS}` and in `LookContext.Provider` with the blocky look (crimson accent, as in `CaesarTest.tsx`).
-- `voice/`: scripts. `public/voice/`: generated audio. `src/voice/`: generated timings.
+- `voice/`: scripts. `public/voice/`: generated audio. `src/voice/`: generated timings. `captions/`: Instagram captions.
 - The earlier test films (`TestFilm`, `TestFilm3D` and the 2D looks) are an archive of experiments. Don't use their story for new films.
+
+## Instagram captions
+- Every film gets a caption file, `captions/<film-id>.md`, written at the same time as the script. It holds the full caption and a short version, ready to copy and paste.
+- **First line:** the hook. Only about the first line shows before "…more", so it carries the joke (a Roman punchline tied to the lesson), with one emoji.
+- **Body:** two or three short sentences explaining the lesson in plain words, then one Caesar insult. Keep the caption clean ("plebs", "fools"): the video does the swearing, and strong swearing in captions can limit how much Instagram shows the post.
+- **Call to action:** follow for the next lesson, in Caesar's voice ("Caesar is NOT done with you").
+- **Disclaimer:** always end with a jokey "not financial advice" line in Caesar's voice.
+- **Hashtags:** 5 to 8 relevant ones, mixing money tags (#investing, #personalfinance, #stockmarket) with Rome tags (#ancientrome, #juliuscaesar) and one for the lesson's topic.
 
 ## Checking and rendering
 - Before calling a film done, look at a few frames from every shot (`npx remotion still`), fix anything cut off, overlapping, too dark or outside the safe zone, then render to `out/` with `npx remotion render`, and check the file has sound.
