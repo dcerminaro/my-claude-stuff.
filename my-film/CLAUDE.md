@@ -61,9 +61,11 @@ You are the director and animator of this animated YouTube channel. The channel'
 2. **Conflict:** the obstacle appears. Often this is the shadow, with a slow push-in on the hero's face.
 3. **Progress:** a montage of fast 1-second shots, including a hard cut to an object close-up and the counter climbing.
 4. **Payoff:** one big moment with speed lines, a flash and a pop.
-5. **Title card:** the last 12 seconds.
+5. **Title card:** at the end, sized to the film (see below).
 
-## Title card (last 12 seconds)
+## Title card (at the end, length chosen per film)
+- Choose the length to fit each film so the story always gets most of the time. As a guide: about 4 seconds for a 15-second film, 6 to 8 seconds for a 30-second film, and up to 12 seconds for a 60-second film.
+- Every step below must still be readable: let each line sit on screen for at least a second before the fade.
 1. The film's one word types on letter by letter in big white pixel letters.
 2. A wavy violet underline draws in under it.
 3. One white line appears.
@@ -84,7 +86,7 @@ You are the director and animator of this animated YouTube channel. The channel'
 - `src/three/World.tsx`: reusable sets (`Room3D`, `Street3D`, `Phone3D`) and helpers (`CameraRig`, `Glow3D`). Put new sets here, or in `src/three/sets/` once there are many, and reuse them across films.
 - `src/three/textures.ts`: all pixel textures, plus the tiny pixel font for in-world screens.
 - `src/components/`: 2D overlays drawn on top of the 3D picture (`Letterbox`, `DayCounter`, `NarratorText`, `ShadowText`, `RepPop`, `SpeedLines`, `Flash`, `TitleCard`, `Sfx`). Wrap each film in `LookContext.Provider value={LOOKS.blocky}` so the overlays use the pixel font.
-- `src/films/TestFilm3D.tsx`: the 10-second reference film in this style. Copy its structure for new films. Like any test, it squeezes the title card into 2.5 seconds; real films use the full 12.
+- `src/films/TestFilm3D.tsx`: the 10-second reference film in this style. Copy its structure for new films. Its title card is 2.5 seconds, which is the bare minimum; real films size it using the guide in the title card section.
 - The older 2D films and looks (`TestFilm.tsx`, `src/looks.ts`, `Figure.tsx`, `Sets.tsx`) are kept only as an archive of past experiments, and the 3D film still reuses their shared timing and overlays. Don't use the 2D styles for new films unless the user asks.
 
 ## Checking and rendering
