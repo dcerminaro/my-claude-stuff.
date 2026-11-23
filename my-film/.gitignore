@@ -9,3 +9,4 @@ out
 # local voice tools (large, re-downloadable)
 .venv-voice/
 .voice-models/
+__pycache__/
