@@ -81,11 +81,12 @@ export const ShadowText: React.FC<{
   );
 };
 
-/** Small game-style DAY counter, top left. `since` = frames since the day changed. */
-export const DayCounter: React.FC<{ day: number; since: number }> = ({
-  day,
-  since,
-}) => {
+/** Small game-style counter, top left (DAY 3, LESSON IV...). `since` = frames since it changed. */
+export const DayCounter: React.FC<{
+  day: number | string;
+  since: number;
+  label?: string;
+}> = ({ day, since, label = "DAY" }) => {
   const { fps } = useVideoConfig();
   const look = useLook();
   const s = spring({
@@ -123,7 +124,7 @@ export const DayCounter: React.FC<{ day: number; since: number }> = ({
           letterSpacing: 2,
         }}
       >
-        DAY
+        {label}
       </span>
       <span style={{ fontSize: 34 * look.fontScale }}>{day}</span>
     </div>

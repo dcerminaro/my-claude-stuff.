@@ -301,7 +301,12 @@ export const Street3D: React.FC<{ scroll: number }> = ({ scroll }) => {
         noise={0.06}
         emissive
       />
-      <Glow3D position={[7, 7.2, -13.6]} size={8} color="#CFDBFF" opacity={0.4} />
+      <Glow3D
+        position={[7, 7.2, -13.6]}
+        size={8}
+        color="#CFDBFF"
+        opacity={0.4}
+      />
       {Array.from({ length: 40 }, (_, i) => (
         <mesh
           key={i}

@@ -238,3 +238,42 @@ const writeWav = (name, data, gain = 1) => {
     1,
   );
 }
+
+// chalk: scratchy squeaky strokes on the board
+{
+  const rnd = mulberry32(7);
+  const lpA = lowpass();
+  const lpB = lowpass();
+  const T = 0.6;
+  writeWav(
+    "chalk",
+    make(T, (t) => {
+      const n = rnd() * 2 - 1;
+      const band = lpA(n, 5200) - lpB(n, 1400);
+      // three quick strokes
+      const stroke = [0, 0.2, 0.4].some((s) => t > s && t < s + 0.15) ? 1 : 0;
+      const squeak = Math.sin(2 * Math.PI * (2100 + 300 * Math.sin(t * 40)) * t) * 0.15;
+      return (band * 2.2 + squeak) * stroke * (0.7 + 0.3 * Math.sin(t * 90));
+    }),
+    0.7,
+  );
+}
+
+// stab: metallic shing + thud (cartoon, not gory)
+{
+  let ph = 0;
+  const rnd = mulberry32(8);
+  const lp = lowpass();
+  writeWav(
+    "stab",
+    make(0.45, (t) => {
+      const f = 3200 * Math.exp(-t * 10) + 900;
+      ph += (2 * Math.PI * f) / 44100;
+      const shing = Math.sin(ph) * Math.exp(-t * 14) * 0.5;
+      const thud = Math.sin(2 * Math.PI * (90 * Math.exp(-t * 6) + 50) * t) * Math.exp(-t * 18) * 1.2;
+      const hiss = lp(rnd() * 2 - 1, 3000) * Math.exp(-t * 40) * 0.8;
+      return shing + thud + hiss;
+    }),
+    0.9,
+  );
+}

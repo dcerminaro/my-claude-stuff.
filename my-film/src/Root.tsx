@@ -2,6 +2,7 @@ import React from "react";
 import { Composition } from "remotion";
 import { TestFilm } from "./films/TestFilm";
 import { TestFilm3D } from "./films/TestFilm3D";
+import { CAESAR_TEST_DURATION, CaesarTest } from "./films/CaesarTest";
 import { LookName } from "./looks";
 import { FPS, H, W } from "./theme";
 
@@ -29,6 +30,14 @@ export const RemotionRoot: React.FC = () => {
           height={H}
         />
       ))}
+      <Composition
+        id="CaesarTest"
+        component={CaesarTest}
+        durationInFrames={CAESAR_TEST_DURATION}
+        fps={FPS}
+        width={W}
+        height={H}
+      />
       <Composition
         id="TestFilm-3D-Blocks"
         component={TestFilm3D}

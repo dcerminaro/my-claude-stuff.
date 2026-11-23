@@ -1,93 +1,102 @@
 # my-film: channel rules
 
-You are the director and animator of this animated YouTube channel. The channel's style is **3D blocks**: a night-time world built entirely from blocks, rendered in real 3D with Remotion and Three.js. Follow every rule below for every film, whatever the story. The characters and world are our own; never copy characters from other channels or games.
+You are the director, writer and animator of this animated YouTube channel. Follow every rule below for every film.
+
+**The format:** every video is a lesson. A foul-mouthed Julius Caesar stands at the front of a dark classroom with a ruler and teaches investing to the audience, whom he calls things like "you fucking idiots". He jokes about his own life and Ancient Rome, and every joke makes an investing point. You write the scripts.
+
+**The style:** 3D blocks. A world built entirely from blocks, rendered in real 3D with Remotion and Three.js. Every character, prop and texture is our own design; never copy characters from other channels or games.
 
 ## Format
-- 1920x1080, 30 fps, 15 to 60 seconds long.
+- 1920x1080, 30 fps, 15 to 60 seconds long (the test films are 10 seconds).
 - Thin black letterbox bars at the top and bottom (about 60px each).
-- No voiceover. No music unless the user asks. Sound effects always.
-- Everything is made in code in Remotion: models, textures and sounds. No AI video, stock footage, downloaded images or downloaded audio.
+- Caesar's voice is an AI voiceover from ElevenLabs (see "Voice"). Sound effects always. No music unless the user asks.
+- Everything else is made in code in Remotion: models, textures and sound effects. No AI video, stock footage, downloaded images or downloaded sound effects.
 
-## The world
-- Everything is built from blocks. 1 unit = 1 block. Props, rooms, streets and characters are boxes, never smooth or round shapes.
-- Surfaces use small pixel-art textures (8 to 16 pixels square) generated in code in `src/three/textures.ts`. Always use nearest-neighbour filtering so pixels stay crisp, and seeded `random()` so textures are the same on every render.
-- Our block world must look like our own. Never copy a real game's textures (for example grass, dirt or ore blocks), characters, creatures, items, UI or logos, and never name a real game on screen.
-- Scenes are usually at night or indoors in the dark.
-- Light comes from objects in the scene: lamps, phones, screens, street lights, the moon, fire, spotlights. Each light source gets a soft additive glow (`Glow3D`) and, where it falls, a light pool on the floor.
-- Keep ambient light low and bluish (about `#5566AA`) so the lit objects stand out. Use one shadow-casting light per scene (usually the main lamp or the moon) so characters cast real shadows.
+## Writing the lessons
+- One lesson per video, with one clear investing idea, such as: diversify, keep fees low, think long-term, don't panic-sell, don't try to time the market, keep an emergency fund, compound interest, pay off high-interest debt first, dollar-cost averaging, avoid hype and get-rich-quick schemes.
+- Give sound, general, widely accepted advice only. Never recommend a specific stock, coin or fund by name, never predict prices, and never promise returns. Caesar may give a jokey disclaimer ("I'm not a financial advisor, I'm a god").
+- Every lesson has at least one Ancient Rome or Caesar joke that makes the point, for example:
+  - **Brutus and the stabbing:** don't trust one stock with everything.
+  - **Crossing the Rubicon:** commit and don't panic-sell.
+  - **"All Gaul is divided into three parts":** a three-part portfolio.
+  - **The Ides of March:** you can't time the market.
+  - **Romans paid partly in salt:** saving.
+  - **Rome wasn't built in a day:** long-term investing.
+  - **Bread and circuses:** hype and distraction.
+  - **His baldness, Cleopatra, the Senate, the triumphs, crossing the Alps** (that was Hannibal, so Caesar can be jealous about it).
+- Caesar is arrogant, theatrical and impatient. He insults the audience freely ("you fucking idiots", "you absolute plebs", "you sniveling senators") and swears uncensored, but never with slurs or insults about race, religion, gender, sexuality or disability.
+- Keep lines short and punchy. Aim for about 2.5 spoken words per second of film, and leave room for slams, pauses and the title card.
+- Save each film's script as `voice/<film-id>.json` (see "Voice") so the voice can be regenerated.
 
-## Camera
-- The view is mostly side-on, like a 2D game, but in real 3D perspective. Characters face the direction they're going, turned about 45 degrees toward the camera so their face reads.
-- The camera is locked. Allowed moves: slow push-ins on emotional moments (move about 10 to 15 percent closer), and hard cuts to close-ups of objects. No orbiting, shaking or handheld movement, except a short shake on a big impact.
-- When a character travels, they stay near the centre and the world scrolls past. Far layers move slower than near ones (parallax).
+## The cast
+- **Caesar (the lead):** built by `Voxel` in `src/three/Voxel.tsx` with the Caesar outfit. He has a big cube head and no neck, tan skin, a white toga with a crimson sash, a gold laurel wreath, and a thin hair cap with a bald patch (a running joke). He always holds a wooden ruler. He faces the camera when he talks to the audience, and turns to the student or the board when the joke needs it.
+- **The student:** our mustard block figure (`#F2B84B`, darker `#D19A34` limbs), sitting at a desk in the front row. He takes the abuse: he flinches at slams, looks confused, and occasionally gets something right. He never speaks.
+- **Faces:** made of small blocks: square dot eyes, a single block for each eyebrow, and a stepped mouth. Most emotion comes from the eyebrows. Caesar's mouth opens and closes in sync with his voice.
+- **Limbs:** plain blocks with no hands or fingers.
+- **The shadow (optional):** the student's inner voice, used when a lesson is about fear or temptation (panic-selling, FOMO). It's a tall black copy of the student with a glowing violet shell (`#9B5CFF`) and slit eyes. It grows when he's weak.
+- Any other character (Brutus, Cleopatra, a senator) is built from the same `Voxel` design with its own colours and items. Never use real modern people or copyrighted characters.
 
-## The hero
-- Our recurring lead, built by `Voxel` in `src/three/Voxel.tsx`. A mustard block figure (`#F2B84B`, with darker `#D19A34` limbs) with a big cube head and no neck: the head sits straight on the body.
-- The face is made of small blocks: two square dot eyes, a single block for each eyebrow, and a three-block stepped mouth.
-- Limbs are plain blocks with no hands or fingers. The legs have knees so he can squat, sit, run and jump.
-- Most of the emotion comes from the eyebrows (angle and height), backed up by the mouth and posture.
-- He can gain items during a story (a headband, a cap, a backpack). Build them from blocks and attach them to `Voxel`.
+## The classroom
+- A dark classroom built from blocks, at night. Caesar's desk is at the front, a chalkboard is on the back wall, the student's desk is in the front row, and there's a window with the moon.
+- The chalkboard shows the lesson in chalky pixel letters and simple diagrams. Use Roman numerals for lesson numbers.
+- Light comes from objects: the board lamp, a desk lamp, the moon, sometimes a projector beam. Each light gets a soft glow (`Glow3D`). Keep ambient light low and bluish (about `#5566AA`), with one shadow-casting light per scene.
+- Everything is built from blocks, with pixel textures (8 to 16 pixels square) generated in code in `src/three/textures.ts`. Use nearest-neighbour filtering and seeded `random()`. Never copy a real game's textures, characters or logos, and never name a real game on screen.
 
-## The shadow (his inner voice)
-- Use the shadow when the story has an inner struggle: doubt, fear, temptation, giving up.
-- It's the same block body, but pure black and taller (about 1.2 times his height), with a glowing violet shell (`#9B5CFF`) and two violet slit eyes. It gives off violet light onto the scene.
-- It grows as the hero gets weaker and shrinks or fades as he gets stronger. Tie its size to one `weakness` value (0 to 1).
-- It rises out of the floor when it appears.
+## Camera and editing
+- Default wide shot: Caesar, his desk, the board and the student all in view, as a locked 3D perspective shot.
+- Cut to a close-up of Caesar's face for insults and punchlines, using a slow push-in on the big ones.
+- Hard cut to a close-up of the chalkboard or a prop when the diagram makes the point.
+- Cut on the beat of the dialogue: each spoken line or punchline gets its own shot. Montage shots last about 1 second.
+- No orbiting or handheld movement. Add a short camera shake only on big ruler slams.
 
-## Other characters
-- Any other character is built from the same `Voxel` design, with its own body colour and its own items (hat, hair block, glasses) so it reads at a glance. Add a colour prop to `Voxel` the first time one is needed.
-- Never use famous, real or copyrighted characters.
+## Voice
+- Caesar's voice is generated by ElevenLabs with `scripts/make-voice.mjs`. It reads `voice/<film-id>.json` (the voice settings and each line of the script) and writes the audio to `public/voice/<film-id>/` and the word timings to `src/voice/<film-id>.ts`.
+- The voice: a deep, theatrical, booming older male voice with a classic stage-Roman (British) feel. It uses the same voice id in every film so Caesar always sounds the same.
+- The API key is saved as a network secret for `api.elevenlabs.io` on this environment and the proxy adds it. Never put the key in code, files or chat.
+- All timing comes from the generated word timings. Shots, subtitles, mouth movement and ruler slams are lined up to the words, never guessed.
+- The user listens to and approves the voice, because you can't hear audio. Say so whenever a new voice or new line is generated.
 
 ## Text
-- Font: Pixelify Sans (the `blocky` look in `src/looks.ts`), white with a dark outline so it reads over anything.
-- Narrator lines: small, white, top centre just under the top bar, 8 words maximum, and they fade in and out.
-- A character's spoken lines appear beside that character in their colour. The shadow speaks in violet.
-- Keep on-screen text short. The pictures tell the story.
+- Font: Pixelify Sans (the `blocky` look in `src/looks.ts`).
+- Subtitles: Caesar's words appear centred near the bottom (above the bottom bar), a few words at a time, timed to the voice, uncensored. The word being spoken is highlighted in crimson.
+- The lesson counter sits top left: `LESSON I`, `LESSON II`, and so on.
+- The shadow's lines (when used) appear beside it in violet.
 
 ## Game feel
-- A small progress counter sits in the top left, in whatever unit fits the story: `DAY 3`, `LEVEL 2`, `ROUND 5`, `ATTEMPT 12`, and so on. It pops when it changes.
-- Counts and scores pop on screen with a springy overshoot (`RepPop`).
-- At the first turning point the hero gains one visible item and keeps it for the rest of the film, to show progress at a glance.
-- Big moments (hits, wins, breakthroughs) get radial speed lines, a white flash lasting a frame or two, a squash-and-stretch on the character and a hit sound.
+- Ruler slams on the desk get a `hit` sound, speed lines, a white flash lasting a frame or two, a squash on Caesar and a flinch from the student.
+- Numbers and money pop on screen with a springy overshoot (`RepPop`): stab counts, percentages, coins.
+- Every pop, slam, footstep, chalk mark and cut gets a sound effect, timed to the exact frame.
 
 ## Animation
-- Everything moves smoothly on every frame. Never a slideshow. In still shots, characters still breathe, blink and sway slightly.
-- Use squash and stretch on jumps, landings, impacts and effort.
-- Calm shots hold for 4 to 8 seconds. Montage shots last about 1 second each.
+- Everything moves smoothly on every frame. Never a slideshow. When nobody is talking, characters still breathe, blink and sway slightly.
+- Use squash and stretch on slams, jumps and impacts.
 - Animate everything from `useCurrentFrame()` with `interpolate()` and `spring()`. Never use `useFrame()` from React Three Fiber, CSS animations or anything that runs on its own clock, because those flicker in renders.
 
-## Story shape (default, adapt to each story)
-1. **Calm opening:** set the place and the hero's goal or problem. Hold the shot.
-2. **Conflict:** the obstacle appears. Often this is the shadow, with a slow push-in on the hero's face.
-3. **Progress:** a montage of fast 1-second shots, including a hard cut to an object close-up and the counter climbing.
-4. **Payoff:** one big moment with speed lines, a flash and a pop.
-5. **Title card:** at the end, sized to the film (see below).
-
 ## Title card (at the end, length chosen per film)
-- Choose the length to fit each film so the story always gets most of the time. As a guide: about 4 seconds for a 15-second film, 6 to 8 seconds for a 30-second film, and up to 12 seconds for a 60-second film.
-- Every step below must still be readable: let each line sit on screen for at least a second before the fade.
-1. The film's one word types on letter by letter in big white pixel letters.
-2. A wavy violet underline draws in under it.
-3. One white line appears.
-4. One short violet line appears.
-5. Fade to black.
+- Choose the length to fit each film so the lesson gets most of the time. As a guide: about 2 to 3 seconds for a 10-second test, about 4 seconds for a 15-second film, 6 to 8 seconds for 30 seconds, and up to 12 seconds for 60 seconds.
+- The steps:
+  1. The lesson's one word types on letter by letter in big white pixel letters.
+  2. A wavy crimson underline draws in.
+  3. Optionally one white line, then one short crimson line.
+  4. Fade to black.
+- Let each line sit on screen for at least a second before the fade.
+- Caesar may say the word as it types on.
 
 ## Sound effects
-- All sounds are generated in code from maths (oscillators, seeded noise, envelopes) in `scripts/make-sfx.mjs`. This makes them 100% original and safe for YouTube, with no Content ID claims.
-- Never use downloaded, stock, sampled or AI-generated audio.
-- To add a sound: add a recipe to `scripts/make-sfx.mjs`, run `node scripts/make-sfx.mjs`, and add its name to `SfxName` in `src/components/Sfx.tsx`. The files land in `public/sfx/`.
-- Place sounds with `<Sfx name="..." at={frame} />`, timed to the exact frame of the action. Every pop, hit, footstep, cut and title letter gets a sound.
-- Current library: `pop` (counts), `whoosh` (cuts, fast moves), `hit` (big moments), `step` (footsteps, landings), `type` (title letters), `alarm` (phone), `drone` (the shadow appears), `shimmer` (title underline), `hum` (quiet room tone, loops).
-- Keep sounds subtle under the picture: room tone about 0.3 volume, effects 0.5 to 1.
+- All sound effects are generated in code from maths (oscillators, seeded noise, envelopes) in `scripts/make-sfx.mjs`, so they're 100% original. Only Caesar's voice comes from ElevenLabs.
+- To add a sound: add a recipe to `scripts/make-sfx.mjs`, run `node scripts/make-sfx.mjs`, and add its name to `SfxName` in `src/components/Sfx.tsx`.
+- Place sounds with `<Sfx name="..." at={frame} />`.
+- Library: `pop`, `whoosh`, `hit`, `step`, `type`, `alarm`, `drone`, `shimmer`, `hum`, `chalk`, `stab`.
+- Keep effects under the voice: room tone about 0.25 volume, effects 0.4 to 0.9, and the voice at full volume.
 
 ## Where things live
-- `src/films/`: one file per film. Register each film in `src/Root.tsx` as a 1920x1080, 30 fps composition.
-- `src/three/Voxel.tsx`: the block character (hero, shadow, and any cast).
-- `src/three/World.tsx`: reusable sets (`Room3D`, `Street3D`, `Phone3D`) and helpers (`CameraRig`, `Glow3D`). Put new sets here, or in `src/three/sets/` once there are many, and reuse them across films.
-- `src/three/textures.ts`: all pixel textures, plus the tiny pixel font for in-world screens.
-- `src/components/`: 2D overlays drawn on top of the 3D picture (`Letterbox`, `DayCounter`, `NarratorText`, `ShadowText`, `RepPop`, `SpeedLines`, `Flash`, `TitleCard`, `Sfx`). Wrap each film in `LookContext.Provider value={LOOKS.blocky}` so the overlays use the pixel font.
-- `src/films/TestFilm3D.tsx`: the 10-second reference film in this style. Copy its structure for new films. Its title card is 2.5 seconds, which is the bare minimum; real films size it using the guide in the title card section.
-- The older 2D films and looks (`TestFilm.tsx`, `src/looks.ts`, `Figure.tsx`, `Sets.tsx`) are kept only as an archive of past experiments, and the 3D film still reuses their shared timing and overlays. Don't use the 2D styles for new films unless the user asks.
+- `src/films/`: one file per film, each registered in `src/Root.tsx` as a 1920x1080, 30 fps composition.
+- `src/three/Voxel.tsx`: every block character (Caesar outfit, student, shadow, any cast).
+- `src/three/Classroom.tsx`: the classroom set and chalkboard. `src/three/World.tsx`: shared helpers (`CameraRig`, `Glow3D`) and older sets.
+- `src/three/textures.ts`: pixel textures and the pixel font for the chalkboard and screens.
+- `src/components/`: 2D overlays on top of the 3D picture (`Letterbox`, `DayCounter`, `Subtitles`, `RepPop`, `SpeedLines`, `Flash`, `TitleCard`, `Sfx`). Wrap each film in `LookContext.Provider value={LOOKS.blocky}`.
+- `voice/`: scripts. `public/voice/`: generated audio. `src/voice/`: generated timings.
+- The earlier test films (`TestFilm`, `TestFilm3D` and the 2D looks) are an archive of experiments. Don't use their story for new films.
 
 ## Checking and rendering
 - Before calling a film done, look at a few frames from every shot (`npx remotion still`), fix anything cut off, overlapping or too dark, then render to `out/` with `npx remotion render`, and check the file has sound.
