@@ -91,7 +91,7 @@ export const Subtitles: React.FC<{ lines: PlacedLine[]; hold?: number }> = ({
               transform: active ? "translateY(-4px)" : "none",
             }}
           >
-            {w.text.toUpperCase()}
+            {w.text}
           </span>
         );
       })}

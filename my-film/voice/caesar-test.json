@@ -1,12 +1,35 @@
 {
   "film": "caesar-test",
-  "voiceId": "onwK4e9ZLuTAKqWW03F9",
-  "modelId": "eleven_multilingual_v2",
-  "settings": { "stability": 0.35, "similarity_boost": 0.8, "style": 0.6, "use_speaker_boost": true },
+  "engine": "kokoro",
+  "kokoroVoice": "bm_george",
+  "kokoroSpeed": 0.95,
+  "elevenlabs": {
+    "voiceId": "onwK4e9ZLuTAKqWW03F9",
+    "modelId": "eleven_multilingual_v2",
+    "settings": {
+      "stability": 0.35,
+      "similarity_boost": 0.8,
+      "style": 0.6,
+      "use_speaker_boost": true
+    }
+  },
   "lines": [
-    { "id": "l1", "text": "Never put all your money in one stock, you fucking idiots." },
-    { "id": "l2", "text": "I trusted ONE man. Brutus." },
-    { "id": "l3", "text": "Twenty-three stab wounds." },
-    { "id": "l4", "text": "Diversify." }
+    {
+      "id": "l1",
+      "text": "Never put all your money in one stock, you fucking idiots."
+    },
+    {
+      "id": "l2",
+      "text": "I trusted ONE man. Brutus.",
+      "say": "I trusted... ONE man. Brutus."
+    },
+    {
+      "id": "l3",
+      "text": "Twenty-three stab wounds."
+    },
+    {
+      "id": "l4",
+      "text": "Diversify."
+    }
   ]
 }

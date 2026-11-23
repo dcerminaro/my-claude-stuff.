@@ -46,13 +46,13 @@ const ease = Easing.inOut(Easing.cubic);
 
 // ---- timeline from the voice ----
 const SLAM = 9; // ruler hits the desk
-const LINES = placeLines(voice, [0.5, 0.3, 0.25, 0.35], FPS);
+const LINES = placeLines(voice, [0.4, 0.3, 0.25, 0.3], FPS);
 const [L1, L2, L3, L4] = LINES;
 const SHOT = {
   wide: [0, L2.from],
   caesar: [L2.from, L3.from],
   board: [L3.from, L4.from - 3],
-  title: [L4.from - 3, L4.from - 3 + 96],
+  title: [L4.from - 3, L4.from - 3 + 84],
 } as const;
 export const CAESAR_TEST_DURATION = SHOT.title[1];
 const len = (k: keyof typeof SHOT) => SHOT[k][1] - SHOT[k][0];
@@ -375,7 +375,7 @@ const StabCounter: React.FC<{ until: number }> = ({ until }) => {
       }}
     >
       <div style={{ fontSize: 190, lineHeight: 1 }}>{n}</div>
-      <div style={{ fontSize: 54, color: "#FFF" }}>STAB WOUNDS</div>
+      <div style={{ fontSize: 54, color: "#FFF" }}>stab wounds</div>
     </div>
   );
 };
@@ -487,9 +487,9 @@ export const CaesarTest: React.FC = () => (
           startAt={3}
           letterEvery={3}
           underlineFrames={12}
-          line1At={38}
-          line2At={50}
-          fadeFrames={16}
+          line1At={32}
+          line2At={40}
+          fadeFrames={14}
         />
       </Sequence>
 

@@ -15,7 +15,11 @@ export const placeLines = (
   return track.lines.map((line, i) => {
     t += gaps[i] ?? 0.25;
     const from = Math.round(t * fps);
-    t += line.duration;
+    // advance by the end of speech, not the file length (clips end in silence)
+    const spoken = line.words.length
+      ? line.words[line.words.length - 1].end + 0.12
+      : line.duration;
+    t += Math.min(line.duration, spoken);
     return { ...line, from, to: Math.round(t * fps) };
   });
 };
