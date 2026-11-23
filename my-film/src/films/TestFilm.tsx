@@ -34,7 +34,7 @@ const CL = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const ease = Easing.inOut(Easing.cubic);
 
 // ---- shot timings (global frames) ----
-const T = {
+export const T = {
   room: [0, 150],
   phone: [150, 175],
   run: [175, 205],
@@ -43,7 +43,7 @@ const T = {
 } as const;
 const len = (k: keyof typeof T) => T[k][1] - T[k][0];
 
-const REPS = [
+export const REPS = [
   [10, 38],
   [38, 66],
   [66, 94],
@@ -306,7 +306,7 @@ const dayAt = (frame: number) => {
   return 30;
 };
 
-const DayHud: React.FC = () => {
+export const DayHud: React.FC = () => {
   const f = useCurrentFrame();
   if (f >= T.title[0]) return null;
   const day = dayAt(f);

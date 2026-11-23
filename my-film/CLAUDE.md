@@ -71,6 +71,7 @@ You are the director and animator of this animated YouTube channel. Follow every
 - `src/looks.ts` defines art styles ("looks"): `original` (the house style above, always the default), `blocky`, `neon`, `paper`, `ink`, `clay`. Every shared component reads the current look, so one film can be redrawn in any style by passing `look` to it.
 - Unless the user asks for another style, films use `original` and all the rules above.
 - Never copy a real game's characters, textures or logos. The blocky look is our own original block art.
+- There is also a real 3D block-world version (`src/films/TestFilm3D.tsx`) built with `@remotion/three`. Its character is `src/three/Voxel.tsx`, its sets are in `src/three/World.tsx`, and its pixel textures are generated in `src/three/textures.ts`, with no image files. Animate it only from `useCurrentFrame()`, never `useFrame()`. In the cloud, render 3D with `--gl=swangle` as well as the browser flag.
 
 ## Workflow
 - Each film is its own composition in `src/`, registered in `src/Root.tsx`.

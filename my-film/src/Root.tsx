@@ -1,6 +1,7 @@
 import React from "react";
 import { Composition } from "remotion";
 import { TestFilm } from "./films/TestFilm";
+import { TestFilm3D } from "./films/TestFilm3D";
 import { LookName } from "./looks";
 import { FPS, H, W } from "./theme";
 
@@ -28,6 +29,14 @@ export const RemotionRoot: React.FC = () => {
           height={H}
         />
       ))}
+      <Composition
+        id="TestFilm-3D-Blocks"
+        component={TestFilm3D}
+        durationInFrames={300}
+        fps={FPS}
+        width={W}
+        height={H}
+      />
     </>
   );
 };
