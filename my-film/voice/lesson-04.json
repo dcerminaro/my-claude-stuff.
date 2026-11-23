@@ -1,0 +1,16 @@
+{
+  "film": "lesson-04",
+  "engine": "kokoro",
+  "kokoroVoice": "bm_george",
+  "kokoroSpeed": 0.95,
+  "lines": [
+    { "id": "l1", "text": "Lesson four, you gullible plebs.", "say": "Lesson FOUR, you gullible plebs!" },
+    { "id": "l2", "text": "In Rome, we kept the mob happy with bread and circuses." },
+    { "id": "l3", "text": "Today, you get meme coins and some guy online screaming to the moon." },
+    { "id": "l4", "text": "Everyone's buying, so you buy. At the top." },
+    { "id": "l5", "text": "Then the circus leaves town." },
+    { "id": "l6", "text": "And you're left holding the bag, you fucking idiot." },
+    { "id": "l7", "text": "If everyone's screaming about it, you're already too late." },
+    { "id": "l8", "text": "Ignore the hype. Boring wins." }
+  ]
+}

@@ -549,3 +549,16 @@ export const skyTex = () =>
     ctx.fillRect(9, 9, 5, 2);
     ctx.fillRect(10, 8, 2, 1);
   });
+
+/** vertical stripes (circus tents, awnings) */
+export const stripesTex = (a: string, b: string, n = 4) =>
+  pixelTexture(`stripes-${a}-${b}-${n}`, 16, 16, (ctx, rnd) => {
+    for (let y = 0; y < 16; y++)
+      for (let x = 0; x < 16; x++) {
+        ctx.fillStyle = shade(
+          Math.floor(x / (16 / n / 2)) % 2 ? b : a,
+          0.92 + rnd(`${x},${y}`) * 0.12,
+        );
+        ctx.fillRect(x, y, 1, 1);
+      }
+  });
