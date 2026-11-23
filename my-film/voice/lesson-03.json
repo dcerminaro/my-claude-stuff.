@@ -1,0 +1,17 @@
+{
+  "film": "lesson-03",
+  "engine": "kokoro",
+  "kokoroVoice": "bm_george",
+  "kokoroSpeed": 0.95,
+  "lines": [
+    { "id": "l1", "text": "Lesson three, you impatient peasants.", "say": "Lesson THREE, you impatient peasants!" },
+    { "id": "l2", "text": "Rome wasn't built in a day. It took centuries." },
+    { "id": "l3", "text": "Your money works the same way. It's called compound interest." },
+    { "id": "l4", "text": "Your money makes money. Then that money makes money.", "say": "Your money makes money. Then THAT money makes money." },
+    { "id": "l5", "text": "A hundred a month for forty years? You put in forty-eight thousand." },
+    { "id": "l6", "text": "At eight percent a year, it grows past three hundred thousand." },
+    { "id": "l7", "text": "And you want to get rich by Friday?" },
+    { "id": "l8", "text": "Fucking idiots." },
+    { "id": "l9", "text": "Start early. Be patient." }
+  ]
+}

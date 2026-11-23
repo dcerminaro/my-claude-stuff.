@@ -95,6 +95,7 @@ You are the director, writer and animator of this animated YouTube channel. Foll
 - Place sounds with `<Sfx name="..." at={frame} />`.
 - Library: `pop`, `whoosh`, `hit`, `step`, `type`, `alarm`, `drone`, `shimmer`, `hum`, `chalk`, `stab`, `fall` (slide whistle down: crashes), `rise` (slide whistle up: recoveries).
 - Keep effects under the voice: room tone about 0.25 volume, effects 0.4 to 0.9, and the voice at full volume.
+- Never put a loud effect (whoosh, thud, drone) on the same frames as an important spoken word, especially the first word of a line on a cut. After rendering, transcribe the finished video with Whisper and fix any word it mishears by moving or quietening the effect underneath it.
 
 ## Where things live
 - `src/films/`: one file per film, each registered in `src/Root.tsx` as a 1080x1920, 30 fps composition.

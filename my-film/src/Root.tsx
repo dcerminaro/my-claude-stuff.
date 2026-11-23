@@ -4,6 +4,7 @@ import { TestFilm } from "./films/TestFilm";
 import { TestFilm3D } from "./films/TestFilm3D";
 import { CAESAR_TEST_DURATION, CaesarTest } from "./films/CaesarTest";
 import { LESSON_02_DURATION, Lesson02 } from "./films/Lesson02";
+import { LESSON_03_DURATION, Lesson03 } from "./films/Lesson03";
 import { LookName } from "./looks";
 import { FPS, H, W } from "./theme";
 
@@ -31,6 +32,14 @@ export const RemotionRoot: React.FC = () => {
           height={H}
         />
       ))}
+      <Composition
+        id="Lesson03"
+        component={Lesson03}
+        durationInFrames={LESSON_03_DURATION}
+        fps={FPS}
+        width={1080}
+        height={1920}
+      />
       <Composition
         id="Lesson02"
         component={Lesson02}

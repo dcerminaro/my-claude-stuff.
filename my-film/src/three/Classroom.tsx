@@ -122,7 +122,10 @@ const DeskAndChair: React.FC<{ x: number; z: number }> = ({ x, z }) => (
   </group>
 );
 
-export const Classroom: React.FC<{ board: THREE.Texture }> = ({ board }) => {
+export const Classroom: React.FC<{
+  board: THREE.Texture;
+  coins?: boolean; // the coin stack on Caesar's desk (hide it when a lesson brings its own props)
+}> = ({ board, coins = true }) => {
   const frame = useCurrentFrame();
   const seconds = frame / 30;
 
@@ -387,7 +390,7 @@ export const Classroom: React.FC<{ board: THREE.Texture }> = ({ board }) => {
         position={[DESK.x, 0.62, DESK.z + 0.44]}
         color="#8A5A32"
       />
-      {[0, 1, 2, 3].map((i) => (
+      {(coins ? [0, 1, 2, 3] : []).map((i) => (
         <B
           key={i}
           size={[0.22, 0.05, 0.22]}
