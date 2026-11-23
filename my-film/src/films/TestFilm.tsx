@@ -1,14 +1,29 @@
 import React from "react";
-import { AbsoluteFill, interpolate, Sequence, spring, useCurrentFrame, useVideoConfig, Easing } from "remotion";
+import {
+  AbsoluteFill,
+  interpolate,
+  Sequence,
+  spring,
+  useCurrentFrame,
+  useVideoConfig,
+  Easing,
+} from "remotion";
 import { Flash, SpeedLines } from "../components/Effects";
 import { Figure } from "../components/Figure";
 import { Glow } from "../components/Glow";
 import { Letterbox } from "../components/Letterbox";
 import { City, PhoneCloseUp, Room } from "../components/Sets";
 import { Sfx } from "../components/Sfx";
-import { DayCounter, NarratorText, RepPop, ShadowText } from "../components/Text";
+import {
+  DayCounter,
+  NarratorText,
+  RepPop,
+  ShadowText,
+} from "../components/Text";
 import { TitleCard } from "../components/TitleCard";
-import { C, FLOOR_Y, H, W } from "../theme";
+import { LookDefs, LookOverlay } from "../components/LookFx";
+import { LookContext, LOOKS, LookName, useLook } from "../looks";
+import { FLOOR_Y, H, W } from "../theme";
 
 /**
  * 10-second test film (300 frames). A compressed version of the channel
@@ -37,6 +52,12 @@ const REPS = [
 const HERO_X = 880;
 const SHADOW_X = 650;
 
+/** the lamp's light washing over the characters */
+const RoomWash: React.FC = () => {
+  const look = useLook();
+  return <Glow x={470} y={560} r={900} color={look.warm} opacity={0.1} />;
+};
+
 // --------------------------------------------------------------------------
 const RoomShot: React.FC = () => {
   const f = useCurrentFrame();
@@ -44,20 +65,34 @@ const RoomShot: React.FC = () => {
   // squat reps
   let s = 0;
   for (const [a, b] of REPS) {
-    if (f >= a && f < b) s = 0.5 - 0.5 * Math.cos(((f - a) / (b - a)) * Math.PI * 2);
+    if (f >= a && f < b)
+      s = 0.5 - 0.5 * Math.cos(((f - a) / (b - a)) * Math.PI * 2);
   }
   const breathe = 0.012 * Math.sin(f * 0.15);
 
   // emotion: effort → proud → worried when the shadow arrives
   const worry = interpolate(f, [108, 135], [0, 1], { ...CL, easing: ease });
   const proud = interpolate(f, [94, 102], [0, 1], CL) * (1 - worry);
-  const brow = interpolate(s, [0, 1], [0.45, 0.9]) * (1 - worry) - 0.9 * worry - 0.2 * proud;
-  const mouth = interpolate(s, [0, 1], [0.15, -0.35]) * (1 - proud - worry) + 0.6 * proud - 0.55 * worry;
-  const blink = Math.max(0, 1 - Math.abs(f - 101) / 3, 1 - Math.abs(f - 142) / 3);
+  const brow =
+    interpolate(s, [0, 1], [0.45, 0.9]) * (1 - worry) -
+    0.9 * worry -
+    0.2 * proud;
+  const mouth =
+    interpolate(s, [0, 1], [0.15, -0.35]) * (1 - proud - worry) +
+    0.6 * proud -
+    0.55 * worry;
+  const blink = Math.max(
+    0,
+    1 - Math.abs(f - 101) / 3,
+    1 - Math.abs(f - 142) / 3,
+  );
 
   // shadow rises out of the floor; it grows as he weakens
   const weakness = interpolate(f, [105, 150], [0.2, 0.7], CL);
-  const emerge = interpolate(f, [105, 126], [0, 1], { ...CL, easing: Easing.out(Easing.back(1.4)) });
+  const emerge = interpolate(f, [105, 126], [0, 1], {
+    ...CL,
+    easing: Easing.out(Easing.back(1.4)),
+  });
 
   // slow push-in on the emotional moment
   const push = interpolate(f, [108, 150], [1, 1.08], { ...CL, easing: ease });
@@ -70,7 +105,9 @@ const RoomShot: React.FC = () => {
       ))}
       <Sfx name="drone" at={104} volume={0.9} />
 
-      <AbsoluteFill style={{ transform: `scale(${push})`, transformOrigin: "760px 600px" }}>
+      <AbsoluteFill
+        style={{ transform: `scale(${push})`, transformOrigin: "760px 600px" }}
+      >
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
           <Room />
           {f >= 105 && (
@@ -80,7 +117,11 @@ const RoomShot: React.FC = () => {
               scale={1.2 * (1 + 0.35 * weakness)}
               variant="shadow"
               emerge={emerge}
-              pose={{ lean: 3 * Math.sin(f * 0.06), squash: 1 + 0.015 * Math.sin(f * 0.1), t: f }}
+              pose={{
+                lean: 3 * Math.sin(f * 0.06),
+                squash: 1 + 0.015 * Math.sin(f * 0.1),
+                t: f,
+              }}
             />
           )}
           <Figure
@@ -100,7 +141,7 @@ const RoomShot: React.FC = () => {
             }}
           />
           {/* the lamp's light washes over him */}
-          <Glow x={470} y={560} r={900} color={C.warmLight} opacity={0.1} />
+          <RoomWash />
         </svg>
 
         <Sequence from={120} durationInFrames={30} layout="none">
@@ -166,7 +207,7 @@ const RunShot: React.FC = () => {
           }}
         />
       </svg>
-      <Sequence  durationInFrames={30} layout="none">
+      <Sequence durationInFrames={30} layout="none">
         <NarratorText text="Every single morning." fadeFrames={6} />
       </Sequence>
     </AbsoluteFill>
@@ -180,11 +221,18 @@ const RepShot: React.FC = () => {
   const LAUNCH = 5;
   const LAND = 15;
 
-  const crouch = interpolate(f, [0, LAUNCH], [0.1, 0.75], { ...CL, easing: ease });
+  const crouch = interpolate(f, [0, LAUNCH], [0.1, 0.75], {
+    ...CL,
+    easing: ease,
+  });
   const u = (f - LAUNCH) / (LAND - LAUNCH);
   const air = f >= LAUNCH && f < LAND;
   const lift = air ? 150 * 4 * u * (1 - u) : 0;
-  const landS = spring({ frame: f - LAND, fps, config: { damping: 8, stiffness: 300 } });
+  const landS = spring({
+    frame: f - LAND,
+    fps,
+    config: { damping: 8, stiffness: 300 },
+  });
 
   let squat = crouch;
   let squash = 1 - 0.12 * (crouch / 0.75);
@@ -231,7 +279,7 @@ const RepShot: React.FC = () => {
             t: f,
           }}
         />
-        <Glow x={470} y={560} r={900} color={C.warmLight} opacity={0.1} />
+        <RoomWash />
       </svg>
 
       <Sequence from={LAUNCH} durationInFrames={10} layout="none">
@@ -251,7 +299,10 @@ const RepShot: React.FC = () => {
 const dayAt = (frame: number) => {
   if (frame < T.phone[0]) return 1;
   if (frame < T.run[0]) return 2;
-  if (frame < T.rep[0]) return Math.round(interpolate(frame, [T.run[0] + 2, T.run[1] - 4], [2, 30], CL));
+  if (frame < T.rep[0])
+    return Math.round(
+      interpolate(frame, [T.run[0] + 2, T.run[1] - 4], [2, 30], CL),
+    );
   return 30;
 };
 
@@ -264,34 +315,48 @@ const DayHud: React.FC = () => {
   return <DayCounter day={day} since={day === 1 ? 30 : since} />;
 };
 
-export const TestFilm: React.FC = () => (
-  <AbsoluteFill style={{ background: "#000" }}>
-    <Sequence from={T.room[0]} durationInFrames={len("room")} name="Room">
-      <RoomShot />
-    </Sequence>
-    <Sequence from={T.phone[0]} durationInFrames={len("phone")} name="Phone close-up">
-      <PhoneShot />
-    </Sequence>
-    <Sequence from={T.run[0]} durationInFrames={len("run")} name="Run">
-      <RunShot />
-    </Sequence>
-    <Sequence from={T.rep[0]} durationInFrames={len("rep")} name="Big rep">
-      <RepShot />
-    </Sequence>
-    <Sequence from={T.title[0]} durationInFrames={len("title")} name="Title card">
-      <TitleCard
-        word="BEGIN"
-        line1="Every day starts with one rep."
-        line2="Day 1."
-        startAt={3}
-        letterEvery={4}
-        underlineFrames={12}
-        line1At={36}
-        line2At={46}
-        fadeFrames={16}
-      />
-    </Sequence>
-    <DayHud />
-    <Letterbox />
-  </AbsoluteFill>
+export const TestFilm: React.FC<{ look?: LookName }> = ({
+  look = "original",
+}) => (
+  <LookContext.Provider value={LOOKS[look]}>
+    <AbsoluteFill style={{ background: "#000" }}>
+      <LookDefs />
+      <Sequence from={T.room[0]} durationInFrames={len("room")} name="Room">
+        <RoomShot />
+      </Sequence>
+      <Sequence
+        from={T.phone[0]}
+        durationInFrames={len("phone")}
+        name="Phone close-up"
+      >
+        <PhoneShot />
+      </Sequence>
+      <Sequence from={T.run[0]} durationInFrames={len("run")} name="Run">
+        <RunShot />
+      </Sequence>
+      <Sequence from={T.rep[0]} durationInFrames={len("rep")} name="Big rep">
+        <RepShot />
+      </Sequence>
+      <Sequence
+        from={T.title[0]}
+        durationInFrames={len("title")}
+        name="Title card"
+      >
+        <TitleCard
+          word="BEGIN"
+          line1="Every day starts with one rep."
+          line2="Day 1."
+          startAt={3}
+          letterEvery={4}
+          underlineFrames={12}
+          line1At={36}
+          line2At={46}
+          fadeFrames={16}
+        />
+      </Sequence>
+      <LookOverlay />
+      <DayHud />
+      <Letterbox />
+    </AbsoluteFill>
+  </LookContext.Provider>
 );

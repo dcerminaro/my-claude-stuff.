@@ -67,6 +67,11 @@ You are the director and animator of this animated YouTube channel. Follow every
 4. Then one short violet line appears.
 5. Fade to black.
 
+## Alternative styles (experiments)
+- `src/looks.ts` defines art styles ("looks"): `original` (the house style above, always the default), `blocky`, `neon`, `paper`, `ink`, `clay`. Every shared component reads the current look, so one film can be redrawn in any style by passing `look` to it.
+- Unless the user asks for another style, films use `original` and all the rules above.
+- Never copy a real game's characters, textures or logos. The blocky look is our own original block art.
+
 ## Workflow
 - Each film is its own composition in `src/`, registered in `src/Root.tsx`.
 - Shared pieces (Character, Shadow, Letterbox, DayCounter, NarratorText, TitleCard, glows, wobbly outline) go in `src/components/` and are reused across films.

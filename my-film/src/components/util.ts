@@ -83,3 +83,29 @@ export const circlePts = (cx: number, cy: number, r: number, n = 24): Pt[] =>
     const a = (i / n) * Math.PI * 2;
     return [cx + r * Math.cos(a), cy + r * Math.sin(a)] as Pt;
   });
+
+/** Stair-stepped, grid-snapped outline for the blocky look. */
+export const blockPath = (pts: Pt[], G: number, closed = true) => {
+  const snap = (v: number) => Math.round(v / G) * G;
+  const sp = pts.map(([x, y]) => [snap(x), snap(y)] as Pt);
+  const out: Pt[] = [sp[0]];
+  const edges = closed ? sp.length : sp.length - 1;
+  for (let e = 0; e < edges; e++) {
+    const [x1, y1] = sp[e];
+    const [x2, y2] = sp[(e + 1) % sp.length];
+    const n = Math.max(
+      1,
+      Math.round(Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1)) / G),
+    );
+    let py = y1;
+    for (let i = 1; i <= n; i++) {
+      const x = snap(x1 + ((x2 - x1) * i) / n);
+      const y = snap(y1 + ((y2 - y1) * i) / n);
+      out.push([x, py]);
+      out.push([x, y]);
+      py = y;
+    }
+  }
+  const d = out.map(([x, y], i) => `${i ? "L" : "M"}${x} ${y}`).join(" ");
+  return closed ? d + " Z" : d;
+};
