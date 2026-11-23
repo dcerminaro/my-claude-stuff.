@@ -93,7 +93,7 @@ You are the director, writer and animator of this animated YouTube channel. Foll
 - All sound effects are generated in code from maths (oscillators, seeded noise, envelopes) in `scripts/make-sfx.mjs`, so they're 100% original. Only Caesar's voice comes from the AI voice model.
 - To add a sound: add a recipe to `scripts/make-sfx.mjs`, run `node scripts/make-sfx.mjs`, and add its name to `SfxName` in `src/components/Sfx.tsx`.
 - Place sounds with `<Sfx name="..." at={frame} />`.
-- Library: `pop`, `whoosh`, `hit`, `step`, `type`, `alarm`, `drone`, `shimmer`, `hum`, `chalk`, `stab`.
+- Library: `pop`, `whoosh`, `hit`, `step`, `type`, `alarm`, `drone`, `shimmer`, `hum`, `chalk`, `stab`, `fall` (slide whistle down: crashes), `rise` (slide whistle up: recoveries).
 - Keep effects under the voice: room tone about 0.25 volume, effects 0.4 to 0.9, and the voice at full volume.
 
 ## Where things live

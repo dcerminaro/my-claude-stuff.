@@ -1,0 +1,43 @@
+{
+  "film": "lesson-02",
+  "engine": "kokoro",
+  "kokoroVoice": "bm_george",
+  "kokoroSpeed": 0.95,
+  "lines": [
+    {
+      "id": "l1",
+      "text": "Lesson two, you sniveling cowards.",
+      "say": "Lesson TWO, you sniveling cowards!"
+    },
+    {
+      "id": "l2",
+      "text": "The market drops ten percent. And what do you do?"
+    },
+    {
+      "id": "l3",
+      "text": "You panic. You sell. At the bottom.",
+      "say": "You panic. You sell... At the BOTTOM."
+    },
+    {
+      "id": "l4",
+      "text": "Like a fucking idiot."
+    },
+    {
+      "id": "l5",
+      "text": "When I crossed the Rubicon, did I turn back because the water was cold?"
+    },
+    {
+      "id": "l6",
+      "text": "No! I took Rome.",
+      "say": "NO! I took ROME."
+    },
+    {
+      "id": "l7",
+      "text": "Markets fall. Markets recover. The only ones who get destroyed are the cowards who sell."
+    },
+    {
+      "id": "l8",
+      "text": "Hold the line, fools."
+    }
+  ]
+}

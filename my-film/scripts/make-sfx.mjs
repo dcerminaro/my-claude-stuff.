@@ -277,3 +277,23 @@ const writeWav = (name, data, gain = 1) => {
     0.9,
   );
 }
+
+// fall / rise: cartoon slide whistle for markets crashing and recovering
+for (const [name, f0, f1] of [
+  ["fall", 1400, 260],
+  ["rise", 300, 1500],
+]) {
+  let ph = 0;
+  const T = 0.75;
+  writeWav(
+    name,
+    make(T, (t) => {
+      const u = t / T;
+      const f = f0 * Math.pow(f1 / f0, u) * (1 + 0.02 * Math.sin(2 * Math.PI * 6 * t));
+      ph += (2 * Math.PI * f) / 44100;
+      const env = Math.min(1, t * 30) * Math.min(1, (T - t) * 8);
+      return (Math.sin(ph) + 0.2 * Math.sin(2 * ph)) * 0.45 * env;
+    }),
+    0.8,
+  );
+}

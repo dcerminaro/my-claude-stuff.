@@ -13,7 +13,9 @@ export type SfxName =
   | "shimmer"
   | "hum"
   | "chalk"
-  | "stab";
+  | "stab"
+  | "fall"
+  | "rise";
 
 /**
  * Plays a code-generated sound effect (see scripts/make-sfx.mjs) at a frame.

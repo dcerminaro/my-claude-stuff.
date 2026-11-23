@@ -49,15 +49,19 @@ export const ShadowText: React.FC<{
   x: number;
   y: number;
   width?: number;
-}> = ({ text, x, y, width = 420 }) => {
+  color?: string; // defaults to the look's accent
+  align?: "left" | "right";
+}> = ({ text, x, y, width = 420, color, align = "right" }) => {
   const f = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const look = useLook();
+  const safe = useSafe();
   const o = fade(f, durationInFrames, 8);
+  const c = color ?? look.accent;
   const glow =
     look.name === "ink" || look.name === "paper"
       ? "none"
-      : `0 0 18px ${look.accent}, 0 0 40px ${look.accent}88`;
+      : `0 0 18px ${c}, 0 0 40px ${c}88, 0 3px 0 #000`;
   return (
     <div
       style={{
@@ -65,15 +69,15 @@ export const ShadowText: React.FC<{
         left: x,
         top: y,
         width,
-        textAlign: "right",
+        textAlign: align,
         fontFamily: look.font,
         fontWeight: look.fontWeight,
-        fontSize: 46 * look.fontScale,
+        fontSize: 46 * look.fontScale * (safe.letterbox ? 1 : 1.7),
         lineHeight: 1.15,
-        color: look.accent,
+        color: c,
         opacity: o,
         transform: `translate(${Math.sin(f * 0.21) * 1.2}px, ${Math.cos(f * 0.17) * 1.2}px) scale(${0.92 + 0.08 * o})`,
-        transformOrigin: "right center",
+        transformOrigin: `${align} center`,
         textShadow: glow,
       }}
     >
@@ -110,7 +114,11 @@ export const DayCounter: React.FC<{
         borderRadius: look.radius,
         padding: "4px 14px",
         background:
-          look.name === "ink" ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)",
+          look.name === "ink"
+            ? "rgba(255,255,255,0.4)"
+            : safe.letterbox
+              ? "rgba(0,0,0,0.4)"
+              : "rgba(20,20,28,0.8)",
         boxShadow: look.name === "neon" ? `0 0 14px ${look.outline}` : "none",
         transform: `scale(${scale})`,
         transformOrigin: "left center",

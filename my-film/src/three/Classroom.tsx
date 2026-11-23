@@ -154,9 +154,13 @@ export const Classroom: React.FC<{ board: THREE.Texture }> = ({ board }) => {
       />
 
       {/* floor */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[10, 10]} />
-        <meshLambertMaterial map={lightPlanksTex([10, 10])} />
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, 0, 2.2]}
+        receiveShadow
+      >
+        <planeGeometry args={[10, 10.6]} />
+        <meshLambertMaterial map={lightPlanksTex([10, 11])} />
       </mesh>
       {/* sun patches on the floor */}
       <Glow3D
@@ -191,29 +195,29 @@ export const Classroom: React.FC<{ board: THREE.Texture }> = ({ board }) => {
 
       {/* side walls; the left one has a window with sky */}
       <mesh
-        position={[-3.6, 2.7, 1]}
+        position={[-3.6, 2.7, 2.2]}
         rotation={[0, Math.PI / 2, 0]}
         receiveShadow
       >
-        <planeGeometry args={[8, 5.4]} />
-        <meshLambertMaterial map={creamWallTex([8, 5])} />
+        <planeGeometry args={[10.4, 5.4]} />
+        <meshLambertMaterial map={creamWallTex([10, 5])} />
       </mesh>
       <mesh position={[-3.58, 2.9, 0.2]} rotation={[0, Math.PI / 2, 0]}>
         <planeGeometry args={[2.2, 2]} />
         <meshBasicMaterial map={skyTex()} toneMapped={false} />
       </mesh>
       <mesh
-        position={[3.6, 2.7, 1]}
+        position={[3.6, 2.7, 2.2]}
         rotation={[0, -Math.PI / 2, 0]}
         receiveShadow
       >
-        <planeGeometry args={[8, 5.4]} />
-        <meshLambertMaterial map={creamWallTex([8, 5])} />
+        <planeGeometry args={[10.4, 5.4]} />
+        <meshLambertMaterial map={creamWallTex([10, 5])} />
       </mesh>
 
       {/* ceiling with two light panels */}
-      <mesh position={[0, CEIL, 1]} rotation={[Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[7.2, 8]} />
+      <mesh position={[0, CEIL, 2.2]} rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[7.2, 10.4]} />
         <meshLambertMaterial color="#EDE7DA" />
       </mesh>
       {[-1.6, 1.2].map((z) => (
@@ -412,6 +416,46 @@ export const Classroom: React.FC<{ board: THREE.Texture }> = ({ board }) => {
         size={[0.5, 0.1, 0.1]}
         position={[DESK.x + 0.05, DESK.h + 0.11, DESK.z + 0.25]}
         color="#E6D7B0"
+      />
+
+      {/* back of the room (seen when the camera faces the student) */}
+      <mesh position={[0, 3.2, 7.4]} rotation={[0, Math.PI, 0]} receiveShadow>
+        <planeGeometry args={[7.2, 4.4]} />
+        <meshLambertMaterial map={creamWallTex([7, 4])} />
+      </mesh>
+      <mesh position={[0, 0.5, 7.39]} rotation={[0, Math.PI, 0]} receiveShadow>
+        <planeGeometry args={[7.2, 1.0]} />
+        <meshLambertMaterial map={wainscotTex([7, 1])} />
+      </mesh>
+      {/* cork notice board with pinned papers */}
+      <group position={[0.6, 2.6, 7.35]}>
+        <B
+          size={[2.4, 1.4, 0.06]}
+          position={[0, 0, 0]}
+          color="#B98A58"
+          noise={0.18}
+        />
+        {[
+          [-0.8, 0.3, "#F4EEDC"],
+          [-0.3, -0.2, "#F2D36B"],
+          [0.3, 0.25, "#F4EEDC"],
+          [0.8, -0.15, "#9FD3A8"],
+          [0.05, -0.35, "#F4B6B6"],
+        ].map(([x, y, c], i) => (
+          <B
+            key={i}
+            size={[0.42, 0.5, 0.02]}
+            position={[x as number, y as number, -0.04]}
+            color={c as string}
+            noise={0.03}
+          />
+        ))}
+      </group>
+      <B size={[1.0, 2.2, 0.08]} position={[-2.4, 1.1, 7.35]} color="#8A5A32" />
+      <B
+        size={[0.08, 0.08, 0.12]}
+        position={[-2.05, 1.1, 7.28]}
+        color="#D8B448"
       />
 
       {/* pupils' desks: our student's, plus empty ones */}
