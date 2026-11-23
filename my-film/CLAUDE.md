@@ -51,6 +51,15 @@ You are the director and animator of this animated YouTube channel. Follow every
 - Calm shots hold 4 to 8 seconds. Montage shots last about 1 second each.
 - Drive everything with `useCurrentFrame()`, `interpolate()` and `spring()`. No CSS transitions or animations.
 
+## Sound effects
+- Every film has sound effects. There is still no voiceover and no music unless the user asks.
+- All sounds are generated in code from maths (oscillators, seeded noise, envelopes) in `scripts/make-sfx.mjs`. This makes them 100% original and safe for YouTube (no Content ID claims).
+- Never use downloaded, stock, sampled or AI-generated audio.
+- To add a new sound, add a recipe to `scripts/make-sfx.mjs`, run `node scripts/make-sfx.mjs`, and add its name to `SfxName` in `src/components/Sfx.tsx`. The files land in `public/sfx/`.
+- Place sounds with `<Sfx name="..." at={frame} />`, timed to the exact frame of the action. Every rep pop, hit, footstep, cut and letter has a sound.
+- Current library: `pop` (rep counts), `whoosh` (cuts, fast moves), `hit` (big hits), `step` (footsteps, landings), `type` (title letters), `alarm` (phone), `drone` (the shadow appears), `shimmer` (title underline), `hum` (quiet room tone, loops).
+- Keep sounds subtle under the picture: room tone about 0.3 volume, effects 0.5 to 1.
+
 ## Title card (last 12 seconds)
 1. The film's one word types on letter by letter in big white Comic Neue letters.
 2. A wavy violet underline draws in under it.
@@ -62,4 +71,6 @@ You are the director and animator of this animated YouTube channel. Follow every
 - Each film is its own composition in `src/`, registered in `src/Root.tsx`.
 - Shared pieces (Character, Shadow, Letterbox, DayCounter, NarratorText, TitleCard, glows, wobbly outline) go in `src/components/` and are reused across films.
 - Before calling a film done, check a few frames (`npx remotion still`) and render to `out/` with `npx remotion render`.
+- In the cloud environment Remotion can't download its own browser. Add `--browser-executable=/opt/pw-browsers/chromium` to `still` and `render` there. On the user's own computer this flag isn't needed.
+- `src/films/TestFilm.tsx` is a 10-second test. It is shorter than the 15-second minimum, so its title card is squeezed into 2.5 seconds. Real films follow the full rules.
 - The user is not a developer. Explain anything they need to do in simple steps.
