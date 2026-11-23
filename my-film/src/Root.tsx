@@ -35,8 +35,8 @@ export const RemotionRoot: React.FC = () => {
         component={CaesarTest}
         durationInFrames={CAESAR_TEST_DURATION}
         fps={FPS}
-        width={W}
-        height={H}
+        width={1080}
+        height={1920}
       />
       <Composition
         id="TestFilm-3D-Blocks"

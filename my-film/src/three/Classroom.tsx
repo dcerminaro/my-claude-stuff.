@@ -1,32 +1,55 @@
 import React from "react";
 import * as THREE from "three";
 import { useCurrentFrame } from "remotion";
-import { classWallTex, deskTex, noiseTex, tileFloorTex } from "./textures";
+import {
+  booksTex,
+  clockTex,
+  creamWallTex,
+  deskTex,
+  lightPlanksTex,
+  noiseTex,
+  numeralStripTex,
+  piePosterTex,
+  skyTex,
+  spqrTex,
+  wainscotTex,
+} from "./textures";
 import { Glow3D } from "./World";
 
 /**
- * Caesar's dark classroom, built from blocks.
+ * Caesar's classroom: a bright, daytime classroom built from blocks.
+ * Cream walls over wooden panelling, a wood floor, ceiling lights, sunlight
+ * from a window on the left, a chalkboard with a Roman-numeral strip,
+ * a clock, an SPQR banner, a pie-chart poster, a marble bust, a bookshelf.
  *
- * Layout (1 unit = 1 block):
- *  - back wall at z = -3, chalkboard centred at x = BOARD.x
- *  - Caesar's desk at x = DESK.x, z = DESK.z; Caesar stands behind it
- *  - the student's desk in the front row at STUDENT
- *  - window with the moon on the right of the back wall
+ * Laid out for a vertical (9:16) frame: everything important sits within
+ * about 2.5 blocks of the centre line (x = 0).
  */
-export const BOARD = { x: -0.3, y: 2.55, z: -2.94, w: 5.2, h: 2.6 };
-export const DESK = { x: -1.3, z: 0.1, h: 1.05 };
-export const CAESAR_SPOT: [number, number, number] = [-1.3, 0, -0.85];
-export const STUDENT_SPOT: [number, number, number] = [2.9, 0, 1.9];
+export const BOARD = { x: 0, y: 2.75, z: -2.94, w: 4.0, h: 2.0 };
+export const DESK = { x: 0, z: -0.2, h: 1.05 };
+export const CAESAR_SPOT: [number, number, number] = [0, 0, -1.05];
+export const STUDENT_SPOT: [number, number, number] = [1.3, 0, 1.8];
+const WALL_Z = -3;
+const CEIL = 5.4;
 
 const B: React.FC<{
   size: [number, number, number];
   position: [number, number, number];
+  rotation?: [number, number, number];
   color?: string;
   map?: THREE.Texture;
   noise?: number;
   emissive?: boolean;
-}> = ({ size, position, color = "#555", map, noise = 0.08, emissive }) => (
-  <mesh position={position} castShadow receiveShadow>
+}> = ({
+  size,
+  position,
+  rotation,
+  color = "#555",
+  map,
+  noise = 0.08,
+  emissive,
+}) => (
+  <mesh position={position} rotation={rotation} castShadow receiveShadow>
     <boxGeometry args={size} />
     {emissive ? (
       <meshBasicMaterial
@@ -39,7 +62,19 @@ const B: React.FC<{
   </mesh>
 );
 
-const Desk: React.FC<{
+/** a flat picture on the wall */
+const WallPic: React.FC<{
+  map: THREE.Texture;
+  position: [number, number, number];
+  size: [number, number];
+}> = ({ map, position, size }) => (
+  <mesh position={position} receiveShadow>
+    <planeGeometry args={size} />
+    <meshLambertMaterial map={map} />
+  </mesh>
+);
+
+export const Desk: React.FC<{
   position: [number, number, number];
   w: number;
   d: number;
@@ -57,73 +92,149 @@ const Desk: React.FC<{
         key={i}
         size={[0.1, h, 0.1]}
         position={[sx * (w / 2 - 0.1), h / 2, sz * (d / 2 - 0.1)]}
-        color="#4A3020"
+        color="#5A5A64"
       />
     ))}
   </group>
 );
 
-export const Classroom: React.FC<{ board: THREE.Texture; dim?: number }> = ({
-  board,
-  dim = 1,
-}) => {
+/** a pupil's desk with its chair behind it (the chair back faces +z) */
+const DeskAndChair: React.FC<{ x: number; z: number }> = ({ x, z }) => (
+  <group>
+    <Desk position={[x, 0, z - 0.7]} w={0.95} d={0.7} h={0.8} />
+    <group position={[x, 0, z + 0.05]}>
+      <B size={[0.55, 0.08, 0.55]} position={[0, 0.44, 0]} color="#3A6EA5" />
+      <B size={[0.55, 0.6, 0.08]} position={[0, 0.78, 0.26]} color="#3A6EA5" />
+      {[
+        [-1, -1],
+        [1, -1],
+        [-1, 1],
+        [1, 1],
+      ].map(([sx, sz], i) => (
+        <B
+          key={i}
+          size={[0.06, 0.44, 0.06]}
+          position={[sx * 0.22, 0.22, sz * 0.22]}
+          color="#5A5A64"
+        />
+      ))}
+    </group>
+  </group>
+);
+
+export const Classroom: React.FC<{ board: THREE.Texture }> = ({ board }) => {
   const frame = useCurrentFrame();
-  const flicker = 1 + 0.05 * Math.sin(frame * 0.9) * Math.sin(frame * 0.37);
+  const seconds = frame / 30;
 
   return (
     <group>
-      <color attach="background" args={["#0A0C14"]} />
-      <ambientLight color="#5566AA" intensity={0.4 * dim} />
-      <hemisphereLight
-        color="#8FA0D0"
-        groundColor="#2A2020"
-        intensity={0.25 * dim}
-      />
-      <directionalLight
-        color="#9DB4FF"
-        intensity={0.35 * dim}
-        position={[6, 6, 5]}
-      />
+      <color attach="background" args={["#BFD8EE"]} />
 
-      {/* board lamp: the main light, casts the shadows */}
-      <spotLight
-        color="#FFD9A0"
-        intensity={70 * flicker * dim}
-        position={[BOARD.x, 4.6, -1.6]}
-        angle={0.85}
-        penumbra={0.7}
-        decay={1.5}
-        distance={0}
+      {/* daylight: soft ambient, sky/ground bounce, sun through the window */}
+      <ambientLight color="#FFF3E0" intensity={0.75} />
+      <hemisphereLight color="#E3EEFF" groundColor="#8A6A4A" intensity={0.8} />
+      <directionalLight
+        color="#FFE9C4"
+        intensity={2.0}
+        position={[-6, 7, 5]}
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
-        shadow-bias={-0.002}
-      >
-        <object3D attach="target" position={[BOARD.x - 0.4, 0.6, 0]} />
-      </spotLight>
-
-      {/* desk lamp on Caesar's desk */}
+        shadow-camera-left={-6}
+        shadow-camera-right={6}
+        shadow-camera-top={6}
+        shadow-camera-bottom={-6}
+        shadow-bias={-0.0015}
+      />
       <pointLight
-        color="#FFB765"
-        intensity={7 * flicker * dim}
-        position={[DESK.x - 1.0, DESK.h + 0.8, DESK.z + 0.4]}
-        decay={1.6}
-        distance={0}
+        color="#FFF6E8"
+        intensity={8}
+        position={[0, CEIL - 0.4, -0.5]}
+        decay={1.5}
       />
 
-      {/* floor and walls */}
+      {/* floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[24, 12]} />
-        <meshLambertMaterial map={tileFloorTex([24, 12])} />
+        <planeGeometry args={[10, 10]} />
+        <meshLambertMaterial map={lightPlanksTex([10, 10])} />
       </mesh>
-      <mesh position={[0, 4, -3]} receiveShadow>
-        <planeGeometry args={[24, 8]} />
-        <meshLambertMaterial map={classWallTex([24, 8])} />
-      </mesh>
-      {/* skirting board */}
-      <B size={[24, 0.3, 0.08]} position={[0, 0.15, -2.96]} color="#1E2E2E" />
+      {/* sun patches on the floor */}
+      <Glow3D
+        position={[-1.6, 0.02, 1.2]}
+        size={3.2}
+        color="#FFE6B0"
+        opacity={0.35}
+        flat
+      />
+      <Glow3D
+        position={[0.4, 0.02, 2.6]}
+        size={3}
+        color="#FFE6B0"
+        opacity={0.3}
+        flat
+      />
 
-      {/* chalkboard with wooden frame and chalk tray */}
+      {/* back wall: cream plaster over wooden panelling */}
+      <mesh position={[0, 3.2, WALL_Z]} receiveShadow>
+        <planeGeometry args={[7.2, 4.4]} />
+        <meshLambertMaterial map={creamWallTex([7, 4])} />
+      </mesh>
+      <mesh position={[0, 0.5, WALL_Z + 0.01]} receiveShadow>
+        <planeGeometry args={[7.2, 1.0]} />
+        <meshLambertMaterial map={wainscotTex([7, 1])} />
+      </mesh>
+      <B
+        size={[7.2, 0.08, 0.08]}
+        position={[0, 1.02, WALL_Z + 0.04]}
+        color="#6E4826"
+      />
+
+      {/* side walls; the left one has a window with sky */}
+      <mesh
+        position={[-3.6, 2.7, 1]}
+        rotation={[0, Math.PI / 2, 0]}
+        receiveShadow
+      >
+        <planeGeometry args={[8, 5.4]} />
+        <meshLambertMaterial map={creamWallTex([8, 5])} />
+      </mesh>
+      <mesh position={[-3.58, 2.9, 0.2]} rotation={[0, Math.PI / 2, 0]}>
+        <planeGeometry args={[2.2, 2]} />
+        <meshBasicMaterial map={skyTex()} toneMapped={false} />
+      </mesh>
+      <mesh
+        position={[3.6, 2.7, 1]}
+        rotation={[0, -Math.PI / 2, 0]}
+        receiveShadow
+      >
+        <planeGeometry args={[8, 5.4]} />
+        <meshLambertMaterial map={creamWallTex([8, 5])} />
+      </mesh>
+
+      {/* ceiling with two light panels */}
+      <mesh position={[0, CEIL, 1]} rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[7.2, 8]} />
+        <meshLambertMaterial color="#EDE7DA" />
+      </mesh>
+      {[-1.6, 1.2].map((z) => (
+        <group key={z}>
+          <B
+            size={[1.6, 0.06, 0.5]}
+            position={[0, CEIL - 0.03, z]}
+            color="#FFFDF4"
+            noise={0.02}
+            emissive
+          />
+          <Glow3D
+            position={[0, CEIL - 0.25, z + 0.3]}
+            size={2.4}
+            color="#FFF6E0"
+            opacity={0.25}
+          />
+        </group>
+      ))}
+
+      {/* chalkboard, frame, tray, chalk */}
       <group position={[BOARD.x, BOARD.y, BOARD.z]}>
         <mesh position={[0, 0, 0.02]} receiveShadow>
           <planeGeometry args={[BOARD.w, BOARD.h]} />
@@ -132,147 +243,182 @@ export const Classroom: React.FC<{ board: THREE.Texture; dim?: number }> = ({
         <B
           size={[BOARD.w + 0.3, 0.15, 0.12]}
           position={[0, BOARD.h / 2 + 0.07, 0.03]}
-          color="#5A3A22"
+          color="#7A5530"
         />
         <B
           size={[BOARD.w + 0.3, 0.15, 0.12]}
           position={[0, -BOARD.h / 2 - 0.07, 0.03]}
-          color="#5A3A22"
+          color="#7A5530"
         />
         <B
           size={[0.15, BOARD.h + 0.3, 0.12]}
           position={[-BOARD.w / 2 - 0.07, 0, 0.03]}
-          color="#5A3A22"
+          color="#7A5530"
         />
         <B
           size={[0.15, BOARD.h + 0.3, 0.12]}
           position={[BOARD.w / 2 + 0.07, 0, 0.03]}
-          color="#5A3A22"
+          color="#7A5530"
         />
         <B
           size={[BOARD.w, 0.08, 0.25]}
           position={[0, -BOARD.h / 2 - 0.16, 0.12]}
-          color="#5A3A22"
+          color="#7A5530"
         />
         <B
           size={[0.22, 0.06, 0.06]}
           position={[1.2, -BOARD.h / 2 - 0.09, 0.15]}
-          color="#EDEDE4"
-        />
-        {/* lamp above the board */}
-        <B
-          size={[1.4, 0.16, 0.3]}
-          position={[0, BOARD.h / 2 + 0.45, 0.4]}
-          color="#2A2A30"
+          color="#F4F4EE"
         />
         <B
-          size={[1.2, 0.06, 0.22]}
-          position={[0, BOARD.h / 2 + 0.36, 0.42]}
-          color="#FFE7B8"
-          emissive
+          size={[0.3, 0.1, 0.12]}
+          position={[-1.3, -BOARD.h / 2 - 0.07, 0.15]}
+          color="#3A3A44"
         />
-        <Glow3D
-          position={[0, BOARD.h / 2 + 0.3, 0.6]}
-          size={4.5}
-          color="#FFD9A0"
-          opacity={0.45 * flicker * dim}
+        {/* Roman-numeral strip above the board */}
+        <WallPic
+          map={numeralStripTex()}
+          position={[0, BOARD.h / 2 + 0.45, 0.02]}
+          size={[BOARD.w, BOARD.w * (11 / 128)]}
         />
       </group>
 
-      {/* window with the moon */}
-      <group position={[4.9, 2.9, -2.95]}>
-        <mesh>
-          <planeGeometry args={[1.8, 2]} />
-          <meshBasicMaterial color="#141B33" />
+      {/* clock with moving hands */}
+      <group position={[-2.55, 4.35, WALL_Z + 0.03]}>
+        <WallPic map={clockTex()} position={[0, 0, 0]} size={[0.75, 0.75]} />
+        <mesh
+          position={[0, 0, 0.02]}
+          rotation={[0, 0, -(seconds / 60) * Math.PI * 2]}
+        >
+          <boxGeometry args={[0.025, 0.3, 0.01]} />
+          <meshBasicMaterial color="#B3262E" />
         </mesh>
-        <B
-          size={[0.5, 0.5, 0.1]}
-          position={[0.35, 0.45, 0.05]}
-          color="#EEEBD8"
-          noise={0.06}
-          emissive
-        />
-        <Glow3D
-          position={[0.35, 0.45, 0.2]}
-          size={2.2}
-          color="#CFDBFF"
-          opacity={0.45 * dim}
-        />
-        <B size={[2, 0.14, 0.18]} position={[0, 1.04, 0.08]} color="#3A2A1E" />
-        <B size={[2, 0.18, 0.28]} position={[0, -1.04, 0.12]} color="#3A2A1E" />
-        <B size={[0.14, 2, 0.18]} position={[-0.95, 0, 0.08]} color="#3A2A1E" />
-        <B size={[0.14, 2, 0.18]} position={[0.95, 0, 0.08]} color="#3A2A1E" />
-        <B size={[0.08, 2, 0.1]} position={[0, 0, 0.06]} color="#3A2A1E" />
+        <mesh
+          position={[0, 0, 0.015]}
+          rotation={[0, 0, -2.1 - seconds * 0.002]}
+        >
+          <boxGeometry args={[0.05, 0.22, 0.01]} />
+          <meshBasicMaterial color="#2B2B33" />
+        </mesh>
       </group>
 
-      {/* Caesar's desk with a lamp, coins and a scroll */}
-      <Desk position={[DESK.x, 0, DESK.z]} w={2.4} d={1.0} h={DESK.h} />
-      <group position={[DESK.x - 1.0, DESK.h + 0.06, DESK.z + 0.1]}>
-        <B size={[0.3, 0.06, 0.3]} position={[0, 0.03, 0]} color="#2A2A30" />
-        <B size={[0.06, 0.5, 0.06]} position={[0, 0.3, 0]} color="#2A2A30" />
+      {/* posters */}
+      <WallPic
+        map={piePosterTex()}
+        position={[-2.65, 2.75, WALL_Z + 0.02]}
+        size={[0.8, 1.07]}
+      />
+      <WallPic
+        map={spqrTex()}
+        position={[2.7, 3.15, WALL_Z + 0.02]}
+        size={[0.85, 1.28]}
+      />
+
+      {/* marble bust on a pedestal */}
+      <group position={[-2.55, 0, -2.45]}>
         <B
-          size={[0.36, 0.22, 0.36]}
-          position={[0, 0.62, 0]}
-          color="#E0904A"
-          emissive
+          size={[0.6, 1.05, 0.6]}
+          position={[0, 0.525, 0]}
+          color="#D9D4CA"
+          noise={0.06}
         />
-        <Glow3D
-          position={[0, 0.58, 0.3]}
-          size={2.6}
-          color="#FFB765"
-          opacity={0.5 * flicker * dim}
+        <B size={[0.7, 0.08, 0.7]} position={[0, 1.09, 0]} color="#CFC9BE" />
+        <B
+          size={[0.5, 0.28, 0.32]}
+          position={[0, 1.27, 0]}
+          color="#E6E2DA"
+          noise={0.05}
         />
+        <B
+          size={[0.42, 0.44, 0.42]}
+          position={[0, 1.63, 0]}
+          color="#ECE8E0"
+          noise={0.05}
+        />
+        <B
+          size={[0.08, 0.12, 0.08]}
+          position={[0, 1.6, 0.24]}
+          color="#E6E2DA"
+        />
+        {[-0.22, 0.22].map((x) => (
+          <B
+            key={x}
+            size={[0.06, 0.08, 0.36]}
+            position={[x, 1.78, -0.02]}
+            color="#9CB04A"
+          />
+        ))}
       </group>
+
+      {/* bookshelf with a plant on top */}
+      <group position={[2.55, 0, -2.6]}>
+        <B size={[1.1, 1.7, 0.4]} position={[0, 0.85, 0]} color="#7A5530" />
+        {[0.35, 0.9, 1.42].map((y) => (
+          <mesh key={y} position={[0, y, 0.15]}>
+            <boxGeometry args={[0.95, 0.42, 0.12]} />
+            <meshLambertMaterial map={booksTex()} />
+          </mesh>
+        ))}
+        <B size={[0.32, 0.3, 0.32]} position={[0.2, 1.85, 0]} color="#B8643A" />
+        {[
+          [0.2, 2.15, 0],
+          [0.08, 2.05, 0.08],
+          [0.32, 2.08, -0.06],
+          [0.2, 2.3, 0.05],
+        ].map((p, i) => (
+          <B
+            key={i}
+            size={[0.2, 0.2, 0.2]}
+            position={p as [number, number, number]}
+            color="#4E8A4A"
+            noise={0.15}
+          />
+        ))}
+      </group>
+
+      {/* Caesar's desk: coins, an apple, a scroll */}
+      <Desk position={[DESK.x, 0, DESK.z]} w={2.0} d={0.95} h={DESK.h} />
+      <B
+        size={[2.0, 0.7, 0.06]}
+        position={[DESK.x, 0.62, DESK.z + 0.44]}
+        color="#8A5A32"
+      />
       {[0, 1, 2, 3].map((i) => (
         <B
           key={i}
           size={[0.22, 0.05, 0.22]}
-          position={[DESK.x + 0.55, DESK.h + 0.085 + i * 0.05, DESK.z + 0.1]}
+          position={[DESK.x + 0.65, DESK.h + 0.085 + i * 0.05, DESK.z + 0.1]}
           color="#E8C04A"
           noise={0.12}
         />
       ))}
       <B
+        size={[0.24, 0.24, 0.24]}
+        position={[DESK.x - 0.7, DESK.h + 0.18, DESK.z + 0.15]}
+        color="#C8302E"
+        noise={0.1}
+      />
+      <B
+        size={[0.04, 0.1, 0.04]}
+        position={[DESK.x - 0.7, DESK.h + 0.35, DESK.z + 0.15]}
+        color="#5A3A1A"
+      />
+      <B
+        size={[0.12, 0.04, 0.08]}
+        position={[DESK.x - 0.64, DESK.h + 0.38, DESK.z + 0.15]}
+        color="#4E8A4A"
+      />
+      <B
         size={[0.5, 0.1, 0.1]}
         position={[DESK.x + 0.05, DESK.h + 0.11, DESK.z + 0.25]}
         color="#E6D7B0"
       />
-      <Glow3D
-        position={[DESK.x, 0.02, DESK.z + 0.8]}
-        size={4}
-        color="#FFB765"
-        opacity={0.25 * dim}
-        flat
-      />
 
-      {/* the student's desk and chair in the front row */}
-      <Desk
-        position={[STUDENT_SPOT[0] - 0.75, 0, STUDENT_SPOT[2]]}
-        w={0.9}
-        d={0.9}
-        h={0.8}
-      />
-      <group position={[STUDENT_SPOT[0] + 0.05, 0, STUDENT_SPOT[2]]}>
-        <B size={[0.55, 0.08, 0.55]} position={[0, 0.44, 0]} color="#5A3A22" />
-        <B
-          size={[0.08, 0.7, 0.55]}
-          position={[0.26, 0.78, 0]}
-          color="#5A3A22"
-        />
-        {[
-          [-1, -1],
-          [1, -1],
-          [-1, 1],
-          [1, 1],
-        ].map(([sx, sz], i) => (
-          <B
-            key={i}
-            size={[0.06, 0.44, 0.06]}
-            position={[sx * 0.22, 0.22, sz * 0.22]}
-            color="#3A2A1E"
-          />
-        ))}
-      </group>
+      {/* pupils' desks: our student's, plus empty ones */}
+      <DeskAndChair x={STUDENT_SPOT[0]} z={STUDENT_SPOT[2]} />
+      <DeskAndChair x={-1.25} z={1.8} />
+      <DeskAndChair x={-1.25} z={3.6} />
+      <DeskAndChair x={STUDENT_SPOT[0]} z={3.6} />
     </group>
   );
 };

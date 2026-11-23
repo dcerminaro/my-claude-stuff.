@@ -1,7 +1,7 @@
 import React from "react";
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { useLook } from "../looks";
-import { BAR } from "../theme";
+import { useSafe } from "../layout";
 
 const fade = (f: number, d: number, edge: number) =>
   interpolate(f, [0, edge, d - edge, d], [0, 1, 1, 0], {
@@ -19,12 +19,13 @@ export const NarratorText: React.FC<{ text: string; fadeFrames?: number }> = ({
   if (text.trim().split(/\s+/).length > 8)
     throw new Error(`Narrator line over 8 words: "${text}"`);
   const look = useLook();
+  const safe = useSafe();
   const o = fade(f, durationInFrames, fadeFrames);
   return (
     <div
       style={{
         position: "absolute",
-        top: BAR + 34,
+        top: safe.top + 34,
         left: 0,
         right: 0,
         textAlign: "center",
@@ -89,6 +90,7 @@ export const DayCounter: React.FC<{
 }> = ({ day, since, label = "DAY" }) => {
   const { fps } = useVideoConfig();
   const look = useLook();
+  const safe = useSafe();
   const s = spring({
     frame: since,
     fps,
@@ -99,8 +101,8 @@ export const DayCounter: React.FC<{
     <div
       style={{
         position: "absolute",
-        left: 48,
-        top: BAR + 26,
+        left: safe.left || 48,
+        top: safe.top + 26,
         fontFamily: look.font,
         fontWeight: look.fontWeight,
         color: look.text,
@@ -119,14 +121,18 @@ export const DayCounter: React.FC<{
     >
       <span
         style={{
-          fontSize: 20 * look.fontScale,
+          fontSize: 20 * look.fontScale * (safe.letterbox ? 1 : 2.1),
           opacity: 0.7,
           letterSpacing: 2,
         }}
       >
         {label}
       </span>
-      <span style={{ fontSize: 34 * look.fontScale }}>{day}</span>
+      <span
+        style={{ fontSize: 34 * look.fontScale * (safe.letterbox ? 1 : 2.1) }}
+      >
+        {day}
+      </span>
     </div>
   );
 };

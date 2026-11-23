@@ -1,7 +1,7 @@
 import React from "react";
 import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { useLook } from "../looks";
-import { BAR } from "../theme";
+import { useSafe } from "../layout";
 import type { PlacedLine } from "../voice/sync";
 
 const MAX_WORDS = 4;
@@ -32,6 +32,7 @@ export const Subtitles: React.FC<{ lines: PlacedLine[]; hold?: number }> = ({
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const look = useLook();
+  const safe = useSafe();
 
   const line = lines.find((l) => frame >= l.from && frame < l.to + hold * fps);
   if (!line) return null;
@@ -64,7 +65,9 @@ export const Subtitles: React.FC<{ lines: PlacedLine[]; hold?: number }> = ({
         position: "absolute",
         left: 0,
         right: 0,
-        bottom: BAR + 46,
+        bottom: safe.bottom + 46,
+        paddingLeft: safe.left,
+        paddingRight: safe.right,
         textAlign: "center",
         fontFamily: look.font,
         fontWeight: look.fontWeight,

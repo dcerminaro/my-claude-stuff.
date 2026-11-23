@@ -7,7 +7,6 @@ import {
   useVideoConfig,
 } from "remotion";
 import { useLook } from "../looks";
-import { H, W } from "../theme";
 
 /** Radial speed lines for big hits. Use inside a <Sequence>. */
 export const SpeedLines: React.FC<{
@@ -17,7 +16,7 @@ export const SpeedLines: React.FC<{
 }> = ({ cx, cy, count = 32 }) => {
   const f = useCurrentFrame();
   const look = useLook();
-  const { durationInFrames } = useVideoConfig();
+  const { durationInFrames, width: W, height: H } = useVideoConfig();
   const p = f / durationInFrames;
   const o = interpolate(p, [0, 0.15, 0.7, 1], [0, 1, 0.8, 0]);
   return (

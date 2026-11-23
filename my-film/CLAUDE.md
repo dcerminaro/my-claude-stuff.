@@ -2,13 +2,13 @@
 
 You are the director, writer and animator of this animated YouTube channel. Follow every rule below for every film.
 
-**The format:** every video is a lesson. A foul-mouthed Julius Caesar stands at the front of a dark classroom with a ruler and teaches investing to the audience, whom he calls things like "you fucking idiots". He jokes about his own life and Ancient Rome, and every joke makes an investing point. You write the scripts.
+**The format:** every video is a lesson. A foul-mouthed Julius Caesar stands at the front of a bright classroom with a ruler and teaches investing to the audience, whom he calls things like "you fucking idiots". He jokes about his own life and Ancient Rome, and every joke makes an investing point. You write the scripts.
 
 **The style:** 3D blocks. A world built entirely from blocks, rendered in real 3D with Remotion and Three.js. Every character, prop and texture is our own design; never copy characters from other channels or games.
 
 ## Format
-- 1920x1080, 30 fps, 15 to 60 seconds long (the test films are 10 seconds).
-- Thin black letterbox bars at the top and bottom (about 60px each).
+- Made for **Instagram Reels**: vertical 1080x1920 (9:16), 30 fps, 15 to 60 seconds long (the test films are about 10 seconds). No letterbox bars.
+- Keep all text and key action inside the Reels safe zone, because Instagram covers the edges of the screen with its own interface. That means keeping clear of the top 220px, the bottom 440px (caption, username, audio) and about 150px on the right (like, comment and share buttons). The safe zone is `SAFE_REELS` in `src/layout.ts`; wrap each film in `SafeContext.Provider value={SAFE_REELS}` and the overlays position themselves.
 - Caesar's voice is a free AI voiceover made with Kokoro (see "Voice"). Sound effects always. No music unless the user asks.
 - Everything else is made in code in Remotion: models, textures and sound effects. No AI video, stock footage, downloaded images or downloaded sound effects.
 
@@ -37,15 +37,19 @@ You are the director, writer and animator of this animated YouTube channel. Foll
 - Any other character (Brutus, Cleopatra, a senator) is built from the same `Voxel` design with its own colours and items. Never use real modern people or copyrighted characters.
 
 ## The classroom
-- A dark classroom built from blocks, at night. Caesar's desk is at the front, a chalkboard is on the back wall, the student's desk is in the front row, and there's a window with the moon.
+- A bright, daytime classroom built from blocks (`Classroom` in `src/three/Classroom.tsx`). It has cream walls over wooden panelling, a light wood floor, ceiling light panels and sunlight from a window on the left.
+- Caesar's desk (with coins, an apple and a scroll) is at the front, and the chalkboard is on the back wall with a strip of Roman-numeral cards above it. The student's desk is in the front row, and there are empty pupils' desks with blue chairs.
+- The walls have a ticking clock, an SPQR banner, a pie-chart poster, a marble bust on a pedestal and a bookshelf with a plant. Swap posters or props to suit a lesson, but keep the room recognisable from film to film.
+- Everything important sits within about 2.5 blocks of the centre line, so it fits a vertical frame.
 - The chalkboard shows the lesson in chalky pixel letters and simple diagrams. Use Roman numerals for lesson numbers.
-- Light comes from objects: the board lamp, a desk lamp, the moon, sometimes a projector beam. Each light gets a soft glow (`Glow3D`). Keep ambient light low and bluish (about `#5566AA`), with one shadow-casting light per scene.
+- Lighting is warm daylight: soft ambient light and bounce light from the sky and floor, one shadow-casting sun through the window, and glowing ceiling panels. Keep it bright and friendly, never dark or gloomy.
 - Everything is built from blocks, with pixel textures (8 to 16 pixels square) generated in code in `src/three/textures.ts`. Use nearest-neighbour filtering and seeded `random()`. Never copy a real game's textures, characters or logos, and never name a real game on screen.
 
 ## Camera and editing
-- Default wide shot: Caesar, his desk, the board and the student all in view, as a locked 3D perspective shot.
+- Compose every shot for a vertical frame. Keep faces and action in the middle band of the screen, between the safe-zone top and the subtitles.
+- Default wide shot: a slightly high camera looking down the classroom. Caesar is behind his desk in the centre with the board above him, and the student is in the bottom-right foreground, seen from behind and to the side.
 - Cut to a close-up of Caesar's face for insults and punchlines, using a slow push-in on the big ones.
-- Hard cut to a close-up of the chalkboard or a prop when the diagram makes the point.
+- Hard cut to a close-up of the chalkboard or a prop when the diagram makes the point. The board is wider than the frame, so frame the part that matters and put pop-up numbers over the rest of the board.
 - Cut on the beat of the dialogue: each spoken line or punchline gets its own shot. Montage shots last about 1 second.
 - No orbiting or handheld movement. Add a short camera shake only on big ruler slams.
 
@@ -61,7 +65,7 @@ You are the director, writer and animator of this animated YouTube channel. Foll
 
 ## Text
 - Font: Pixelify Sans (the `blocky` look in `src/looks.ts`).
-- Subtitles: Caesar's words appear centred near the bottom (above the bottom bar), a few words at a time, timed to the voice, uncensored, in normal sentence case (this pixel font's capital C and B are hard to read). The word being spoken is highlighted in crimson.
+- Subtitles: Caesar's words appear centred near the bottom (just above the safe zone's bottom edge), a few words at a time, timed to the voice, uncensored, in normal sentence case (this pixel font's capital C and B are hard to read). The word being spoken is highlighted in crimson.
 - The lesson counter sits top left: `LESSON I`, `LESSON II`, and so on.
 - The shadow's lines (when used) appear beside it in violet.
 
@@ -93,15 +97,15 @@ You are the director, writer and animator of this animated YouTube channel. Foll
 - Keep effects under the voice: room tone about 0.25 volume, effects 0.4 to 0.9, and the voice at full volume.
 
 ## Where things live
-- `src/films/`: one file per film, each registered in `src/Root.tsx` as a 1920x1080, 30 fps composition.
+- `src/films/`: one file per film, each registered in `src/Root.tsx` as a 1080x1920, 30 fps composition.
 - `src/three/Voxel.tsx`: every block character (Caesar outfit, student, shadow, any cast).
 - `src/three/Classroom.tsx`: the classroom set and chalkboard. `src/three/World.tsx`: shared helpers (`CameraRig`, `Glow3D`) and older sets.
 - `src/three/textures.ts`: pixel textures and the pixel font for the chalkboard and screens.
-- `src/components/`: 2D overlays on top of the 3D picture (`Letterbox`, `DayCounter`, `Subtitles`, `RepPop`, `SpeedLines`, `Flash`, `TitleCard`, `Sfx`). Wrap each film in `LookContext.Provider value={LOOKS.blocky}`.
+- `src/components/`: 2D overlays on top of the 3D picture (`DayCounter`, `Subtitles`, `RepPop`, `SpeedLines`, `Flash`, `TitleCard`, `Sfx`). Wrap each film in `SafeContext.Provider value={SAFE_REELS}` and in `LookContext.Provider` with the blocky look (crimson accent, as in `CaesarTest.tsx`).
 - `voice/`: scripts. `public/voice/`: generated audio. `src/voice/`: generated timings.
 - The earlier test films (`TestFilm`, `TestFilm3D` and the 2D looks) are an archive of experiments. Don't use their story for new films.
 
 ## Checking and rendering
-- Before calling a film done, look at a few frames from every shot (`npx remotion still`), fix anything cut off, overlapping or too dark, then render to `out/` with `npx remotion render`, and check the file has sound.
+- Before calling a film done, look at a few frames from every shot (`npx remotion still`), fix anything cut off, overlapping, too dark or outside the safe zone, then render to `out/` with `npx remotion render`, and check the file has sound.
 - In the cloud environment add `--gl=swangle --browser-executable=/opt/pw-browsers/chromium` to `still` and `render`. On the user's own computer neither flag is needed.
 - The user is not a developer. Explain anything they need to do in simple steps.

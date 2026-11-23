@@ -372,3 +372,180 @@ export const chalkboardTex = (
     );
     draw?.(ctx, rnd);
   });
+
+// ---------- bright classroom ----------
+export const creamWallTex = (repeat: [number, number]) =>
+  pixelTexture(
+    "creamwall",
+    16,
+    16,
+    (ctx, rnd) => {
+      for (let y = 0; y < 16; y++)
+        for (let x = 0; x < 16; x++) {
+          ctx.fillStyle = shade("#E6D8B8", 0.94 + rnd(`${x},${y}`) * 0.1);
+          ctx.fillRect(x, y, 1, 1);
+        }
+      ctx.fillStyle = "rgba(120,100,70,0.12)";
+      ctx.fillRect(0, 15, 16, 1);
+      ctx.fillRect(15, 0, 1, 16);
+    },
+    repeat,
+  );
+
+export const wainscotTex = (repeat: [number, number]) =>
+  pixelTexture(
+    "wainscot",
+    16,
+    16,
+    (ctx, rnd) => {
+      for (let y = 0; y < 16; y++)
+        for (let x = 0; x < 16; x++) {
+          ctx.fillStyle = shade("#9A6A3C", 0.88 + rnd(`${x},${y}`) * 0.2);
+          ctx.fillRect(x, y, 1, 1);
+        }
+      ctx.fillStyle = "#6E4826";
+      ctx.fillRect(0, 0, 1, 16);
+      ctx.fillRect(2, 2, 12, 1);
+      ctx.fillRect(2, 13, 12, 1);
+      ctx.fillRect(2, 2, 1, 12);
+      ctx.fillRect(13, 2, 1, 12);
+    },
+    repeat,
+  );
+
+export const lightPlanksTex = (repeat: [number, number]) =>
+  pixelTexture(
+    "lightplanks",
+    16,
+    16,
+    (ctx, rnd) => {
+      const base = ["#B98A58", "#C29460", "#B08050"];
+      for (let row = 0; row < 4; row++) {
+        for (let y = 0; y < 4; y++)
+          for (let x = 0; x < 16; x++) {
+            ctx.fillStyle = shade(
+              base[row % 3],
+              0.92 + rnd(`${row}-${x}-${y}`) * 0.16,
+            );
+            ctx.fillRect(x, row * 4 + y, 1, 1);
+          }
+        ctx.fillStyle = "#7A5530";
+        ctx.fillRect(0, row * 4 + 3, 16, 1);
+        ctx.fillRect(Math.floor(rnd(`seam${row}`) * 14) + 1, row * 4, 1, 3);
+      }
+    },
+    repeat,
+  );
+
+/** cards with Roman numerals, like an alphabet strip above the board */
+export const numeralStripTex = () =>
+  pixelTexture("numerals", 128, 11, (ctx) => {
+    ctx.fillStyle = "#3A6EA5";
+    ctx.fillRect(0, 0, 128, 11);
+    const items = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
+    let x = 1;
+    for (const it of items) {
+      const w = it.length * 6 + 3;
+      ctx.fillStyle = "#F4EEDC";
+      ctx.fillRect(x, 1, w, 9);
+      drawText(ctx, it, x + 2, 2, 1, "#B3262E");
+      x += w + 2;
+    }
+  });
+
+export const spqrTex = () =>
+  pixelTexture("spqr", 32, 48, (ctx, rnd) => {
+    for (let y = 0; y < 48; y++)
+      for (let x = 0; x < 32; x++) {
+        ctx.fillStyle = shade("#A3212A", 0.9 + rnd(`${x},${y}`) * 0.15);
+        ctx.fillRect(x, y, 1, 1);
+      }
+    ctx.fillStyle = "#D8B448";
+    ctx.fillRect(1, 1, 30, 1);
+    ctx.fillRect(1, 46, 30, 1);
+    drawText(ctx, "SPQR", 4, 8, 1, "#E8C85A");
+    // laurel ring
+    for (let a = 0; a < 20; a++) {
+      const ang = (a / 20) * Math.PI * 2;
+      if (Math.abs(Math.sin(ang)) < 0.2 && Math.cos(ang) < 0) continue;
+      ctx.fillRect(
+        Math.round(16 + Math.cos(ang) * 9),
+        Math.round(30 + Math.sin(ang) * 9),
+        2,
+        2,
+      );
+    }
+  });
+
+export const piePosterTex = () =>
+  pixelTexture("pieposter", 24, 32, (ctx) => {
+    ctx.fillStyle = "#F4EEDC";
+    ctx.fillRect(0, 0, 24, 32);
+    drawText(ctx, "III", 4, 2, 1, "#2B2B33");
+    const cols = ["#D4343C", "#3A6EA5", "#D8B448"];
+    for (let y = 0; y < 18; y++)
+      for (let x = 0; x < 18; x++) {
+        const dx = x - 8.5;
+        const dy = y - 8.5;
+        if (dx * dx + dy * dy > 72) continue;
+        const ang = (Math.atan2(dy, dx) + Math.PI) / (Math.PI * 2);
+        ctx.fillStyle = cols[Math.floor(ang * 3) % 3];
+        ctx.fillRect(3 + x, 12 + y, 1, 1);
+      }
+  });
+
+export const clockTex = () =>
+  pixelTexture("clock", 16, 16, (ctx) => {
+    ctx.fillStyle = "#2B2B33";
+    for (let y = 0; y < 16; y++)
+      for (let x = 0; x < 16; x++) {
+        const d = Math.hypot(x - 7.5, y - 7.5);
+        if (d < 8) {
+          ctx.fillStyle = d > 6.6 ? "#2B2B33" : "#F6F2E6";
+          ctx.fillRect(x, y, 1, 1);
+        }
+      }
+    ctx.fillStyle = "#2B2B33";
+    ctx.fillRect(7, 2, 2, 1);
+    ctx.fillRect(13, 7, 1, 2);
+    ctx.fillRect(7, 13, 2, 1);
+    ctx.fillRect(2, 7, 1, 2);
+  });
+
+export const booksTex = () =>
+  pixelTexture("books", 16, 16, (ctx, rnd) => {
+    const cols = [
+      "#B3262E",
+      "#3A6EA5",
+      "#D8B448",
+      "#4E8A4A",
+      "#7A4AA0",
+      "#E07A3A",
+      "#2B2B33",
+    ];
+    for (let x = 0; x < 16; x++) {
+      const c = cols[Math.floor(rnd(`b${x}`) * cols.length)];
+      const top = Math.floor(rnd(`h${x}`) * 4);
+      for (let y = top; y < 16; y++) {
+        ctx.fillStyle = shade(c, 0.9 + rnd(`${x},${y}`) * 0.15);
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  });
+
+export const skyTex = () =>
+  pixelTexture("sky", 16, 16, (ctx, rnd) => {
+    for (let y = 0; y < 16; y++)
+      for (let x = 0; x < 16; x++) {
+        ctx.fillStyle = shade(
+          "#8EC5F0",
+          0.85 + y * 0.012 + rnd(`${x},${y}`) * 0.05,
+        );
+        ctx.fillRect(x, y, 1, 1);
+      }
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(2, 4, 6, 2);
+    ctx.fillRect(3, 3, 3, 1);
+    ctx.fillRect(9, 9, 5, 2);
+    ctx.fillRect(10, 8, 2, 1);
+  });

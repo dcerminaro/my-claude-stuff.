@@ -6,6 +6,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { useSafe } from "../layout";
 import { useLook } from "../looks";
 import { Sfx } from "./Sfx";
 import { useSvgId } from "./util";
@@ -40,9 +41,10 @@ export const TitleCard: React.FC<{
   fadeFrames = 50,
 }) => {
   const f = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
+  const { fps, durationInFrames, width } = useVideoConfig();
   const filterId = useSvgId("ul-glow");
   const look = useLook();
+  const phone = useSafe().letterbox ? 1 : 1.5; // bigger small text on phones
 
   const letters = word.split("");
   const typedEnd = startAt + letters.length * letterEvery;
@@ -54,7 +56,12 @@ export const TitleCard: React.FC<{
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const ulW = Math.max(300, letters.length * 120);
+  // shrink the word to fit narrow (vertical) frames
+  const wordSize = Math.min(
+    190 * look.fontScale,
+    (width * 0.86) / (letters.length * 0.72),
+  );
+  const ulW = Math.min(Math.max(300, letters.length * 120), width * 0.86);
   const wave = Array.from({ length: 61 }, (_, i) => {
     const x = -ulW / 2 + (i / 60) * ulW;
     const raw = 12 * Math.sin(i * 0.42 - f * 0.18);
@@ -105,10 +112,10 @@ export const TitleCard: React.FC<{
         <div
           style={{
             display: "flex",
-            fontSize: 190 * look.fontScale,
+            fontSize: wordSize,
             fontWeight: look.fontWeight,
             color: look.text,
-            height: 220 * Math.max(1, look.fontScale),
+            height: wordSize * 1.16,
             letterSpacing: 6,
             textShadow:
               look.name === "neon"
@@ -176,7 +183,7 @@ export const TitleCard: React.FC<{
         <div
           style={{
             marginTop: 50,
-            fontSize: 48 * look.fontScale,
+            fontSize: 48 * look.fontScale * phone,
             fontWeight: look.fontWeight,
             color: look.text,
             ...lineIn(l1),
@@ -187,7 +194,7 @@ export const TitleCard: React.FC<{
         <div
           style={{
             marginTop: 18,
-            fontSize: 40 * look.fontScale,
+            fontSize: 40 * look.fontScale * phone,
             fontWeight: look.fontWeight,
             color: look.accent,
             textShadow:

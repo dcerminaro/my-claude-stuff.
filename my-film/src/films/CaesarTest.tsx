@@ -20,7 +20,8 @@ import { DayCounter } from "../components/Text";
 import { TitleCard } from "../components/TitleCard";
 import { comic } from "../fonts";
 import { Look, LookContext, LOOKS } from "../looks";
-import { BAR, FPS } from "../theme";
+import { SAFE_REELS, SafeContext } from "../layout";
+import { FPS } from "../theme";
 import {
   BOARD,
   CAESAR_SPOT,
@@ -170,9 +171,9 @@ const WideShot: React.FC = () => {
   // camera shake on the slam
   const shake = f >= SLAM && f < SLAM + 7 ? (1 - (f - SLAM) / 7) * 0.06 : 0;
   const cam: [number, number, number] = [
-    0.6 + Math.sin(f * 7.3) * shake,
-    2.5 + Math.cos(f * 9.1) * shake,
-    10.5,
+    -0.3 + Math.sin(f * 7.3) * shake,
+    3.3 + Math.cos(f * 9.1) * shake,
+    6.4,
   ];
 
   const L = life(f);
@@ -205,7 +206,7 @@ const WideShot: React.FC = () => {
       <Sfx name="whoosh" at={4} volume={0.35} rate={1.3} />
       <Sfx name="hit" at={SLAM} volume={0.9} />
       <Canvas3D>
-        <CameraRig position={cam} target={[0.4, 1.75, -0.5]} />
+        <CameraRig position={cam} target={[0.15, 1.75, -1]} fov={56} />
         <Classroom board={boardTex()} />
         <Voxel
           position={CAESAR_SPOT}
@@ -221,7 +222,7 @@ const WideShot: React.FC = () => {
         />
       </Canvas3D>
       <Sequence from={SLAM} durationInFrames={9} layout="none">
-        <SpeedLines cx={760} cy={600} />
+        <SpeedLines cx={540} cy={1050} />
       </Sequence>
       <Sequence from={SLAM} durationInFrames={3} layout="none">
         <Flash strength={0.6} />
@@ -262,9 +263,9 @@ const CaesarCloseUp: React.FC = () => {
   ];
   const armL: [number, number, number] = [-1.0 * hurt, 0, 0.75 * hurt];
   const cam: [number, number, number] = [
-    CAESAR_SPOT[0] + 0.3,
+    CAESAR_SPOT[0] + 0.15,
     2.05,
-    2.5 - 0.6 * push,
+    2.3 - 0.5 * push,
   ];
 
   return (
@@ -275,8 +276,8 @@ const CaesarCloseUp: React.FC = () => {
       <Canvas3D>
         <CameraRig
           position={cam}
-          target={[CAESAR_SPOT[0], 1.95, CAESAR_SPOT[2]]}
-          fov={32}
+          target={[CAESAR_SPOT[0], 1.75, CAESAR_SPOT[2]]}
+          fov={48}
         />
         <Classroom board={boardTex()} />
         <Voxel
@@ -363,8 +364,9 @@ const StabCounter: React.FC<{ until: number }> = ({ until }) => {
     <div
       style={{
         position: "absolute",
-        right: 150,
-        top: BAR + 150,
+        left: 470,
+        right: 40,
+        top: 520,
         textAlign: "center",
         fontFamily: CAESAR_LOOK.font,
         fontWeight: 700,
@@ -398,9 +400,9 @@ const BoardShot: React.FC = () => {
       <Sfx name="stab" at={until} volume={0.9} />
       <Canvas3D>
         <CameraRig
-          position={[BOARD.x - 0.6, BOARD.y - 0.1, 1.4]}
-          target={[BOARD.x - 0.6, BOARD.y - 0.1, BOARD.z]}
-          fov={38}
+          position={[BOARD.x - 0.95, BOARD.y - 0.55, 1.5]}
+          target={[BOARD.x - 0.95, BOARD.y - 0.55, BOARD.z]}
+          fov={62}
         />
         <Classroom board={boardTex()} />
         <ChalkX p={chalk} />
@@ -423,7 +425,7 @@ const PlaceholderBadge: React.FC = () =>
       style={{
         position: "absolute",
         right: 40,
-        top: BAR + 24,
+        top: SAFE_REELS.top + 24,
         fontFamily: comic,
         fontSize: 22,
         color: "#FFD27A",
@@ -437,66 +439,68 @@ const PlaceholderBadge: React.FC = () =>
   ) : null;
 
 export const CaesarTest: React.FC = () => (
-  <LookContext.Provider value={CAESAR_LOOK}>
-    <AbsoluteFill style={{ background: "#000" }}>
-      <LookDefs />
-      <Sfx name="hum" at={0} duration={SHOT.title[0]} loop volume={0.2} />
-      {LINES.map((l) =>
-        l.src ? (
-          <Sequence
-            key={l.id}
-            from={l.from}
-            layout="none"
-            name={`voice:${l.id}`}
-          >
-            <Audio src={staticFile(l.src)} />
-          </Sequence>
-        ) : null,
-      )}
+  <SafeContext.Provider value={SAFE_REELS}>
+    <LookContext.Provider value={CAESAR_LOOK}>
+      <AbsoluteFill style={{ background: "#000" }}>
+        <LookDefs />
+        <Sfx name="hum" at={0} duration={SHOT.title[0]} loop volume={0.2} />
+        {LINES.map((l) =>
+          l.src ? (
+            <Sequence
+              key={l.id}
+              from={l.from}
+              layout="none"
+              name={`voice:${l.id}`}
+            >
+              <Audio src={staticFile(l.src)} />
+            </Sequence>
+          ) : null,
+        )}
 
-      <Sequence
-        from={SHOT.wide[0]}
-        durationInFrames={len("wide")}
-        name="Wide: slam + insult"
-      >
-        <WideShot />
-      </Sequence>
-      <Sequence
-        from={SHOT.caesar[0]}
-        durationInFrames={len("caesar")}
-        name="Close-up: Brutus"
-      >
-        <CaesarCloseUp />
-      </Sequence>
-      <Sequence
-        from={SHOT.board[0]}
-        durationInFrames={len("board")}
-        name="Board: 23 stabs"
-      >
-        <BoardShot />
-      </Sequence>
-      <Sequence
-        from={SHOT.title[0]}
-        durationInFrames={len("title")}
-        name="Title card"
-      >
-        <TitleCard
-          word="DIVERSIFY"
-          line1="Never trust one stock."
-          line2="Lesson I."
-          startAt={3}
-          letterEvery={3}
-          underlineFrames={12}
-          line1At={32}
-          line2At={40}
-          fadeFrames={14}
-        />
-      </Sequence>
+        <Sequence
+          from={SHOT.wide[0]}
+          durationInFrames={len("wide")}
+          name="Wide: slam + insult"
+        >
+          <WideShot />
+        </Sequence>
+        <Sequence
+          from={SHOT.caesar[0]}
+          durationInFrames={len("caesar")}
+          name="Close-up: Brutus"
+        >
+          <CaesarCloseUp />
+        </Sequence>
+        <Sequence
+          from={SHOT.board[0]}
+          durationInFrames={len("board")}
+          name="Board: 23 stabs"
+        >
+          <BoardShot />
+        </Sequence>
+        <Sequence
+          from={SHOT.title[0]}
+          durationInFrames={len("title")}
+          name="Title card"
+        >
+          <TitleCard
+            word="DIVERSIFY"
+            line1="Never trust one stock."
+            line2="Lesson I."
+            startAt={3}
+            letterEvery={3}
+            underlineFrames={12}
+            line1At={32}
+            line2At={40}
+            fadeFrames={14}
+          />
+        </Sequence>
 
-      <Subtitles lines={LINES.slice(0, 3)} />
-      <LessonHud />
-      <PlaceholderBadge />
-      <Letterbox />
-    </AbsoluteFill>
-  </LookContext.Provider>
+        <Subtitles lines={LINES.slice(0, 3)} />
+        <LessonHud />
+        <PlaceholderBadge />
+        <Letterbox />
+      </AbsoluteFill>
+    </LookContext.Provider>
+  </SafeContext.Provider>
 );
