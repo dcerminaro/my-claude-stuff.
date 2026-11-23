@@ -562,3 +562,16 @@ export const stripesTex = (a: string, b: string, n = 4) =>
         ctx.fillRect(x, y, 1, 1);
       }
   });
+
+/** desk calendar page: "MAR" on a red band, big "XV" (the Ides of March) */
+export const calendarTex = () =>
+  pixelTexture("calendar-ides", 32, 40, (ctx) => {
+    ctx.fillStyle = "#F4EEDC";
+    ctx.fillRect(0, 0, 32, 40);
+    ctx.fillStyle = "#B3262E";
+    ctx.fillRect(0, 0, 32, 11);
+    drawText(ctx, "MAR", 7, 2, 1, "#F4EEDC");
+    drawText(ctx, "XV", 5, 17, 2, "#1B1B1F");
+    ctx.fillStyle = "#B3262E";
+    ctx.fillRect(3, 34, 26, 1);
+  });

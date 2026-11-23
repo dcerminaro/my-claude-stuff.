@@ -175,6 +175,7 @@ export const RepPop: React.FC<{
         color: color ?? look.text,
         opacity: o,
         WebkitTextStroke: `3px ${look.textStroke}`,
+        whiteSpace: "nowrap",
         paintOrder: "stroke",
         textShadow: "0 4px 0 rgba(0,0,0,0.6)",
       }}
