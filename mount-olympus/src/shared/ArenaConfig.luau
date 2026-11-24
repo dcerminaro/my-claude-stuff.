@@ -24,6 +24,10 @@ ArenaConfig.Arenas = {
 			{ Bandit = 4, Skeleton = 3 },
 			{ Boss = "TrainingChampion", Bandit = 2 },
 		},
+		-- Each wave is harder than the last (wave 1 is a warm-up).
+		-- Multiplies normal enemies' health and damage; the boss is not scaled.
+		WaveHealth = { 0.7, 0.9, 1.15, 1.4, 1.7 },
+		WaveDamage = { 0.6, 0.8, 1.0, 1.2, 1.4 },
 		-- Completion rewards (on top of what each enemy drops).
 		Rewards = { XP = 250, Gold = 200, DivineFavor = 15, Ambrosia = 1 },
 	},

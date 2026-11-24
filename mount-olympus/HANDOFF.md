@@ -39,7 +39,7 @@ Follow the master specification in **Part C** exactly, including its section 19
 | 3. God Selection | **Confirmed** by the developer |
 | 4A. Combat core | **Confirmed** by the developer ("It works perfect!", v17) |
 | 4B. God abilities | **Confirmed** ("Phase 4 confirmed") |
-| 5. Arenas | **Built and server-tested**, live (v21), awaiting "Phase 5 confirmed" |
+| 5. Arenas | **Built and server-tested**, live (v22, with wave difficulty ramp), awaiting "Phase 5 confirmed" |
 | 5–8 | Not started |
 
 ### How to set up Phase 1 on a Mac (or Windows PC)
@@ -292,6 +292,10 @@ environment, so a session can `rojo build` and publish via
    3 · Training Champion + 2 bandits. 3 s countdown, 4 s between waves. Party
    scaling: +50% enemy health and +25% enemies per extra player; boss +60%
    health per extra player.
+   **Wave difficulty (developer request):** normal enemies' health and damage
+   ramp up each wave — health ×0.7/0.9/1.15/1.4/1.7, damage
+   ×0.6/0.8/1.0/1.2/1.4 (`WaveHealth`/`WaveDamage` per arena). The boss is
+   not wave-scaled.
 4. **Training Champion:** 900 HP, big and gold-armoured; sword swing,
    **Slam** (1.2 s red circle, 13-stud radius), **Charge** (1 s red lane,
    26 studs). At 50% HP: enraged (faster attacks and walking) and summons 2

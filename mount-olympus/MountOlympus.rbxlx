@@ -134,6 +134,10 @@ ArenaConfig.Arenas = {
 			{ Bandit = 4, Skeleton = 3 },
 			{ Boss = "TrainingChampion", Bandit = 2 },
 		},
+		-- Each wave is harder than the last (wave 1 is a warm-up).
+		-- Multiplies normal enemies' health and damage; the boss is not scaled.
+		WaveHealth = { 0.7, 0.9, 1.15, 1.4, 1.7 },
+		WaveDamage = { 0.6, 0.8, 1.0, 1.2, 1.4 },
 		-- Completion rewards (on top of what each enemy drops).
 		Rewards = { XP = 250, Gold = 200, DivineFavor = 15, Ambrosia = 1 },
 	},
@@ -464,7 +468,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v21"
+GameConfig.BuildLabel = "v22"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -2513,10 +2517,18 @@ local function spawnEnemy(run, enemyType, position, isBoss)
 	local partyExtra = run.PartySize - 1
 	local party = ArenaConfig.Party
 	local healthMultiplier = 1 + partyExtra * (if isBoss then party.BossHealthPerExtraPlayer else party.HealthPerExtraPlayer)
+	-- Waves get harder: normal enemies get more health and damage each wave.
+	local damageMultiplier = 1
+	if not isBoss then
+		local wave = math.max(run.Wave, 1)
+		healthMultiplier *= (run.Arena.WaveHealth and run.Arena.WaveHealth[wave]) or 1
+		damageMultiplier = (run.Arena.WaveDamage and run.Arena.WaveDamage[wave]) or 1
+	end
 	local cframe = CFrame.lookAt(position, Vector3.new(run.Center.X, position.Y, run.Center.Z))
 	local model
 	model = EnemyService.Spawn(enemyType, cframe, {
 		HealthMultiplier = healthMultiplier,
+		DamageMultiplier = damageMultiplier,
 		AggroRange = ArenaConfig.Radius * 3, -- arena enemies always find you
 		LeashRange = ArenaConfig.Radius * 3,
 		Attributes = { RunId = run.Id },

@@ -215,10 +215,18 @@ local function spawnEnemy(run, enemyType, position, isBoss)
 	local partyExtra = run.PartySize - 1
 	local party = ArenaConfig.Party
 	local healthMultiplier = 1 + partyExtra * (if isBoss then party.BossHealthPerExtraPlayer else party.HealthPerExtraPlayer)
+	-- Waves get harder: normal enemies get more health and damage each wave.
+	local damageMultiplier = 1
+	if not isBoss then
+		local wave = math.max(run.Wave, 1)
+		healthMultiplier *= (run.Arena.WaveHealth and run.Arena.WaveHealth[wave]) or 1
+		damageMultiplier = (run.Arena.WaveDamage and run.Arena.WaveDamage[wave]) or 1
+	end
 	local cframe = CFrame.lookAt(position, Vector3.new(run.Center.X, position.Y, run.Center.Z))
 	local model
 	model = EnemyService.Spawn(enemyType, cframe, {
 		HealthMultiplier = healthMultiplier,
+		DamageMultiplier = damageMultiplier,
 		AggroRange = ArenaConfig.Radius * 3, -- arena enemies always find you
 		LeashRange = ArenaConfig.Radius * 3,
 		Attributes = { RunId = run.Id },
