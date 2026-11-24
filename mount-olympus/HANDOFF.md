@@ -39,7 +39,7 @@ Follow the master specification in **Part C** exactly, including its section 19
 | 1. Core Framework | **Confirmed** by the developer |
 | 2. Temple Tycoon | **Confirmed** by the developer |
 | 3. God Selection | **Confirmed** by the developer |
-| 4A. Combat core | **Built and server-tested**, live in the game, awaiting play-testing |
+| 4A. Combat core | **Confirmed** by the developer ("It works perfect!", v17) |
 | 4B. God abilities | Next |
 | 5–8 | Not started |
 
