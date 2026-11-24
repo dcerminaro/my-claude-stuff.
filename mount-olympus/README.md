@@ -2,7 +2,7 @@
 
 A Greek mythology RPG / temple tycoon for Roblox.
 
-- **Status:** Phases 1–2 confirmed by the developer. Phase 3 (God Selection) built, server-tested on Roblox, awaiting play-testing.
+- **Status:** Phases 1–3 confirmed by the developer. Phase 4A (core combat) built, server-tested on Roblox, awaiting play-testing. Phase 4B (god abilities) is next.
 - **Full design spec, decisions, and roadmap:** [`HANDOFF.md`](HANDOFF.md).
 
 ## Fastest way to try it (no tools needed)
@@ -21,6 +21,7 @@ A Greek mythology RPG / temple tycoon for Roblox.
 | `src/shared/GameConfig.luau` | ReplicatedStorage › Shared › GameConfig | ModuleScript |
 | `src/shared/Progression.luau` | ReplicatedStorage › Shared › Progression | ModuleScript |
 | `src/shared/TempleConfig.luau` | ReplicatedStorage › Shared › TempleConfig | ModuleScript |
+| `src/shared/CombatConfig.luau` | ReplicatedStorage › Shared › CombatConfig | ModuleScript |
 | `src/shared/GodConfig.luau` | ReplicatedStorage › Shared › GodConfig | ModuleScript |
 | `src/shared/Gods/*.luau` (Zeus, Ares, Poseidon, Hades, Athena, Apollo) | ReplicatedStorage › Shared › Gods › *(one per god)* | ModuleScript |
 | `src/server/Main.server.luau` | ServerScriptService › Main | Script |
@@ -31,9 +32,13 @@ A Greek mythology RPG / temple tycoon for Roblox.
 | `src/server/Services/TempleService.luau` | ServerScriptService › Services › TempleService | ModuleScript |
 | `src/server/Services/TempleModels.luau` | ServerScriptService › Services › TempleModels | ModuleScript |
 | `src/server/Services/GodService.luau` | ServerScriptService › Services › GodService | ModuleScript |
+| `src/server/Services/EnemyService.luau` | ServerScriptService › Services › EnemyService | ModuleScript |
+| `src/server/Services/CombatService.luau` | ServerScriptService › Services › CombatService | ModuleScript |
 | `src/client/HUDController.client.luau` | StarterPlayer › StarterPlayerScripts › HUDController | LocalScript |
 | `src/client/TempleUI.client.luau` | StarterPlayer › StarterPlayerScripts › TempleUI | LocalScript |
 | `src/client/GodUI.client.luau` | StarterPlayer › StarterPlayerScripts › GodUI | LocalScript |
+| `src/client/CombatController.client.luau` | StarterPlayer › StarterPlayerScripts › CombatController | LocalScript |
+| `src/character/Health.server.luau` | StarterPlayer › StarterCharacterScripts › Health (empty: disables default regen) | Script |
 
 `default.project.json` is the [Rojo](https://rojo.space) project file that defines this mapping.
 
@@ -53,6 +58,10 @@ rojo build -o MountOlympus.rbxlx
 
 The place file is also kept up to date in this folder, and each tested build is
 published straight to the experience with Open Cloud (see `HANDOFF.md`).
+
+Cloud test note: Roblox's Luau Execution sessions do **not** run physics, so
+walking/chasing can't be tested there; everything else (damage, rewards,
+saving, telegraphs) can.
 
 Lint (uses a minimal Roblox globals list in `roblox_min.yml`, since `selene`'s
 full Roblox std needs internet access to generate):

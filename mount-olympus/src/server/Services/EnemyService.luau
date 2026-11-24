@@ -1,0 +1,561 @@
+-- EnemyService (ModuleScript)
+-- Location: ServerScriptService > Services > EnemyService
+--
+-- Server-controlled enemies:
+--   * Spawns enemies from CombatConfig.Enemies (placeholder characters).
+--   * Simple AI: idle -> chase the nearest player -> wind up (glows red, red
+--     ring on the ground) -> strike -> cooldown. Gives up and heals if pulled
+--     too far from its spawn.
+--   * Health bar over its head, damage numbers, death effect.
+--   * Rewards XP + Gold ONCE per kill to every player who damaged it.
+--
+-- Used by later systems:
+--   EnemyService.Spawn(enemyType, cframe, options) -> model
+--       options = { HealthMultiplier, DamageMultiplier, RewardMultiplier, OnDeath = function(model) }
+--   EnemyService.DamageEnemy(model, amount, player) -> true/false
+--   EnemyService.GetEnemiesInRange(position, range) -> { record, ... }
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
+local Workspace = game:GetService("Workspace")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local CombatConfig = require(Shared:WaitForChild("CombatConfig"))
+
+local EnemyService = {}
+
+local DataService = nil
+local ProgressionService = nil
+local CombatService = nil
+local fxRemote = nil
+
+local enemies = {} -- [Model] = record
+local getPlayers = function()
+	return Players:GetPlayers()
+end
+local folder = nil
+
+local THINK_INTERVAL = 0.15
+local HEAL_DELAY = 4 -- an enemy only heals after this many seconds without being hit
+local REWARD_WINDOW = 60 -- damage older than this (seconds) doesn't earn a share of the reward
+
+-- Roblox's own default R15 animations (free for every game).
+local WALK_ANIMATION = "rbxassetid://507777826"
+local ATTACK_ANIMATION = "rbxassetid://522635514"
+
+--------------------------------------------------------------------------
+-- Building an enemy character
+--------------------------------------------------------------------------
+local function buildFallbackRig(look)
+	-- Used only if Roblox can't create a normal character.
+	local model = Instance.new("Model")
+	local root = Instance.new("Part")
+	root.Name = "HumanoidRootPart"
+	root.Size = Vector3.new(2, 2, 1)
+	root.Transparency = 1
+	root.Parent = model
+	local torso = Instance.new("Part")
+	torso.Name = "UpperTorso"
+	torso.Size = Vector3.new(2 * look.Width, 2, 1)
+	torso.Color = look.Shirt
+	torso.Parent = model
+	local head = Instance.new("Part")
+	head.Name = "Head"
+	head.Size = Vector3.new(1.2, 1.2, 1.2)
+	head.Color = look.Skin
+	head.Parent = model
+	for _, pair in { { torso, CFrame.new() }, { head, CFrame.new(0, 1.6, 0) } } do
+		local weld = Instance.new("Weld")
+		weld.Part0 = root
+		weld.Part1 = pair[1]
+		weld.C0 = pair[2]
+		weld.Parent = root
+		pair[1].CFrame = root.CFrame * pair[2]
+	end
+	local humanoid = Instance.new("Humanoid")
+	humanoid.RigType = Enum.HumanoidRigType.R15
+	humanoid.HipHeight = 2
+	humanoid.Parent = model
+	model.PrimaryPart = root
+	return model
+end
+
+local function buildRig(look)
+	local ok, model = pcall(function()
+		local description = Instance.new("HumanoidDescription")
+		description.HeadColor = look.Skin
+		description.LeftArmColor = look.Skin
+		description.RightArmColor = look.Skin
+		description.TorsoColor = look.Shirt
+		description.LeftLegColor = look.Pants
+		description.RightLegColor = look.Pants
+		description.WidthScale = look.Width
+		description.DepthScale = look.Width
+		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R15)
+	end)
+	if ok and model then
+		return model
+	end
+	warn("[EnemyService] Using fallback enemy body: " .. tostring(model))
+	return buildFallbackRig(look)
+end
+
+local function addWeapon(model, color)
+	local hand = model:FindFirstChild("RightHand") or model:FindFirstChild("UpperTorso")
+	if not hand or not color then
+		return
+	end
+	local blade = Instance.new("Part")
+	blade.Name = "Weapon"
+	blade.Size = Vector3.new(0.25, 0.4, 3.6)
+	blade.Material = Enum.Material.Metal
+	blade.Color = color
+	blade.CanCollide = false
+	blade.Massless = true
+	blade.CFrame = hand.CFrame * CFrame.new(0, -0.2, -1.8)
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = hand
+	weld.Part1 = blade
+	weld.Parent = blade
+	blade.Parent = model
+end
+
+local function addHealthBar(record)
+	local head = record.Model:FindFirstChild("Head")
+	if not head then
+		return
+	end
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "EnemyBar"
+	billboard.Size = UDim2.fromOffset(120, 34)
+	billboard.StudsOffset = Vector3.new(0, 2.6, 0)
+	billboard.MaxDistance = 90
+	billboard.AlwaysOnTop = true
+
+	local name = Instance.new("TextLabel")
+	name.Size = UDim2.new(1, 0, 0, 16)
+	name.BackgroundTransparency = 1
+	name.Text = record.Config.DisplayName
+	name.Font = Enum.Font.GothamBold
+	name.TextScaled = true
+	name.TextColor3 = Color3.new(1, 1, 1)
+	name.TextStrokeTransparency = 0.3
+	name.Parent = billboard
+
+	local back = Instance.new("Frame")
+	back.Position = UDim2.fromOffset(0, 20)
+	back.Size = UDim2.new(1, 0, 0, 10)
+	back.BackgroundColor3 = Color3.fromRGB(40, 30, 30)
+	back.BorderSizePixel = 0
+	back.Parent = billboard
+
+	local fill = Instance.new("Frame")
+	fill.Name = "Fill"
+	fill.Size = UDim2.fromScale(1, 1)
+	fill.BackgroundColor3 = Color3.fromRGB(210, 60, 50)
+	fill.BorderSizePixel = 0
+	fill.Parent = back
+
+	billboard.Parent = head
+	record.Humanoid.HealthChanged:Connect(function(health)
+		fill.Size = UDim2.fromScale(math.clamp(health / record.Humanoid.MaxHealth, 0, 1), 1)
+	end)
+end
+
+local function loadAnimation(humanoid, id)
+	local animator = humanoid:FindFirstChildOfClass("Animator")
+	if not animator then
+		animator = Instance.new("Animator")
+		animator.Parent = humanoid
+	end
+	local ok, track = pcall(function()
+		local animation = Instance.new("Animation")
+		animation.AnimationId = id
+		return animator:LoadAnimation(animation)
+	end)
+	return if ok then track else nil
+end
+
+--------------------------------------------------------------------------
+-- AI helpers
+--------------------------------------------------------------------------
+local function flat(v)
+	return Vector3.new(v.X, 0, v.Z)
+end
+
+local function face(record, position)
+	local root = record.Root
+	local look = flat(position - root.Position)
+	if look.Magnitude > 0.1 and not root.Anchored then
+		root.CFrame = CFrame.lookAt(root.Position, root.Position + look)
+	end
+end
+
+local function aliveCharacterRoot(player)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if humanoid and root and humanoid.Health > 0 then
+		return root
+	end
+	return nil
+end
+
+local function findTarget(record)
+	local cfg = record.Config
+	-- Whoever hit it recently is chased first (even from a little further away).
+	local attacker = record.LastAttacker
+	if attacker and attacker.Parent and os.clock() - record.LastDamagedAt < HEAL_DELAY then
+		local root = aliveCharacterRoot(attacker)
+		if root and (root.Position - record.Home).Magnitude <= cfg.LeashRange then
+			return attacker, (root.Position - record.Root.Position).Magnitude
+		end
+	end
+	local best, bestDistance = nil, math.huge
+	for _, player in getPlayers() do
+		local root = aliveCharacterRoot(player)
+		if root then
+			local distance = (root.Position - record.Root.Position).Magnitude
+			local range = if record.Target == player then cfg.AggroRange * 1.5 else cfg.AggroRange
+			local fromHome = (root.Position - record.Home).Magnitude
+			if distance <= range and fromHome <= cfg.LeashRange and distance < bestDistance then
+				best, bestDistance = player, distance
+			end
+		end
+	end
+	return best, bestDistance
+end
+
+local function clearTelegraph(record)
+	if record.Telegraph then
+		for _, item in record.Telegraph do
+			item:Destroy()
+		end
+		record.Telegraph = nil
+	end
+end
+
+local function startAttack(record, target)
+	local cfg = record.Config
+	record.State = "Windup"
+	record.Humanoid:MoveTo(record.Root.Position)
+	local targetRoot = aliveCharacterRoot(target)
+	if targetRoot then
+		face(record, targetRoot.Position)
+	end
+
+	-- Telegraph: the enemy glows red and a red ring shows the danger zone.
+	local highlight = Instance.new("Highlight")
+	highlight.FillColor = Color3.fromRGB(255, 40, 30)
+	highlight.FillTransparency = 0.45
+	highlight.OutlineColor = Color3.fromRGB(255, 80, 60)
+	highlight.Parent = record.Model
+
+	local groundY = record.Root.Position.Y - record.Root.Size.Y / 2 - record.Humanoid.HipHeight + 0.1
+	local ring = Instance.new("Part")
+	ring.Name = "AttackWarning"
+	ring.Anchored = true
+	ring.CanCollide = false
+	ring.CanQuery = false
+	ring.Shape = Enum.PartType.Cylinder
+	ring.Material = Enum.Material.Neon
+	ring.Color = Color3.fromRGB(255, 50, 40)
+	ring.Transparency = 0.6
+	local diameter = (cfg.AttackRange + 1.5) * 2
+	ring.Size = Vector3.new(0.2, diameter, diameter)
+	ring.CFrame = CFrame.new(record.Root.Position.X, groundY, record.Root.Position.Z) * CFrame.Angles(0, 0, math.rad(90))
+	ring.Parent = folder
+	record.Telegraph = { highlight, ring }
+
+	task.delay(cfg.Windup, function()
+		clearTelegraph(record)
+		if record.Dead or not record.Model.Parent then
+			return
+		end
+		if record.AttackTrack then
+			record.AttackTrack:Play()
+		end
+		local root = record.Root
+		for _, player in getPlayers() do
+			local playerRoot = aliveCharacterRoot(player)
+			if playerRoot then
+				local offset = flat(playerRoot.Position - root.Position)
+				local inRange = offset.Magnitude <= cfg.AttackRange + 1.5
+				local inFront = offset.Magnitude < 1 or root.CFrame.LookVector:Dot(offset.Unit) > 0.1
+				if inRange and inFront then
+					CombatService.DamagePlayer(player, cfg.Damage * record.DamageMultiplier, root.Position)
+				end
+			end
+		end
+		record.NextAttackAt = os.clock() + cfg.AttackCooldown
+		record.State = "Chase"
+	end)
+end
+
+local function think(record, now)
+	if record.Dead then
+		return
+	end
+	local cfg = record.Config
+	local humanoid = record.Humanoid
+
+	if cfg.Passive then
+		if now - record.LastDamagedAt > cfg.RegenDelay and humanoid.Health < humanoid.MaxHealth then
+			humanoid.Health = humanoid.MaxHealth
+		end
+		return
+	end
+	if record.State == "Windup" then
+		return
+	end
+
+	local target, distance = findTarget(record)
+	record.Target = target
+	local fromHome = (record.Root.Position - record.Home).Magnitude
+
+	if not target or fromHome > cfg.LeashRange then
+		-- Go home, and heal up once nobody has hit it for a while.
+		if fromHome > 3 then
+			humanoid:MoveTo(record.Home)
+		elseif humanoid.Health < humanoid.MaxHealth and now - record.LastDamagedAt > HEAL_DELAY then
+			humanoid.Health = humanoid.MaxHealth
+		end
+		return
+	end
+
+	local targetRoot = aliveCharacterRoot(target)
+	if distance > cfg.AttackRange then
+		humanoid:MoveTo(targetRoot.Position)
+	elseif now >= record.NextAttackAt then
+		startAttack(record, target)
+	else
+		humanoid:MoveTo(record.Root.Position)
+		face(record, targetRoot.Position)
+	end
+end
+
+--------------------------------------------------------------------------
+-- Death and rewards
+--------------------------------------------------------------------------
+local function die(record)
+	if record.Dead then
+		return
+	end
+	record.Dead = true
+	enemies[record.Model] = nil
+	clearTelegraph(record)
+
+	local cfg = record.Config
+	local position = record.Root.Position
+	local now = os.clock()
+	local xp = math.floor(cfg.XP * record.RewardMultiplier)
+	local gold = math.floor(cfg.Gold * record.RewardMultiplier)
+
+	-- Every player who helped gets the reward once.
+	for player, info in record.Contributors do
+		if player.Parent and info.Damage > 0 and now - info.Last <= REWARD_WINDOW then
+			local data = DataService.GetData(player)
+			if data then
+				data.Stats.EnemiesDefeated += 1
+				if xp > 0 then
+					ProgressionService.AddXP(player, xp, "Combat")
+				end
+				if gold > 0 then
+					ProgressionService.AddCurrency(player, "Gold", gold, "Combat")
+				end
+				if xp > 0 or gold > 0 then
+					fxRemote:FireClient(player, "Reward", position, ("+%d XP  +%d Gold"):format(xp, gold))
+				end
+			end
+		end
+	end
+
+	fxRemote:FireAllClients("Death", position)
+	for _, item in record.Model:GetDescendants() do
+		if item:IsA("BasePart") then
+			TweenService:Create(item, TweenInfo.new(1), { Transparency = 1 }):Play()
+		elseif item:IsA("BillboardGui") then
+			item.Enabled = false
+		end
+	end
+	Debris:AddItem(record.Model, 1.5)
+
+	if record.OnDeath then
+		task.spawn(record.OnDeath, record.Model)
+	end
+end
+
+--------------------------------------------------------------------------
+-- Public API
+--------------------------------------------------------------------------
+function EnemyService.Init(dataService, progressionService, combatService, fxRemoteEvent)
+	DataService = dataService
+	ProgressionService = progressionService
+	CombatService = combatService
+	fxRemote = fxRemoteEvent
+
+	folder = Workspace:FindFirstChild("Enemies")
+	if not folder then
+		folder = Instance.new("Folder")
+		folder.Name = "Enemies"
+		folder.Parent = Workspace
+	end
+
+	local elapsed = 0
+	RunService.Heartbeat:Connect(function(dt)
+		elapsed += dt
+		if elapsed < THINK_INTERVAL then
+			return
+		end
+		elapsed = 0
+		local now = os.clock()
+		for _, record in enemies do
+			think(record, now)
+		end
+	end)
+end
+
+function EnemyService.Spawn(enemyType, cframe, options)
+	local cfg = CombatConfig.Enemies[enemyType]
+	if not cfg then
+		warn("[EnemyService] Unknown enemy type: " .. tostring(enemyType))
+		return nil
+	end
+	options = options or {}
+
+	local model = buildRig(cfg.Appearance)
+	model.Name = enemyType
+	addWeapon(model, cfg.Appearance.Weapon)
+
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	local root = model:FindFirstChild("HumanoidRootPart")
+	local healthMultiplier = options.HealthMultiplier or 1
+	humanoid.MaxHealth = math.floor(cfg.MaxHealth * healthMultiplier)
+	humanoid.Health = humanoid.MaxHealth
+	humanoid.WalkSpeed = cfg.WalkSpeed
+	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	humanoid.BreakJointsOnDeath = true
+
+	model:PivotTo(cframe + Vector3.new(0, 3, 0))
+	if cfg.Passive then
+		root.Anchored = true
+	end
+	model:SetAttribute("IsEnemy", true)
+	model.Parent = folder
+	if not root.Anchored then
+		pcall(function()
+			root:SetNetworkOwner(nil) -- the server moves enemies; players can't
+		end)
+	end
+
+	local record = {
+		Model = model,
+		Humanoid = humanoid,
+		Root = root,
+		Type = enemyType,
+		Config = cfg,
+		Home = cframe.Position,
+		State = "Idle",
+		Target = nil,
+		NextAttackAt = 0,
+		LastDamagedAt = 0,
+		LastAttacker = nil,
+		Contributors = {}, -- [Player] = { Damage, Last }
+		Dead = false,
+		DamageMultiplier = options.DamageMultiplier or 1,
+		RewardMultiplier = options.RewardMultiplier or 1,
+		OnDeath = options.OnDeath,
+	}
+	addHealthBar(record)
+
+	record.AttackTrack = loadAnimation(humanoid, ATTACK_ANIMATION)
+	local walkTrack = if cfg.Passive then nil else loadAnimation(humanoid, WALK_ANIMATION)
+	if walkTrack then
+		humanoid.Running:Connect(function(speed)
+			if speed > 0.5 and not walkTrack.IsPlaying then
+				walkTrack:Play()
+			elseif speed <= 0.5 and walkTrack.IsPlaying then
+				walkTrack:Stop()
+			end
+		end)
+	end
+
+	humanoid.Died:Connect(function()
+		die(record)
+	end)
+	enemies[model] = record
+	return model
+end
+
+-- Damages an enemy on behalf of a player. Returns true if it was hit.
+function EnemyService.DamageEnemy(model, amount, player)
+	local record = enemies[model]
+	if not record or record.Dead or record.Humanoid.Health <= 0 then
+		return false
+	end
+	amount = math.max(1, math.floor(amount))
+	local now = os.clock()
+	record.LastDamagedAt = now
+	if player then
+		record.LastAttacker = player
+		local info = record.Contributors[player] or { Damage = 0, Last = 0 }
+		info.Damage += amount
+		info.Last = now
+		record.Contributors[player] = info
+	end
+	local head = model:FindFirstChild("Head") or record.Root
+	fxRemote:FireAllClients("Damage", head.Position + Vector3.new(0, 1.5, 0), amount, "Enemy")
+	record.Humanoid:TakeDamage(amount)
+	if record.Humanoid.Health <= 0 then
+		die(record)
+	end
+	return true
+end
+
+-- Living enemies whose root is within `range` of `position`.
+function EnemyService.GetEnemiesInRange(position, range)
+	local found = {}
+	for _, record in enemies do
+		if not record.Dead and (record.Root.Position - position).Magnitude <= range then
+			table.insert(found, record)
+		end
+	end
+	return found
+end
+
+function EnemyService.GetEnemyCount()
+	local count = 0
+	for _ in enemies do
+		count += 1
+	end
+	return count
+end
+
+-- Test helper: lets the cloud test supply pretend players.
+function EnemyService._SetPlayerProvider(provider)
+	getPlayers = provider
+end
+
+-- Spawns the Practice Field enemies; each one respawns after it dies.
+function EnemyService.SpawnPracticeField()
+	local field = CombatConfig.PracticeField
+	for _, entry in field.Spawns do
+		local cfg = CombatConfig.Enemies[entry.Enemy]
+		local position = field.Center + entry.Offset
+		local cframe = CFrame.lookAt(position, position + Vector3.new(0, 0, 1)) -- face the entrance
+		local function spawnOne()
+			EnemyService.Spawn(entry.Enemy, cframe, {
+				OnDeath = function()
+					task.wait(cfg.RespawnTime)
+					spawnOne()
+				end,
+			})
+		end
+		spawnOne()
+	end
+end
+
+return EnemyService

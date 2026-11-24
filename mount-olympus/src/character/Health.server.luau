@@ -1,0 +1,6 @@
+-- Health (Script)
+-- Location: StarterPlayer > StarterCharacterScripts > Health
+--
+-- Intentionally empty. A Script named "Health" here replaces Roblox's
+-- built-in health regeneration, so CombatService can control regeneration
+-- (delay after taking damage, and the Divine Fountain bonus).

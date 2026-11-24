@@ -17,8 +17,12 @@ Follow the master specification in **Part C** exactly, including its section 19
   published from the cloud session with Open Cloud (see "Publishing without
   Studio" below), and server logic is checked with the Luau Execution API using
   a fake player before going live.
-- Phases 1–2 are **confirmed**. Phase 3 is built and server-tested; **do not
-  start Phase 4** until the developer replies **"Phase 3 confirmed"**. Build each
+- Phases 1–3 are **confirmed**. Phase 4 is split: **4A (core combat)** is
+  built and server-tested; **4B (god abilities Q/E/R/Dash/Form, hotbar with
+  cooldowns)** comes next. Do not start Phase 5 until the developer replies
+  **"Phase 4 confirmed"** after 4B.
+- Luau Execution sessions do **not** simulate physics (parts don't fall,
+  Humanoids don't walk), so movement/chasing must be play-tested by the developer. Build each
   phase on top of the existing code; do not rewrite earlier phases unless a bug
   requires it.
 - When delivering a phase, give: complete scripts, exact Explorer placement, an
@@ -34,8 +38,9 @@ Follow the master specification in **Part C** exactly, including its section 19
 |---|---|
 | 1. Core Framework | **Confirmed** by the developer |
 | 2. Temple Tycoon | **Confirmed** by the developer |
-| 3. God Selection | **Built and server-tested**, live in the game, awaiting "Phase 3 confirmed" |
-| 4. Combat | Next, starts after "Phase 3 confirmed" |
+| 3. God Selection | **Confirmed** by the developer |
+| 4A. Combat core | **Built and server-tested**, live in the game, awaiting play-testing |
+| 4B. God abilities | Next |
 | 5–8 | Not started |
 
 ### How to set up Phase 1 on a Mac (or Windows PC)
@@ -56,6 +61,7 @@ ReplicatedStorage
     ├── Progression             (ModuleScript)
     ├── TempleConfig            (ModuleScript)   Phase 2
     ├── GodConfig               (ModuleScript)   Phase 3
+    ├── CombatConfig            (ModuleScript)   Phase 4
     └── Gods                    (Folder)         Phase 3
         ├── Zeus, Ares          (ModuleScript, playable)
         └── Poseidon, Hades, Athena, Apollo  (ModuleScript, Available = false until Phase 7)
@@ -69,17 +75,25 @@ ServerScriptService
     ├── WorldBuilder            (ModuleScript)
     ├── TempleService           (ModuleScript)   Phase 2
     ├── TempleModels            (ModuleScript)   Phase 2
-    └── GodService              (ModuleScript)   Phase 3
+    ├── GodService              (ModuleScript)   Phase 3
+    ├── EnemyService            (ModuleScript)   Phase 4
+    └── CombatService           (ModuleScript)   Phase 4
 
 StarterPlayer
 └── StarterPlayerScripts
     ├── HUDController           (LocalScript)
     ├── TempleUI                (LocalScript)    Phase 2
-    └── GodUI                   (LocalScript)    Phase 3
+    ├── GodUI                   (LocalScript)    Phase 3
+    └── CombatController        (LocalScript)    Phase 4
+StarterPlayer
+└── StarterCharacterScripts
+    └── Health                  (Script, empty)  Phase 4: disables Roblox's default regen
 ```
 Created automatically at runtime: `ReplicatedStorage > Remotes` (RemoteEvents
-`Notify`, `RequestTeleport`, `RequestUpgrade`, `GodAction`), `Workspace > Hub`
-(including `HallOfTheGods`),
+`Notify`, `RequestTeleport`, `RequestUpgrade`, `GodAction`, `CombatAttack`,
+`CombatBlock`, `CombatDash`, `CombatFX`), `Workspace > Hub` (including
+`HallOfTheGods`, `PracticeField`, `PracticePath`, `PracticeSpawn`),
+`Workspace > Enemies`,
 `Workspace > TemplePlots` (Plot1–Plot8, each a Model with `Base`, `Sign`,
 `Buildings` folder, `Pads` folder; attribute `OwnerUserId`, 0 = free).
 
@@ -152,6 +166,27 @@ environment, so a session can `rojo build` and publish via
    stays 1).
 8. New test command: `!loyalty N`.
 
+### Design decisions made in Phase 4A (developer asked to confirm)
+1. **Practice Field** behind the plaza spawn (new "Practice" travel button): 3
+   Training Dummies (500 HP, heal after 3 s, no rewards), 3 Bandits, 2
+   Skeletons; each respawns after it dies. Arenas replace this in Phase 5.
+2. **Controls:** attack = left click / R2 / on-screen Attack; block = hold F /
+   L2 / hold on-screen Block (70% less damage, half speed, can't attack);
+   dash = Left Shift / B / on-screen Dash (2 s cooldown, 0.3 s where you can't
+   be hit). Q/E/R stay free for the god abilities (Phase 4B).
+3. **Damage** = BaseAttack (level + blessings) × (1 + Training Grounds
+   combat bonus), ±10%. Swing every 0.45 s, hits up to 3 enemies in front.
+4. **Enemies:** Bandit 60 HP / 8 dmg / 25 XP / 10 Gold; Skeleton 45 HP / 10
+   dmg / 35 XP / 14 Gold. They glow red with a red ring for 0.6–0.7 s before
+   each hit, chase within 22 studs, give up and heal if pulled 55 studs from
+   spawn, and heal only after 4 s without being hit. Every player who damaged
+   an enemy gets the full reward once.
+5. **Regeneration:** Roblox's default is replaced: 1% max HP per second after
+   5 s without damage, × (1 + Divine Fountain bonus) — so the Fountain is live.
+6. **Death:** respawn after 4 s at the plaza; nothing is lost.
+7. **Animations:** Roblox's own default R15 walk and sword-slash animations
+   (free to use); proper animations come in Phase 8.
+
 ### Ideas from the developer for later (not built yet)
 - **Rank outfits and physique (Phase 6, Ascension):** each ascension rank gets
   its own outfit, and the character gets bigger with a more powerful physique
@@ -163,6 +198,18 @@ environment, so a session can `rojo build` and publish via
   models/clothing, not unverified Toolbox assets.
 
 ---
+
+## Part B4A — Phase 4A tests
+- **Practice button** takes you to the Practice Field; enemies have name + health bars.
+- **Attack** a Training Dummy: yellow damage numbers, sparks, a glowing swing; it heals after 3 s.
+- **Bandit:** walks to you, glows red with a red ring, then hits you (red numbers, health bar drops).
+- **Block** (hold): blue bubble, blue "(blocked)" numbers, smaller hits, slower walking.
+- **Dash** through an attack: "Dodged!".
+- **Kill** a bandit: "+25 XP +10 Gold" floats up; it respawns after ~10 s.
+- **Run away** ~55 studs: enemies give up and go home.
+- **Die:** respawn at the plaza after 4 s with everything kept.
+- **Regen:** after 5 s without damage your health refills slowly (faster with the Divine Fountain).
+- **iPad:** Attack / Block / Dash buttons near the jump button; health bar bottom centre.
 
 ## Part B3 — Phase 3 tests
 - **Intro:** joining without a god shows "Choose Your God" with 6 cards; only Zeus and Ares can be picked.
@@ -251,6 +298,21 @@ BonusAttackPercent, BonusHealthPercent, BonusSpeedPercent`.
 **Phase 4:** abilities should check `data.SelectedGod` and the blessing level
 (`data.Blessings[god][blessingId]`); each blessing's `Ability` field says
 which control it uses.
+
+**CombatService** (server, Phase 4) — `BasicAttack`, `Dash`,
+`DamagePlayer(player, amount, sourcePos)` (applies block / dash
+invulnerability), regen loop. State per player: attack/dash cooldowns,
+`Blocking` (also a player attribute).
+
+**EnemyService** (server, Phase 4) — `Spawn(type, cframe, {HealthMultiplier,
+DamageMultiplier, RewardMultiplier, OnDeath})`, `DamageEnemy(model, amount,
+player)`, `GetEnemiesInRange(pos, range)`, `SpawnPracticeField()`. Rewards go
+to all contributors once. **Phase 4B abilities** should damage via
+`EnemyService.DamageEnemy` and find targets with `GetEnemiesInRange`.
+**Phase 5 arenas** should spawn waves with `Spawn(..., {OnDeath = ...})`.
+
+**CombatFX remote** (server → clients): `("Damage", pos, amount, style)`,
+`("Hit", pos)`, `("Death", pos)`, `("Reward", pos, text)`.
 
 **GodConfig + Gods/** (shared, Phase 3) — one module per god (colours,
 blessings with `Tier`, `Ability`, `Passive`); `GodConfig` holds tier rules,

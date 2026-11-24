@@ -306,7 +306,7 @@ local travelBar = create("Frame", {
 local function makeButton(text, order)
 	return create("TextButton", {
 		Name = text,
-		Size = UDim2.new(0.5, -5, 1, 0),
+		Size = UDim2.new(1 / 3, -7, 1, 0),
 		BackgroundColor3 = THEME.Bronze,
 		Text = text,
 		Font = BODY_FONT,
@@ -319,6 +319,7 @@ local function makeButton(text, order)
 end
 local templeButton = makeButton("My Temple", 1)
 local plazaButton = makeButton("Plaza", 2)
+local practiceButton = makeButton("Practice", 3)
 
 -- Pop-up notification (upper centre)
 local toast = create("Frame", {
@@ -447,4 +448,7 @@ templeButton.Activated:Connect(function()
 end)
 plazaButton.Activated:Connect(function()
 	requestTeleport("Plaza")
+end)
+practiceButton.Activated:Connect(function()
+	requestTeleport("Practice")
 end)

@@ -77,7 +77,7 @@ function PlotService.ReleasePlot(player)
 	setSign(plot, "Unclaimed Temple")
 end
 
--- destination: "Temple" or "Plaza". Validated by the caller.
+-- destination: "Temple", "Plaza" or "Practice". Validated by the caller.
 function PlotService.TeleportPlayer(player, destination)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -102,6 +102,14 @@ function PlotService.TeleportPlayer(player, destination)
 		end
 		local pos = spawn.Position + Vector3.new(0, 4, 0)
 		target = CFrame.lookAt(pos, pos + Vector3.new(0, 0, 1))
+	elseif destination == "Practice" then
+		local hub = Workspace:FindFirstChild("Hub")
+		local spawn = hub and hub:FindFirstChild("PracticeSpawn")
+		if not spawn then
+			return false
+		end
+		local pos = spawn.Position + Vector3.new(0, 4, 0)
+		target = CFrame.lookAt(pos, pos + Vector3.new(0, 0, -1)) -- face the enemies
 	else
 		return false
 	end

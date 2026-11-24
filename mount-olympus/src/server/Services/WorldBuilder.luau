@@ -11,6 +11,7 @@ local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("GameConfig"))
+local CombatConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CombatConfig"))
 
 local WorldBuilder = {}
 
@@ -100,11 +101,11 @@ local function buildHub()
 	})
 	WorldBuilder.AddLabel(statue, "Olympus Plaza", GOLD, 9)
 
-	-- Ring of columns (gap left at +Z for the path to the Temple District)
+	-- Ring of columns (gaps at +Z for the Temple District and -Z for the Practice Field)
 	for i = 0, 11 do
 		local angle = math.rad(i * 30)
 		local x, z = math.cos(angle) * 62, math.sin(angle) * 62
-		if not (z > 55 and math.abs(x) < 20) then
+		if not (math.abs(z) > 55 and math.abs(x) < 20) then
 			WorldBuilder.MakePart(hub, {
 				Name = "Column",
 				Shape = Enum.PartType.Cylinder,
@@ -144,6 +145,35 @@ local function buildHub()
 		Color = Color3.fromRGB(215, 205, 185),
 	})
 	WorldBuilder.AddLabel(path, "Temple District", GOLD, 6)
+
+	-- Phase 4: Practice Field behind the spawn, for fighting before arenas exist.
+	local field = CombatConfig.PracticeField
+	local plazaEdge = -70
+	local fieldNear = field.Center.Z + field.Size.Z / 2
+	local practicePath = WorldBuilder.MakePart(hub, {
+		Name = "PracticePath",
+		Size = Vector3.new(16, 1, plazaEdge - fieldNear),
+		Position = Vector3.new(0, 0.5, (plazaEdge + fieldNear) / 2),
+		Color = Color3.fromRGB(215, 205, 185),
+	})
+	WorldBuilder.AddLabel(practicePath, "Practice Field", Color3.fromRGB(255, 140, 110), 6)
+	local practiceFloor = WorldBuilder.MakePart(hub, {
+		Name = "PracticeField",
+		Size = field.Size,
+		Position = field.Center - Vector3.new(0, 0.5, 0),
+		Material = Enum.Material.Sandstone,
+		Color = Color3.fromRGB(196, 170, 125),
+	})
+	WorldBuilder.AddLabel(practiceFloor, "Practice Field\n(arenas arrive in Phase 5)", Color3.fromRGB(255, 140, 110), 12)
+	WorldBuilder.MakePart(hub, {
+		Name = "PracticeSpawn",
+		Size = Vector3.new(6, 0.2, 6),
+		Position = Vector3.new(field.Center.X, field.Center.Y + 0.1, fieldNear - 6),
+		Color = Color3.fromRGB(255, 140, 110),
+		Material = Enum.Material.Neon,
+		Transparency = 0.5,
+		CanCollide = false,
+	})
 
 	hub.Parent = Workspace
 end

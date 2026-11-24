@@ -9,6 +9,145 @@
       </Properties>
       <Item class="ModuleScript" referent="2">
         <Properties>
+          <string name="Name">CombatConfig</string>
+          <string name="Source"><![CDATA[-- CombatConfig (ModuleScript)
+-- Location: ReplicatedStorage > Shared > CombatConfig
+--
+-- Tunable combat numbers for players and enemies. Server and client read it.
+-- All numbers are PLACEHOLDERS, balanced in Phase 8.
+-- To add an enemy: add an entry to Enemies. Arenas (Phase 5) spawn enemies by
+-- these names through EnemyService.Spawn.
+
+local CombatConfig = {}
+
+--------------------------------------------------------------------------
+-- PLAYER
+--------------------------------------------------------------------------
+CombatConfig.Player = {
+	RespawnTime = 4, -- seconds after dying
+
+	-- Damage = BaseAttack (level + blessings) x DamageMultiplier x (1 + Training Grounds bonus)
+	BasicAttack = {
+		DamageMultiplier = 1,
+		Range = 7.5,        -- studs in front of you
+		ArcDot = 0.2,       -- how wide the swing is (0 = 180 degrees, 0.7 = narrow)
+		Cooldown = 0.45,    -- seconds between swings
+		MaxTargets = 3,
+		RandomSpread = 0.1, -- +/- 10% damage variation
+	},
+
+	Block = {
+		DamageTaken = 0.3,          -- you take 30% damage while blocking
+		WalkSpeedMultiplier = 0.5,  -- and move at half speed
+	},
+
+	Dash = {
+		Cooldown = 2,
+		Speed = 60,             -- studs per second during the dash
+		Duration = 0.18,        -- seconds
+		InvulnerableTime = 0.3, -- you can't be hit right after dashing
+	},
+
+	-- Replaces Roblox's default regeneration. The Divine Fountain bonus multiplies it.
+	Regen = {
+		DelayAfterDamage = 5, -- seconds without taking damage before regen starts
+		PercentPerSecond = 1, -- % of max health per second
+	},
+}
+
+--------------------------------------------------------------------------
+-- ENEMIES
+-- Windup = the warning time (the enemy glows red) before an attack lands.
+-- AggroRange = how close you must be before it chases you.
+-- LeashRange = how far from its spawn it will follow you before giving up.
+--------------------------------------------------------------------------
+CombatConfig.Enemies = {
+	Bandit = {
+		DisplayName = "Bandit",
+		MaxHealth = 60,
+		Damage = 8,
+		WalkSpeed = 12,
+		AttackRange = 5,
+		Windup = 0.7,
+		AttackCooldown = 1.6,
+		AggroRange = 22,
+		LeashRange = 55,
+		XP = 25,
+		Gold = 10,
+		RespawnTime = 10,
+		Appearance = {
+			Skin = Color3.fromRGB(204, 160, 120),
+			Shirt = Color3.fromRGB(120, 60, 40),
+			Pants = Color3.fromRGB(70, 55, 40),
+			Width = 1,
+			Weapon = Color3.fromRGB(150, 150, 155),
+		},
+	},
+	Skeleton = {
+		DisplayName = "Skeleton",
+		MaxHealth = 45,
+		Damage = 10,
+		WalkSpeed = 14,
+		AttackRange = 5,
+		Windup = 0.6,
+		AttackCooldown = 1.8,
+		AggroRange = 22,
+		LeashRange = 55,
+		XP = 35,
+		Gold = 14,
+		RespawnTime = 12,
+		Appearance = {
+			Skin = Color3.fromRGB(235, 230, 215),
+			Shirt = Color3.fromRGB(225, 220, 205),
+			Pants = Color3.fromRGB(215, 210, 195),
+			Width = 0.7,
+			Weapon = Color3.fromRGB(110, 100, 90),
+		},
+	},
+	TrainingDummy = {
+		DisplayName = "Training Dummy",
+		MaxHealth = 500,
+		Damage = 0,
+		WalkSpeed = 0,
+		Passive = true,   -- never moves or attacks
+		RegenDelay = 3,   -- heals fully after 3 seconds without being hit
+		XP = 0,
+		Gold = 0,
+		RespawnTime = 3,
+		Appearance = {
+			Skin = Color3.fromRGB(214, 190, 140),
+			Shirt = Color3.fromRGB(160, 120, 80),
+			Pants = Color3.fromRGB(120, 85, 55),
+			Width = 1.1,
+		},
+	},
+}
+
+--------------------------------------------------------------------------
+-- PRACTICE FIELD (behind the plaza spawn) — a place to fight before arenas
+-- exist. Offsets are relative to Center (Y = floor top).
+--------------------------------------------------------------------------
+CombatConfig.PracticeField = {
+	Center = Vector3.new(0, 1, -125),
+	Size = Vector3.new(90, 1, 70),
+	Spawns = {
+		{ Enemy = "TrainingDummy", Offset = Vector3.new(-20, 0, 18) },
+		{ Enemy = "TrainingDummy", Offset = Vector3.new(0, 0, 18) },
+		{ Enemy = "TrainingDummy", Offset = Vector3.new(20, 0, 18) },
+		{ Enemy = "Bandit", Offset = Vector3.new(-22, 0, 2) },
+		{ Enemy = "Bandit", Offset = Vector3.new(0, 0, -6) },
+		{ Enemy = "Bandit", Offset = Vector3.new(22, 0, 2) },
+		{ Enemy = "Skeleton", Offset = Vector3.new(-14, 0, -24) },
+		{ Enemy = "Skeleton", Offset = Vector3.new(14, 0, -24) },
+	},
+}
+
+return CombatConfig
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="3">
+        <Properties>
           <string name="Name">GameConfig</string>
           <string name="Source"><![CDATA[-- GameConfig (ModuleScript)
 -- Location: ReplicatedStorage > Shared > GameConfig
@@ -121,7 +260,7 @@ return GameConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="3">
+      <Item class="ModuleScript" referent="4">
         <Properties>
           <string name="Name">GodConfig</string>
           <string name="Source"><![CDATA[-- GodConfig (ModuleScript)
@@ -240,11 +379,11 @@ return GodConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="4">
+      <Item class="Folder" referent="5">
         <Properties>
           <string name="Name">Gods</string>
         </Properties>
-        <Item class="ModuleScript" referent="5">
+        <Item class="ModuleScript" referent="6">
           <Properties>
             <string name="Name">Apollo</string>
             <string name="Source"><![CDATA[-- Apollo (ModuleScript)
@@ -270,7 +409,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="6">
+        <Item class="ModuleScript" referent="7">
           <Properties>
             <string name="Name">Ares</string>
             <string name="Source"><![CDATA[-- Ares (ModuleScript)
@@ -307,7 +446,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="7">
+        <Item class="ModuleScript" referent="8">
           <Properties>
             <string name="Name">Athena</string>
             <string name="Source"><![CDATA[-- Athena (ModuleScript)
@@ -333,7 +472,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="8">
+        <Item class="ModuleScript" referent="9">
           <Properties>
             <string name="Name">Hades</string>
             <string name="Source"><![CDATA[-- Hades (ModuleScript)
@@ -359,7 +498,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="9">
+        <Item class="ModuleScript" referent="10">
           <Properties>
             <string name="Name">Poseidon</string>
             <string name="Source"><![CDATA[-- Poseidon (ModuleScript)
@@ -385,7 +524,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="10">
+        <Item class="ModuleScript" referent="11">
           <Properties>
             <string name="Name">Zeus</string>
             <string name="Source"><![CDATA[-- Zeus (ModuleScript)
@@ -428,7 +567,7 @@ return {
           </Properties>
         </Item>
       </Item>
-      <Item class="ModuleScript" referent="11">
+      <Item class="ModuleScript" referent="12">
         <Properties>
           <string name="Name">Progression</string>
           <string name="Source"><![CDATA[-- Progression (ModuleScript)
@@ -492,7 +631,7 @@ return Progression
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="12">
+      <Item class="ModuleScript" referent="13">
         <Properties>
           <string name="Name">TempleConfig</string>
           <string name="Source"><![CDATA[-- TempleConfig (ModuleScript)
@@ -664,11 +803,11 @@ return TempleConfig
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="13">
+  <Item class="ServerScriptService" referent="14">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Script" referent="14">
+    <Item class="Script" referent="15">
       <Properties>
         <string name="Name">Main</string>
         <token name="RunContext">0</token>
@@ -694,6 +833,8 @@ local ProgressionService = require(Services:WaitForChild("ProgressionService"))
 local PlotService = require(Services:WaitForChild("PlotService"))
 local TempleService = require(Services:WaitForChild("TempleService"))
 local GodService = require(Services:WaitForChild("GodService"))
+local EnemyService = require(Services:WaitForChild("EnemyService"))
+local CombatService = require(Services:WaitForChild("CombatService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -717,6 +858,19 @@ local godRemote = Instance.new("RemoteEvent") -- client -> server god menu reque
 godRemote.Name = "GodAction"
 godRemote.Parent = remotes
 
+local function newRemote(name)
+	local remote = Instance.new("RemoteEvent")
+	remote.Name = name
+	remote.Parent = remotes
+	return remote
+end
+local combatRemotes = {
+	Attack = newRemote("CombatAttack"), -- client -> server "I swung"
+	Block = newRemote("CombatBlock"),   -- client -> server block on/off
+	Dash = newRemote("CombatDash"),     -- client -> server "I dashed"
+}
+local fxRemote = newRemote("CombatFX") -- server -> clients damage numbers and effects
+
 remotes.Parent = ReplicatedStorage
 
 --------------------------------------------------------------------------
@@ -729,6 +883,9 @@ PlotService.Init()
 TempleService.Init(DataService, ProgressionService, PlotService, notifyRemote, upgradeRemote)
 GodService.Init(DataService, ProgressionService, TempleService, notifyRemote, godRemote)
 GodService.BuildHall()
+CombatService.Init(TempleService, EnemyService, fxRemote, combatRemotes)
+EnemyService.Init(DataService, ProgressionService, CombatService, fxRemote)
+EnemyService.SpawnPracticeField()
 
 --------------------------------------------------------------------------
 -- 3. Debug chat commands
@@ -827,6 +984,7 @@ local function onPlayerAdded(player)
 	ProgressionService.SetupPlayer(player)
 	GodService.SetupPlayer(player)
 	TempleService.SetupPlayer(player, plot)
+	CombatService.SetupPlayer(player)
 	player:SetAttribute("DataLoaded", true)
 	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
 end
@@ -842,6 +1000,7 @@ Players.PlayerRemoving:Connect(function(player)
 	lastTeleport[player] = nil
 	TempleService.ReleasePlayer(player)
 	GodService.ReleasePlayer(player)
+	CombatService.ReleasePlayer(player)
 	PlotService.ReleasePlot(player)
 	DataService.ReleasePlayer(player) -- yields while saving
 end)
@@ -850,7 +1009,7 @@ end)
 -- 5. Teleport requests (validated: never trust what the client sends)
 --------------------------------------------------------------------------
 teleportRemote.OnServerEvent:Connect(function(player, destination)
-	if destination ~= "Temple" and destination ~= "Plaza" then
+	if destination ~= "Temple" and destination ~= "Plaza" and destination ~= "Practice" then
 		return
 	end
 	if player:GetAttribute("DataLoaded") ~= true then
@@ -866,11 +1025,271 @@ end)
 ]]></string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="15">
+    <Item class="Folder" referent="16">
       <Properties>
         <string name="Name">Services</string>
       </Properties>
-      <Item class="ModuleScript" referent="16">
+      <Item class="ModuleScript" referent="17">
+        <Properties>
+          <string name="Name">CombatService</string>
+          <string name="Source"><![CDATA[-- CombatService (ModuleScript)
+-- Location: ServerScriptService > Services > CombatService
+--
+-- The player side of combat, all checked on the server:
+--   * Basic attack: the client only says "I swung". The server checks the
+--     cooldown, finds enemies in front of the player, and works out damage
+--     (BaseAttack incl. blessings, x Training Grounds bonus).
+--   * Block: less damage taken, slower movement, can't attack.
+--   * Dash: the client moves itself; the server grants a short moment where
+--     you can't be hit (with its own cooldown, so it can't be spammed).
+--   * Damage to players (from enemies), damage numbers.
+--   * Health regeneration (replaces Roblox's default), boosted by the
+--     Divine Fountain.
+--
+-- Other systems call: CombatService.DamagePlayer(player, amount, sourcePosition)
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local CombatConfig = require(Shared:WaitForChild("CombatConfig"))
+
+local CombatService = {}
+
+local TempleService = nil
+local EnemyService = nil
+local fxRemote = nil
+
+local CFG = CombatConfig.Player
+local state = {} -- [Player] = { NextAttackAt, NextDashAt, InvulnerableUntil, Blocking, SavedWalkSpeed, Shield, LastDamagedAt }
+local random = Random.new()
+
+--------------------------------------------------------------------------
+-- Helpers
+--------------------------------------------------------------------------
+local function getParts(player)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if humanoid and root and humanoid.Health > 0 then
+		return character, humanoid, root
+	end
+	return nil
+end
+
+local function flat(v)
+	return Vector3.new(v.X, 0, v.Z)
+end
+
+local function setBlocking(player, on)
+	local st = state[player]
+	if not st or st.Blocking == on then
+		return
+	end
+	local _, humanoid, root = getParts(player)
+	st.Blocking = on
+	player:SetAttribute("Blocking", on)
+
+	if on then
+		if humanoid then
+			st.SavedWalkSpeed = humanoid.WalkSpeed
+			humanoid.WalkSpeed = humanoid.WalkSpeed * CFG.Block.WalkSpeedMultiplier
+		end
+		if root then
+			-- A see-through shield bubble everyone can see.
+			local shield = Instance.new("Part")
+			shield.Name = "BlockShield"
+			shield.Shape = Enum.PartType.Ball
+			shield.Size = Vector3.new(7, 7, 7)
+			shield.Material = Enum.Material.ForceField
+			shield.Color = Color3.fromRGB(120, 190, 255)
+			shield.CanCollide = false
+			shield.CanQuery = false
+			shield.CanTouch = false
+			shield.Massless = true
+			shield.CFrame = root.CFrame
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = root
+			weld.Part1 = shield
+			weld.Parent = shield
+			shield.Parent = root.Parent
+			st.Shield = shield
+		end
+	else
+		if humanoid and st.SavedWalkSpeed then
+			humanoid.WalkSpeed = st.SavedWalkSpeed
+		end
+		st.SavedWalkSpeed = nil
+		if st.Shield then
+			st.Shield:Destroy()
+			st.Shield = nil
+		end
+	end
+end
+
+--------------------------------------------------------------------------
+-- Requests from the client
+--------------------------------------------------------------------------
+function CombatService.BasicAttack(player)
+	local st = state[player]
+	local _, _, root = getParts(player)
+	if not st or not root or st.Blocking then
+		return 0
+	end
+	local now = os.clock()
+	if now < st.NextAttackAt then
+		return 0
+	end
+	local attack = CFG.BasicAttack
+	st.NextAttackAt = now + attack.Cooldown * 0.9 -- small tolerance for network timing
+
+	local baseAttack = player:GetAttribute("BaseAttack") or 10
+	local combatBonus = TempleService.GetEffect(player, "CombatBonusPercent") / 100
+	local look = flat(root.CFrame.LookVector).Unit
+
+	-- Enemies in front of the player, closest first.
+	local candidates = {}
+	for _, record in EnemyService.GetEnemiesInRange(root.Position, attack.Range + 4) do
+		local offset = flat(record.Root.Position - root.Position)
+		local reach = attack.Range + record.Root.Size.X / 2
+		if offset.Magnitude <= reach and (offset.Magnitude < 1.5 or look:Dot(offset.Unit) >= attack.ArcDot) then
+			table.insert(candidates, { Record = record, Distance = offset.Magnitude })
+		end
+	end
+	table.sort(candidates, function(a, b)
+		return a.Distance < b.Distance
+	end)
+
+	local hits = 0
+	for i = 1, math.min(#candidates, attack.MaxTargets) do
+		local record = candidates[i].Record
+		local spread = 1 + random:NextNumber(-attack.RandomSpread, attack.RandomSpread)
+		local damage = baseAttack * attack.DamageMultiplier * (1 + combatBonus) * spread
+		if EnemyService.DamageEnemy(record.Model, damage, player) then
+			hits += 1
+			fxRemote:FireAllClients("Hit", record.Root.Position)
+		end
+	end
+	return hits
+end
+
+function CombatService.Dash(player)
+	local st = state[player]
+	if not st or not getParts(player) then
+		return false
+	end
+	local now = os.clock()
+	if now < st.NextDashAt then
+		return false
+	end
+	st.NextDashAt = now + CFG.Dash.Cooldown * 0.9
+	st.InvulnerableUntil = now + CFG.Dash.InvulnerableTime
+	return true
+end
+
+--------------------------------------------------------------------------
+-- Damage to players
+--------------------------------------------------------------------------
+function CombatService.DamagePlayer(player, amount, _sourcePosition)
+	local st = state[player]
+	local _, humanoid, root = getParts(player)
+	if not st or not humanoid then
+		return 0
+	end
+	local now = os.clock()
+	if now < st.InvulnerableUntil then
+		fxRemote:FireAllClients("Damage", root.Position + Vector3.new(0, 3, 0), 0, "Dodged")
+		return 0
+	end
+	local style = "Player"
+	if st.Blocking then
+		amount *= CFG.Block.DamageTaken
+		style = "Blocked"
+	end
+	amount = math.max(1, math.floor(amount))
+	st.LastDamagedAt = now
+	humanoid:TakeDamage(amount)
+	fxRemote:FireAllClients("Damage", root.Position + Vector3.new(0, 3, 0), amount, style)
+	return amount
+end
+
+--------------------------------------------------------------------------
+-- Setup
+--------------------------------------------------------------------------
+function CombatService.Init(templeService, enemyService, fxRemoteEvent, remotes)
+	TempleService = templeService
+	EnemyService = enemyService
+	fxRemote = fxRemoteEvent
+	Players.RespawnTime = CFG.RespawnTime
+
+	if remotes then
+		remotes.Attack.OnServerEvent:Connect(function(player)
+			CombatService.BasicAttack(player)
+		end)
+		remotes.Block.OnServerEvent:Connect(function(player, on)
+			if type(on) == "boolean" then
+				setBlocking(player, on)
+			end
+		end)
+		remotes.Dash.OnServerEvent:Connect(function(player)
+			CombatService.Dash(player)
+		end)
+	end
+
+	-- Health regeneration, once per second.
+	task.spawn(function()
+		while true do
+			task.wait(1)
+			local now = os.clock()
+			for player, st in state do
+				local _, humanoid = getParts(player)
+				if humanoid and humanoid.Health < humanoid.MaxHealth and now - st.LastDamagedAt >= CFG.Regen.DelayAfterDamage then
+					local bonus = 1 + TempleService.GetEffect(player, "RegenBonusPercent") / 100
+					local heal = humanoid.MaxHealth * CFG.Regen.PercentPerSecond / 100 * bonus
+					humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + heal)
+				end
+			end
+		end
+	end)
+end
+
+function CombatService.SetupPlayer(player)
+	state[player] = {
+		NextAttackAt = 0,
+		NextDashAt = 0,
+		InvulnerableUntil = 0,
+		Blocking = false,
+		SavedWalkSpeed = nil,
+		Shield = nil,
+		LastDamagedAt = 0,
+	}
+	player:SetAttribute("Blocking", false)
+	player.CharacterAdded:Connect(function()
+		local st = state[player]
+		if st then
+			st.Blocking = false
+			st.SavedWalkSpeed = nil
+			st.Shield = nil
+			st.InvulnerableUntil = 0
+			player:SetAttribute("Blocking", false)
+		end
+	end)
+end
+
+function CombatService.ReleasePlayer(player)
+	state[player] = nil
+end
+
+-- Test helper: lets the cloud test act as a player.
+function CombatService._GetState(player)
+	return state[player]
+end
+
+return CombatService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="18">
         <Properties>
           <string name="Name">DataService</string>
           <string name="Source"><![CDATA[-- DataService (ModuleScript)
@@ -1250,7 +1669,574 @@ return DataService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="17">
+      <Item class="ModuleScript" referent="19">
+        <Properties>
+          <string name="Name">EnemyService</string>
+          <string name="Source"><![CDATA[-- EnemyService (ModuleScript)
+-- Location: ServerScriptService > Services > EnemyService
+--
+-- Server-controlled enemies:
+--   * Spawns enemies from CombatConfig.Enemies (placeholder characters).
+--   * Simple AI: idle -> chase the nearest player -> wind up (glows red, red
+--     ring on the ground) -> strike -> cooldown. Gives up and heals if pulled
+--     too far from its spawn.
+--   * Health bar over its head, damage numbers, death effect.
+--   * Rewards XP + Gold ONCE per kill to every player who damaged it.
+--
+-- Used by later systems:
+--   EnemyService.Spawn(enemyType, cframe, options) -> model
+--       options = { HealthMultiplier, DamageMultiplier, RewardMultiplier, OnDeath = function(model) }
+--   EnemyService.DamageEnemy(model, amount, player) -> true/false
+--   EnemyService.GetEnemiesInRange(position, range) -> { record, ... }
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
+local Workspace = game:GetService("Workspace")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local CombatConfig = require(Shared:WaitForChild("CombatConfig"))
+
+local EnemyService = {}
+
+local DataService = nil
+local ProgressionService = nil
+local CombatService = nil
+local fxRemote = nil
+
+local enemies = {} -- [Model] = record
+local getPlayers = function()
+	return Players:GetPlayers()
+end
+local folder = nil
+
+local THINK_INTERVAL = 0.15
+local HEAL_DELAY = 4 -- an enemy only heals after this many seconds without being hit
+local REWARD_WINDOW = 60 -- damage older than this (seconds) doesn't earn a share of the reward
+
+-- Roblox's own default R15 animations (free for every game).
+local WALK_ANIMATION = "rbxassetid://507777826"
+local ATTACK_ANIMATION = "rbxassetid://522635514"
+
+--------------------------------------------------------------------------
+-- Building an enemy character
+--------------------------------------------------------------------------
+local function buildFallbackRig(look)
+	-- Used only if Roblox can't create a normal character.
+	local model = Instance.new("Model")
+	local root = Instance.new("Part")
+	root.Name = "HumanoidRootPart"
+	root.Size = Vector3.new(2, 2, 1)
+	root.Transparency = 1
+	root.Parent = model
+	local torso = Instance.new("Part")
+	torso.Name = "UpperTorso"
+	torso.Size = Vector3.new(2 * look.Width, 2, 1)
+	torso.Color = look.Shirt
+	torso.Parent = model
+	local head = Instance.new("Part")
+	head.Name = "Head"
+	head.Size = Vector3.new(1.2, 1.2, 1.2)
+	head.Color = look.Skin
+	head.Parent = model
+	for _, pair in { { torso, CFrame.new() }, { head, CFrame.new(0, 1.6, 0) } } do
+		local weld = Instance.new("Weld")
+		weld.Part0 = root
+		weld.Part1 = pair[1]
+		weld.C0 = pair[2]
+		weld.Parent = root
+		pair[1].CFrame = root.CFrame * pair[2]
+	end
+	local humanoid = Instance.new("Humanoid")
+	humanoid.RigType = Enum.HumanoidRigType.R15
+	humanoid.HipHeight = 2
+	humanoid.Parent = model
+	model.PrimaryPart = root
+	return model
+end
+
+local function buildRig(look)
+	local ok, model = pcall(function()
+		local description = Instance.new("HumanoidDescription")
+		description.HeadColor = look.Skin
+		description.LeftArmColor = look.Skin
+		description.RightArmColor = look.Skin
+		description.TorsoColor = look.Shirt
+		description.LeftLegColor = look.Pants
+		description.RightLegColor = look.Pants
+		description.WidthScale = look.Width
+		description.DepthScale = look.Width
+		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R15)
+	end)
+	if ok and model then
+		return model
+	end
+	warn("[EnemyService] Using fallback enemy body: " .. tostring(model))
+	return buildFallbackRig(look)
+end
+
+local function addWeapon(model, color)
+	local hand = model:FindFirstChild("RightHand") or model:FindFirstChild("UpperTorso")
+	if not hand or not color then
+		return
+	end
+	local blade = Instance.new("Part")
+	blade.Name = "Weapon"
+	blade.Size = Vector3.new(0.25, 0.4, 3.6)
+	blade.Material = Enum.Material.Metal
+	blade.Color = color
+	blade.CanCollide = false
+	blade.Massless = true
+	blade.CFrame = hand.CFrame * CFrame.new(0, -0.2, -1.8)
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = hand
+	weld.Part1 = blade
+	weld.Parent = blade
+	blade.Parent = model
+end
+
+local function addHealthBar(record)
+	local head = record.Model:FindFirstChild("Head")
+	if not head then
+		return
+	end
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "EnemyBar"
+	billboard.Size = UDim2.fromOffset(120, 34)
+	billboard.StudsOffset = Vector3.new(0, 2.6, 0)
+	billboard.MaxDistance = 90
+	billboard.AlwaysOnTop = true
+
+	local name = Instance.new("TextLabel")
+	name.Size = UDim2.new(1, 0, 0, 16)
+	name.BackgroundTransparency = 1
+	name.Text = record.Config.DisplayName
+	name.Font = Enum.Font.GothamBold
+	name.TextScaled = true
+	name.TextColor3 = Color3.new(1, 1, 1)
+	name.TextStrokeTransparency = 0.3
+	name.Parent = billboard
+
+	local back = Instance.new("Frame")
+	back.Position = UDim2.fromOffset(0, 20)
+	back.Size = UDim2.new(1, 0, 0, 10)
+	back.BackgroundColor3 = Color3.fromRGB(40, 30, 30)
+	back.BorderSizePixel = 0
+	back.Parent = billboard
+
+	local fill = Instance.new("Frame")
+	fill.Name = "Fill"
+	fill.Size = UDim2.fromScale(1, 1)
+	fill.BackgroundColor3 = Color3.fromRGB(210, 60, 50)
+	fill.BorderSizePixel = 0
+	fill.Parent = back
+
+	billboard.Parent = head
+	record.Humanoid.HealthChanged:Connect(function(health)
+		fill.Size = UDim2.fromScale(math.clamp(health / record.Humanoid.MaxHealth, 0, 1), 1)
+	end)
+end
+
+local function loadAnimation(humanoid, id)
+	local animator = humanoid:FindFirstChildOfClass("Animator")
+	if not animator then
+		animator = Instance.new("Animator")
+		animator.Parent = humanoid
+	end
+	local ok, track = pcall(function()
+		local animation = Instance.new("Animation")
+		animation.AnimationId = id
+		return animator:LoadAnimation(animation)
+	end)
+	return if ok then track else nil
+end
+
+--------------------------------------------------------------------------
+-- AI helpers
+--------------------------------------------------------------------------
+local function flat(v)
+	return Vector3.new(v.X, 0, v.Z)
+end
+
+local function face(record, position)
+	local root = record.Root
+	local look = flat(position - root.Position)
+	if look.Magnitude > 0.1 and not root.Anchored then
+		root.CFrame = CFrame.lookAt(root.Position, root.Position + look)
+	end
+end
+
+local function aliveCharacterRoot(player)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if humanoid and root and humanoid.Health > 0 then
+		return root
+	end
+	return nil
+end
+
+local function findTarget(record)
+	local cfg = record.Config
+	-- Whoever hit it recently is chased first (even from a little further away).
+	local attacker = record.LastAttacker
+	if attacker and attacker.Parent and os.clock() - record.LastDamagedAt < HEAL_DELAY then
+		local root = aliveCharacterRoot(attacker)
+		if root and (root.Position - record.Home).Magnitude <= cfg.LeashRange then
+			return attacker, (root.Position - record.Root.Position).Magnitude
+		end
+	end
+	local best, bestDistance = nil, math.huge
+	for _, player in getPlayers() do
+		local root = aliveCharacterRoot(player)
+		if root then
+			local distance = (root.Position - record.Root.Position).Magnitude
+			local range = if record.Target == player then cfg.AggroRange * 1.5 else cfg.AggroRange
+			local fromHome = (root.Position - record.Home).Magnitude
+			if distance <= range and fromHome <= cfg.LeashRange and distance < bestDistance then
+				best, bestDistance = player, distance
+			end
+		end
+	end
+	return best, bestDistance
+end
+
+local function clearTelegraph(record)
+	if record.Telegraph then
+		for _, item in record.Telegraph do
+			item:Destroy()
+		end
+		record.Telegraph = nil
+	end
+end
+
+local function startAttack(record, target)
+	local cfg = record.Config
+	record.State = "Windup"
+	record.Humanoid:MoveTo(record.Root.Position)
+	local targetRoot = aliveCharacterRoot(target)
+	if targetRoot then
+		face(record, targetRoot.Position)
+	end
+
+	-- Telegraph: the enemy glows red and a red ring shows the danger zone.
+	local highlight = Instance.new("Highlight")
+	highlight.FillColor = Color3.fromRGB(255, 40, 30)
+	highlight.FillTransparency = 0.45
+	highlight.OutlineColor = Color3.fromRGB(255, 80, 60)
+	highlight.Parent = record.Model
+
+	local groundY = record.Root.Position.Y - record.Root.Size.Y / 2 - record.Humanoid.HipHeight + 0.1
+	local ring = Instance.new("Part")
+	ring.Name = "AttackWarning"
+	ring.Anchored = true
+	ring.CanCollide = false
+	ring.CanQuery = false
+	ring.Shape = Enum.PartType.Cylinder
+	ring.Material = Enum.Material.Neon
+	ring.Color = Color3.fromRGB(255, 50, 40)
+	ring.Transparency = 0.6
+	local diameter = (cfg.AttackRange + 1.5) * 2
+	ring.Size = Vector3.new(0.2, diameter, diameter)
+	ring.CFrame = CFrame.new(record.Root.Position.X, groundY, record.Root.Position.Z) * CFrame.Angles(0, 0, math.rad(90))
+	ring.Parent = folder
+	record.Telegraph = { highlight, ring }
+
+	task.delay(cfg.Windup, function()
+		clearTelegraph(record)
+		if record.Dead or not record.Model.Parent then
+			return
+		end
+		if record.AttackTrack then
+			record.AttackTrack:Play()
+		end
+		local root = record.Root
+		for _, player in getPlayers() do
+			local playerRoot = aliveCharacterRoot(player)
+			if playerRoot then
+				local offset = flat(playerRoot.Position - root.Position)
+				local inRange = offset.Magnitude <= cfg.AttackRange + 1.5
+				local inFront = offset.Magnitude < 1 or root.CFrame.LookVector:Dot(offset.Unit) > 0.1
+				if inRange and inFront then
+					CombatService.DamagePlayer(player, cfg.Damage * record.DamageMultiplier, root.Position)
+				end
+			end
+		end
+		record.NextAttackAt = os.clock() + cfg.AttackCooldown
+		record.State = "Chase"
+	end)
+end
+
+local function think(record, now)
+	if record.Dead then
+		return
+	end
+	local cfg = record.Config
+	local humanoid = record.Humanoid
+
+	if cfg.Passive then
+		if now - record.LastDamagedAt > cfg.RegenDelay and humanoid.Health < humanoid.MaxHealth then
+			humanoid.Health = humanoid.MaxHealth
+		end
+		return
+	end
+	if record.State == "Windup" then
+		return
+	end
+
+	local target, distance = findTarget(record)
+	record.Target = target
+	local fromHome = (record.Root.Position - record.Home).Magnitude
+
+	if not target or fromHome > cfg.LeashRange then
+		-- Go home, and heal up once nobody has hit it for a while.
+		if fromHome > 3 then
+			humanoid:MoveTo(record.Home)
+		elseif humanoid.Health < humanoid.MaxHealth and now - record.LastDamagedAt > HEAL_DELAY then
+			humanoid.Health = humanoid.MaxHealth
+		end
+		return
+	end
+
+	local targetRoot = aliveCharacterRoot(target)
+	if distance > cfg.AttackRange then
+		humanoid:MoveTo(targetRoot.Position)
+	elseif now >= record.NextAttackAt then
+		startAttack(record, target)
+	else
+		humanoid:MoveTo(record.Root.Position)
+		face(record, targetRoot.Position)
+	end
+end
+
+--------------------------------------------------------------------------
+-- Death and rewards
+--------------------------------------------------------------------------
+local function die(record)
+	if record.Dead then
+		return
+	end
+	record.Dead = true
+	enemies[record.Model] = nil
+	clearTelegraph(record)
+
+	local cfg = record.Config
+	local position = record.Root.Position
+	local now = os.clock()
+	local xp = math.floor(cfg.XP * record.RewardMultiplier)
+	local gold = math.floor(cfg.Gold * record.RewardMultiplier)
+
+	-- Every player who helped gets the reward once.
+	for player, info in record.Contributors do
+		if player.Parent and info.Damage > 0 and now - info.Last <= REWARD_WINDOW then
+			local data = DataService.GetData(player)
+			if data then
+				data.Stats.EnemiesDefeated += 1
+				if xp > 0 then
+					ProgressionService.AddXP(player, xp, "Combat")
+				end
+				if gold > 0 then
+					ProgressionService.AddCurrency(player, "Gold", gold, "Combat")
+				end
+				if xp > 0 or gold > 0 then
+					fxRemote:FireClient(player, "Reward", position, ("+%d XP  +%d Gold"):format(xp, gold))
+				end
+			end
+		end
+	end
+
+	fxRemote:FireAllClients("Death", position)
+	for _, item in record.Model:GetDescendants() do
+		if item:IsA("BasePart") then
+			TweenService:Create(item, TweenInfo.new(1), { Transparency = 1 }):Play()
+		elseif item:IsA("BillboardGui") then
+			item.Enabled = false
+		end
+	end
+	Debris:AddItem(record.Model, 1.5)
+
+	if record.OnDeath then
+		task.spawn(record.OnDeath, record.Model)
+	end
+end
+
+--------------------------------------------------------------------------
+-- Public API
+--------------------------------------------------------------------------
+function EnemyService.Init(dataService, progressionService, combatService, fxRemoteEvent)
+	DataService = dataService
+	ProgressionService = progressionService
+	CombatService = combatService
+	fxRemote = fxRemoteEvent
+
+	folder = Workspace:FindFirstChild("Enemies")
+	if not folder then
+		folder = Instance.new("Folder")
+		folder.Name = "Enemies"
+		folder.Parent = Workspace
+	end
+
+	local elapsed = 0
+	RunService.Heartbeat:Connect(function(dt)
+		elapsed += dt
+		if elapsed < THINK_INTERVAL then
+			return
+		end
+		elapsed = 0
+		local now = os.clock()
+		for _, record in enemies do
+			think(record, now)
+		end
+	end)
+end
+
+function EnemyService.Spawn(enemyType, cframe, options)
+	local cfg = CombatConfig.Enemies[enemyType]
+	if not cfg then
+		warn("[EnemyService] Unknown enemy type: " .. tostring(enemyType))
+		return nil
+	end
+	options = options or {}
+
+	local model = buildRig(cfg.Appearance)
+	model.Name = enemyType
+	addWeapon(model, cfg.Appearance.Weapon)
+
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	local root = model:FindFirstChild("HumanoidRootPart")
+	local healthMultiplier = options.HealthMultiplier or 1
+	humanoid.MaxHealth = math.floor(cfg.MaxHealth * healthMultiplier)
+	humanoid.Health = humanoid.MaxHealth
+	humanoid.WalkSpeed = cfg.WalkSpeed
+	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	humanoid.BreakJointsOnDeath = true
+
+	model:PivotTo(cframe + Vector3.new(0, 3, 0))
+	if cfg.Passive then
+		root.Anchored = true
+	end
+	model:SetAttribute("IsEnemy", true)
+	model.Parent = folder
+	if not root.Anchored then
+		pcall(function()
+			root:SetNetworkOwner(nil) -- the server moves enemies; players can't
+		end)
+	end
+
+	local record = {
+		Model = model,
+		Humanoid = humanoid,
+		Root = root,
+		Type = enemyType,
+		Config = cfg,
+		Home = cframe.Position,
+		State = "Idle",
+		Target = nil,
+		NextAttackAt = 0,
+		LastDamagedAt = 0,
+		LastAttacker = nil,
+		Contributors = {}, -- [Player] = { Damage, Last }
+		Dead = false,
+		DamageMultiplier = options.DamageMultiplier or 1,
+		RewardMultiplier = options.RewardMultiplier or 1,
+		OnDeath = options.OnDeath,
+	}
+	addHealthBar(record)
+
+	record.AttackTrack = loadAnimation(humanoid, ATTACK_ANIMATION)
+	local walkTrack = if cfg.Passive then nil else loadAnimation(humanoid, WALK_ANIMATION)
+	if walkTrack then
+		humanoid.Running:Connect(function(speed)
+			if speed > 0.5 and not walkTrack.IsPlaying then
+				walkTrack:Play()
+			elseif speed <= 0.5 and walkTrack.IsPlaying then
+				walkTrack:Stop()
+			end
+		end)
+	end
+
+	humanoid.Died:Connect(function()
+		die(record)
+	end)
+	enemies[model] = record
+	return model
+end
+
+-- Damages an enemy on behalf of a player. Returns true if it was hit.
+function EnemyService.DamageEnemy(model, amount, player)
+	local record = enemies[model]
+	if not record or record.Dead or record.Humanoid.Health <= 0 then
+		return false
+	end
+	amount = math.max(1, math.floor(amount))
+	local now = os.clock()
+	record.LastDamagedAt = now
+	if player then
+		record.LastAttacker = player
+		local info = record.Contributors[player] or { Damage = 0, Last = 0 }
+		info.Damage += amount
+		info.Last = now
+		record.Contributors[player] = info
+	end
+	local head = model:FindFirstChild("Head") or record.Root
+	fxRemote:FireAllClients("Damage", head.Position + Vector3.new(0, 1.5, 0), amount, "Enemy")
+	record.Humanoid:TakeDamage(amount)
+	if record.Humanoid.Health <= 0 then
+		die(record)
+	end
+	return true
+end
+
+-- Living enemies whose root is within `range` of `position`.
+function EnemyService.GetEnemiesInRange(position, range)
+	local found = {}
+	for _, record in enemies do
+		if not record.Dead and (record.Root.Position - position).Magnitude <= range then
+			table.insert(found, record)
+		end
+	end
+	return found
+end
+
+function EnemyService.GetEnemyCount()
+	local count = 0
+	for _ in enemies do
+		count += 1
+	end
+	return count
+end
+
+-- Test helper: lets the cloud test supply pretend players.
+function EnemyService._SetPlayerProvider(provider)
+	getPlayers = provider
+end
+
+-- Spawns the Practice Field enemies; each one respawns after it dies.
+function EnemyService.SpawnPracticeField()
+	local field = CombatConfig.PracticeField
+	for _, entry in field.Spawns do
+		local cfg = CombatConfig.Enemies[entry.Enemy]
+		local position = field.Center + entry.Offset
+		local cframe = CFrame.lookAt(position, position + Vector3.new(0, 0, 1)) -- face the entrance
+		local function spawnOne()
+			EnemyService.Spawn(entry.Enemy, cframe, {
+				OnDeath = function()
+					task.wait(cfg.RespawnTime)
+					spawnOne()
+				end,
+			})
+		end
+		spawnOne()
+	end
+end
+
+return EnemyService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="20">
         <Properties>
           <string name="Name">GodService</string>
           <string name="Source"><![CDATA[-- GodService (ModuleScript)
@@ -1691,7 +2677,7 @@ return GodService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="18">
+      <Item class="ModuleScript" referent="21">
         <Properties>
           <string name="Name">PlotService</string>
           <string name="Source"><![CDATA[-- PlotService (ModuleScript)
@@ -1773,7 +2759,7 @@ function PlotService.ReleasePlot(player)
 	setSign(plot, "Unclaimed Temple")
 end
 
--- destination: "Temple" or "Plaza". Validated by the caller.
+-- destination: "Temple", "Plaza" or "Practice". Validated by the caller.
 function PlotService.TeleportPlayer(player, destination)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -1798,6 +2784,14 @@ function PlotService.TeleportPlayer(player, destination)
 		end
 		local pos = spawn.Position + Vector3.new(0, 4, 0)
 		target = CFrame.lookAt(pos, pos + Vector3.new(0, 0, 1))
+	elseif destination == "Practice" then
+		local hub = Workspace:FindFirstChild("Hub")
+		local spawn = hub and hub:FindFirstChild("PracticeSpawn")
+		if not spawn then
+			return false
+		end
+		local pos = spawn.Position + Vector3.new(0, 4, 0)
+		target = CFrame.lookAt(pos, pos + Vector3.new(0, 0, -1)) -- face the enemies
 	else
 		return false
 	end
@@ -1811,7 +2805,7 @@ return PlotService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="19">
+      <Item class="ModuleScript" referent="22">
         <Properties>
           <string name="Name">ProgressionService</string>
           <string name="Source"><![CDATA[-- ProgressionService (ModuleScript)
@@ -2080,7 +3074,7 @@ return ProgressionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="20">
+      <Item class="ModuleScript" referent="23">
         <Properties>
           <string name="Name">TempleModels</string>
           <string name="Source"><![CDATA[-- TempleModels (ModuleScript)
@@ -2562,7 +3556,7 @@ return TempleModels
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="21">
+      <Item class="ModuleScript" referent="24">
         <Properties>
           <string name="Name">TempleService</string>
           <string name="Source"><![CDATA[-- TempleService (ModuleScript)
@@ -2969,7 +3963,7 @@ return TempleService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="22">
+      <Item class="ModuleScript" referent="25">
         <Properties>
           <string name="Name">WorldBuilder</string>
           <string name="Source"><![CDATA[-- WorldBuilder (ModuleScript)
@@ -2985,6 +3979,7 @@ local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("GameConfig"))
+local CombatConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CombatConfig"))
 
 local WorldBuilder = {}
 
@@ -3074,11 +4069,11 @@ local function buildHub()
 	})
 	WorldBuilder.AddLabel(statue, "Olympus Plaza", GOLD, 9)
 
-	-- Ring of columns (gap left at +Z for the path to the Temple District)
+	-- Ring of columns (gaps at +Z for the Temple District and -Z for the Practice Field)
 	for i = 0, 11 do
 		local angle = math.rad(i * 30)
 		local x, z = math.cos(angle) * 62, math.sin(angle) * 62
-		if not (z > 55 and math.abs(x) < 20) then
+		if not (math.abs(z) > 55 and math.abs(x) < 20) then
 			WorldBuilder.MakePart(hub, {
 				Name = "Column",
 				Shape = Enum.PartType.Cylinder,
@@ -3118,6 +4113,35 @@ local function buildHub()
 		Color = Color3.fromRGB(215, 205, 185),
 	})
 	WorldBuilder.AddLabel(path, "Temple District", GOLD, 6)
+
+	-- Phase 4: Practice Field behind the spawn, for fighting before arenas exist.
+	local field = CombatConfig.PracticeField
+	local plazaEdge = -70
+	local fieldNear = field.Center.Z + field.Size.Z / 2
+	local practicePath = WorldBuilder.MakePart(hub, {
+		Name = "PracticePath",
+		Size = Vector3.new(16, 1, plazaEdge - fieldNear),
+		Position = Vector3.new(0, 0.5, (plazaEdge + fieldNear) / 2),
+		Color = Color3.fromRGB(215, 205, 185),
+	})
+	WorldBuilder.AddLabel(practicePath, "Practice Field", Color3.fromRGB(255, 140, 110), 6)
+	local practiceFloor = WorldBuilder.MakePart(hub, {
+		Name = "PracticeField",
+		Size = field.Size,
+		Position = field.Center - Vector3.new(0, 0.5, 0),
+		Material = Enum.Material.Sandstone,
+		Color = Color3.fromRGB(196, 170, 125),
+	})
+	WorldBuilder.AddLabel(practiceFloor, "Practice Field\n(arenas arrive in Phase 5)", Color3.fromRGB(255, 140, 110), 12)
+	WorldBuilder.MakePart(hub, {
+		Name = "PracticeSpawn",
+		Size = Vector3.new(6, 0.2, 6),
+		Position = Vector3.new(field.Center.X, field.Center.Y + 0.1, fieldNear - 6),
+		Color = Color3.fromRGB(255, 140, 110),
+		Material = Enum.Material.Neon,
+		Transparency = 0.5,
+		CanCollide = false,
+	})
 
 	hub.Parent = Workspace
 end
@@ -3179,15 +4203,429 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="23">
+  <Item class="StarterPlayer" referent="26">
     <Properties>
       <string name="Name">StarterPlayer</string>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="24">
+    <Item class="StarterCharacterScripts" referent="27">
+      <Properties>
+        <string name="Name">StarterCharacterScripts</string>
+      </Properties>
+      <Item class="Script" referent="28">
+        <Properties>
+          <string name="Name">Health</string>
+          <token name="RunContext">0</token>
+          <string name="Source"><![CDATA[-- Health (Script)
+-- Location: StarterPlayer > StarterCharacterScripts > Health
+--
+-- Intentionally empty. A Script named "Health" here replaces Roblox's
+-- built-in health regeneration, so CombatService can control regeneration
+-- (delay after taking damage, and the Divine Fountain bonus).
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+    <Item class="StarterPlayerScripts" referent="29">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="25">
+      <Item class="LocalScript" referent="30">
+        <Properties>
+          <string name="Name">CombatController</string>
+          <string name="Source"><![CDATA[-- CombatController (LocalScript)
+-- Location: StarterPlayer > StarterPlayerScripts > CombatController
+--
+-- The client side of combat. It only handles input, animation and effects;
+-- the server decides hits, damage, cooldowns and rewards.
+--   Attack: left mouse button / R2 / on-screen "Attack" button
+--   Block:  hold F / L2 / hold on-screen "Block" button
+--   Dash:   Left Shift / B / on-screen "Dash" button
+-- Also draws the health bar, swing effects, damage numbers and reward text.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ContextActionService = game:GetService("ContextActionService")
+local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local CombatConfig = require(Shared:WaitForChild("CombatConfig"))
+local GodConfig = require(Shared:WaitForChild("GodConfig"))
+
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local attackRemote = Remotes:WaitForChild("CombatAttack")
+local blockRemote = Remotes:WaitForChild("CombatBlock")
+local dashRemote = Remotes:WaitForChild("CombatDash")
+local fxRemote = Remotes:WaitForChild("CombatFX")
+
+local CFG = CombatConfig.Player
+local ATTACK_ANIMATION = "rbxassetid://522635514" -- Roblox's default R15 sword slash
+
+-- Our own health bar replaces Roblox's default one.
+pcall(function()
+	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
+end)
+
+--------------------------------------------------------------------------
+-- Character helpers
+--------------------------------------------------------------------------
+local attackTrack = nil
+
+local function getParts()
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if humanoid and root and humanoid.Health > 0 then
+		return character, humanoid, root
+	end
+	return nil
+end
+
+local function godColor()
+	return GodConfig.GetColors(player:GetAttribute("SelectedGod") or "").Primary
+end
+
+local function loadAttackTrack(character)
+	attackTrack = nil
+	local humanoid = character:WaitForChild("Humanoid", 10)
+	local animator = humanoid and humanoid:WaitForChild("Animator", 10)
+	if animator then
+		pcall(function()
+			local animation = Instance.new("Animation")
+			animation.AnimationId = ATTACK_ANIMATION
+			attackTrack = animator:LoadAnimation(animation)
+		end)
+	end
+end
+player.CharacterAdded:Connect(loadAttackTrack)
+if player.Character then
+	task.spawn(loadAttackTrack, player.Character)
+end
+
+--------------------------------------------------------------------------
+-- Effects folder (client only)
+--------------------------------------------------------------------------
+local fxFolder = Instance.new("Folder")
+fxFolder.Name = "ClientEffects"
+fxFolder.Parent = Workspace
+
+local function anchoredPart(props)
+	local part = Instance.new("Part")
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.CastShadow = false
+	for key, value in props do
+		part[key] = value
+	end
+	part.Parent = fxFolder
+	return part
+end
+
+-- A glowing arc sweeping in front of the player.
+local function slashEffect(root)
+	local color = godColor()
+	local pivot = root.CFrame * CFrame.new(0, 0.3, 0)
+	local blade = anchoredPart({
+		Size = Vector3.new(0.2, 0.3, CFG.BasicAttack.Range),
+		Material = Enum.Material.Neon,
+		Color = color,
+		Transparency = 0.2,
+	})
+	local startAngle, endAngle = math.rad(70), math.rad(-70)
+	local value = Instance.new("NumberValue")
+	value.Value = startAngle
+	value.Changed:Connect(function(angle)
+		blade.CFrame = pivot * CFrame.Angles(0, angle, 0) * CFrame.new(0, 0, -CFG.BasicAttack.Range / 2)
+	end)
+	blade.CFrame = pivot * CFrame.Angles(0, startAngle, 0) * CFrame.new(0, 0, -CFG.BasicAttack.Range / 2)
+	TweenService:Create(value, TweenInfo.new(0.18, Enum.EasingStyle.Quad), { Value = endAngle }):Play()
+	TweenService:Create(blade, TweenInfo.new(0.25), { Transparency = 1 }):Play()
+	Debris:AddItem(blade, 0.3)
+	Debris:AddItem(value, 0.3)
+end
+
+local function burst(position, color, count, speed)
+	local holder = anchoredPart({ Size = Vector3.new(0.2, 0.2, 0.2), Transparency = 1, Position = position })
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Color = ColorSequence.new(color)
+	emitter.LightEmission = 0.8
+	emitter.Lifetime = NumberRange.new(0.25, 0.5)
+	emitter.Speed = NumberRange.new(speed * 0.5, speed)
+	emitter.SpreadAngle = Vector2.new(180, 180)
+	emitter.Size = NumberSequence.new(0.35, 0)
+	emitter.Rate = 0
+	emitter.Parent = holder
+	emitter:Emit(count)
+	Debris:AddItem(holder, 1)
+end
+
+local DAMAGE_COLORS = {
+	Enemy = Color3.fromRGB(255, 235, 120),
+	Player = Color3.fromRGB(255, 80, 70),
+	Blocked = Color3.fromRGB(120, 190, 255),
+	Dodged = Color3.fromRGB(200, 255, 200),
+}
+
+local function floatingText(position, textValue, color, size, rise)
+	local holder = anchoredPart({ Size = Vector3.new(0.2, 0.2, 0.2), Transparency = 1, Position = position })
+	local billboard = Instance.new("BillboardGui")
+	billboard.Size = UDim2.fromOffset(160, 40)
+	billboard.AlwaysOnTop = true
+	billboard.MaxDistance = 120
+	billboard.Parent = holder
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.GothamBlack
+	label.TextSize = size
+	label.TextColor3 = color
+	label.TextStrokeTransparency = 0.2
+	label.Text = textValue
+	label.Parent = billboard
+	local info = TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	TweenService:Create(billboard, info, { StudsOffset = Vector3.new(0, rise, 0) }):Play()
+	TweenService:Create(label, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+	Debris:AddItem(holder, 1)
+end
+
+fxRemote.OnClientEvent:Connect(function(kind, position, value, style)
+	if typeof(position) ~= "Vector3" then
+		return
+	end
+	if kind == "Damage" then
+		local jitter = Vector3.new(math.random() - 0.5, 0, math.random() - 0.5) * 2
+		local label = if style == "Dodged" then "Dodged!" elseif style == "Blocked" then ("%d (blocked)"):format(value) else tostring(value)
+		floatingText(position + jitter, label, DAMAGE_COLORS[style] or DAMAGE_COLORS.Enemy, if style == "Enemy" then 26 else 22, 3)
+	elseif kind == "Hit" then
+		burst(position, godColor(), 12, 14)
+	elseif kind == "Death" then
+		burst(position, Color3.fromRGB(230, 230, 230), 30, 10)
+	elseif kind == "Reward" then
+		floatingText(position + Vector3.new(0, 4, 0), tostring(value), Color3.fromRGB(212, 175, 55), 24, 4)
+	end
+end)
+
+--------------------------------------------------------------------------
+-- Actions
+--------------------------------------------------------------------------
+local nextAttackAt, nextDashAt = 0, 0
+local blocking = false
+
+local function canAct()
+	return player:GetAttribute("DataLoaded") == true and getParts() ~= nil
+end
+
+local function attack()
+	if not canAct() or blocking then
+		return
+	end
+	local now = os.clock()
+	if now < nextAttackAt then
+		return
+	end
+	nextAttackAt = now + CFG.BasicAttack.Cooldown
+	local _, _, root = getParts()
+	if attackTrack then
+		attackTrack:Play(0.05)
+	end
+	slashEffect(root)
+	attackRemote:FireServer()
+end
+
+local function setBlock(on)
+	if on == blocking then
+		return
+	end
+	if on and not canAct() then
+		return
+	end
+	blocking = on
+	blockRemote:FireServer(on)
+end
+
+local function dash()
+	if not canAct() or blocking then
+		return
+	end
+	local now = os.clock()
+	if now < nextDashAt then
+		return
+	end
+	nextDashAt = now + CFG.Dash.Cooldown
+	local _, humanoid, root = getParts()
+	local direction = humanoid.MoveDirection
+	if direction.Magnitude < 0.1 then
+		direction = root.CFrame.LookVector
+	end
+	direction = Vector3.new(direction.X, 0, direction.Z).Unit
+
+	-- Your own character is simulated on your device, so the push happens here.
+	local attachment = Instance.new("Attachment")
+	attachment.Parent = root
+	local velocity = Instance.new("LinearVelocity")
+	velocity.Attachment0 = attachment
+	velocity.RelativeTo = Enum.ActuatorRelativeTo.World
+	velocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
+	velocity.PrimaryTangentAxis = Vector3.xAxis
+	velocity.SecondaryTangentAxis = Vector3.zAxis
+	velocity.PlaneVelocity = Vector2.new(direction.X, direction.Z) * CFG.Dash.Speed
+	velocity.MaxForce = 100000
+	velocity.Parent = root
+	Debris:AddItem(velocity, CFG.Dash.Duration)
+	Debris:AddItem(attachment, CFG.Dash.Duration)
+
+	burst(root.Position, godColor(), 16, 8)
+	dashRemote:FireServer()
+end
+
+--------------------------------------------------------------------------
+-- Input bindings (keyboard, controller and touch buttons)
+--------------------------------------------------------------------------
+local function onAttack(_, inputState)
+	if inputState == Enum.UserInputState.Begin then
+		attack()
+	end
+	return Enum.ContextActionResult.Sink
+end
+
+local function onBlock(_, inputState)
+	if inputState == Enum.UserInputState.Begin then
+		setBlock(true)
+	elseif inputState == Enum.UserInputState.End or inputState == Enum.UserInputState.Cancel then
+		setBlock(false)
+	end
+	return Enum.ContextActionResult.Sink
+end
+
+local function onDash(_, inputState)
+	if inputState == Enum.UserInputState.Begin then
+		dash()
+	end
+	return Enum.ContextActionResult.Sink
+end
+
+ContextActionService:BindAction("OlympusAttack", onAttack, true, Enum.KeyCode.ButtonR2)
+ContextActionService:BindAction("OlympusBlock", onBlock, true, Enum.KeyCode.F, Enum.KeyCode.ButtonL2)
+ContextActionService:BindAction("OlympusDash", onDash, true, Enum.KeyCode.LeftShift, Enum.KeyCode.ButtonB)
+ContextActionService:SetTitle("OlympusAttack", "Attack")
+ContextActionService:SetTitle("OlympusBlock", "Block")
+ContextActionService:SetTitle("OlympusDash", "Dash")
+-- Touch buttons sit around the jump button (bottom right).
+ContextActionService:SetPosition("OlympusAttack", UDim2.new(1, -170, 1, -150))
+ContextActionService:SetPosition("OlympusBlock", UDim2.new(1, -240, 1, -95))
+ContextActionService:SetPosition("OlympusDash", UDim2.new(1, -110, 1, -210))
+
+-- Left mouse button attacks, unless the click was on a menu or button.
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if not gameProcessed and input.UserInputType == Enum.UserInputType.MouseButton1 then
+		attack()
+	end
+end)
+
+-- Releasing block if the character dies or respawns.
+player.CharacterRemoving:Connect(function()
+	blocking = false
+end)
+
+--------------------------------------------------------------------------
+-- Health bar (bottom centre)
+--------------------------------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "CombatHUD"
+gui.ResetOnSpawn = false
+gui.Enabled = false
+gui.Parent = playerGui
+
+local uiScale = Instance.new("UIScale")
+uiScale.Parent = gui
+local function updateScale()
+	local camera = Workspace.CurrentCamera
+	local viewport = if camera then camera.ViewportSize else Vector2.new(1280, 720)
+	uiScale.Scale = math.clamp(math.min(viewport.X / 1280, viewport.Y / 720), 0.7, 1.2)
+end
+updateScale()
+if Workspace.CurrentCamera then
+	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+end
+
+local barBack = Instance.new("Frame")
+barBack.Name = "HealthBar"
+barBack.AnchorPoint = Vector2.new(0.5, 1)
+barBack.Position = UDim2.new(0.5, 0, 1, -24)
+barBack.Size = UDim2.fromOffset(340, 24)
+barBack.BackgroundColor3 = Color3.fromRGB(50, 30, 30)
+barBack.Parent = gui
+local backCorner = Instance.new("UICorner")
+backCorner.CornerRadius = UDim.new(0, 8)
+backCorner.Parent = barBack
+local backStroke = Instance.new("UIStroke")
+backStroke.Color = Color3.fromRGB(212, 175, 55)
+backStroke.Thickness = 2
+backStroke.Parent = barBack
+
+local barFill = Instance.new("Frame")
+barFill.Name = "Fill"
+barFill.Size = UDim2.fromScale(1, 1)
+barFill.BackgroundColor3 = Color3.fromRGB(200, 55, 50)
+barFill.Parent = barBack
+local fillCorner = Instance.new("UICorner")
+fillCorner.CornerRadius = UDim.new(0, 8)
+fillCorner.Parent = barFill
+
+local barText = Instance.new("TextLabel")
+barText.Size = UDim2.fromScale(1, 1)
+barText.BackgroundTransparency = 1
+barText.Font = Enum.Font.GothamBold
+barText.TextSize = 15
+barText.TextColor3 = Color3.new(1, 1, 1)
+barText.TextStrokeTransparency = 0.4
+barText.ZIndex = 2
+barText.Parent = barBack
+
+local healthConnections = {}
+local function trackHumanoid(humanoid)
+	for _, c in healthConnections do
+		c:Disconnect()
+	end
+	healthConnections = {}
+	local function update()
+		local ratio = if humanoid.MaxHealth > 0 then math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1) else 0
+		TweenService:Create(barFill, TweenInfo.new(0.15), { Size = UDim2.fromScale(ratio, 1) }):Play()
+		barText.Text = ("HP %d / %d"):format(math.ceil(humanoid.Health), humanoid.MaxHealth)
+	end
+	table.insert(healthConnections, humanoid.HealthChanged:Connect(update))
+	table.insert(healthConnections, humanoid:GetPropertyChangedSignal("MaxHealth"):Connect(update))
+	update()
+end
+
+local function onCharacter(character)
+	local humanoid = character:WaitForChild("Humanoid", 10)
+	if humanoid then
+		trackHumanoid(humanoid)
+	end
+end
+player.CharacterAdded:Connect(onCharacter)
+if player.Character then
+	task.spawn(onCharacter, player.Character)
+end
+
+local function updateEnabled()
+	gui.Enabled = player:GetAttribute("DataLoaded") == true
+end
+player:GetAttributeChangedSignal("DataLoaded"):Connect(updateEnabled)
+updateEnabled()
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="LocalScript" referent="31">
         <Properties>
           <string name="Name">GodUI</string>
           <string name="Source"><![CDATA[-- GodUI (LocalScript)
@@ -3766,7 +5204,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="26">
+      <Item class="LocalScript" referent="32">
         <Properties>
           <string name="Name">HUDController</string>
           <string name="Source"><![CDATA[-- HUDController (LocalScript)
@@ -4077,7 +5515,7 @@ local travelBar = create("Frame", {
 local function makeButton(text, order)
 	return create("TextButton", {
 		Name = text,
-		Size = UDim2.new(0.5, -5, 1, 0),
+		Size = UDim2.new(1 / 3, -7, 1, 0),
 		BackgroundColor3 = THEME.Bronze,
 		Text = text,
 		Font = BODY_FONT,
@@ -4090,6 +5528,7 @@ local function makeButton(text, order)
 end
 local templeButton = makeButton("My Temple", 1)
 local plazaButton = makeButton("Plaza", 2)
+local practiceButton = makeButton("Practice", 3)
 
 -- Pop-up notification (upper centre)
 local toast = create("Frame", {
@@ -4219,10 +5658,13 @@ end)
 plazaButton.Activated:Connect(function()
 	requestTeleport("Plaza")
 end)
+practiceButton.Activated:Connect(function()
+	requestTeleport("Practice")
+end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="27">
+      <Item class="LocalScript" referent="33">
         <Properties>
           <string name="Name">TempleUI</string>
           <string name="Source"><![CDATA[-- TempleUI (LocalScript)

@@ -19,3 +19,4 @@ globals:
   ColorSequence: {any: true}
   NumberRange: {any: true}
   NumberSequence: {any: true}
+  Random: {any: true}

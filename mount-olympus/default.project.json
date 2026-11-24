@@ -2,13 +2,11 @@
   "name": "MountOlympus",
   "tree": {
     "$className": "DataModel",
-
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/shared"
       }
     },
-
     "ServerScriptService": {
       "Main": {
         "$path": "src/server/Main.server.luau"
@@ -17,7 +15,6 @@
         "$path": "src/server/Services"
       }
     },
-
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "HUDController": {
@@ -28,6 +25,14 @@
         },
         "GodUI": {
           "$path": "src/client/GodUI.client.luau"
+        },
+        "CombatController": {
+          "$path": "src/client/CombatController.client.luau"
+        }
+      },
+      "StarterCharacterScripts": {
+        "Health": {
+          "$path": "src/character/Health.server.luau"
         }
       }
     }

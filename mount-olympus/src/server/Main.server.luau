@@ -20,6 +20,8 @@ local ProgressionService = require(Services:WaitForChild("ProgressionService"))
 local PlotService = require(Services:WaitForChild("PlotService"))
 local TempleService = require(Services:WaitForChild("TempleService"))
 local GodService = require(Services:WaitForChild("GodService"))
+local EnemyService = require(Services:WaitForChild("EnemyService"))
+local CombatService = require(Services:WaitForChild("CombatService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -43,6 +45,19 @@ local godRemote = Instance.new("RemoteEvent") -- client -> server god menu reque
 godRemote.Name = "GodAction"
 godRemote.Parent = remotes
 
+local function newRemote(name)
+	local remote = Instance.new("RemoteEvent")
+	remote.Name = name
+	remote.Parent = remotes
+	return remote
+end
+local combatRemotes = {
+	Attack = newRemote("CombatAttack"), -- client -> server "I swung"
+	Block = newRemote("CombatBlock"),   -- client -> server block on/off
+	Dash = newRemote("CombatDash"),     -- client -> server "I dashed"
+}
+local fxRemote = newRemote("CombatFX") -- server -> clients damage numbers and effects
+
 remotes.Parent = ReplicatedStorage
 
 --------------------------------------------------------------------------
@@ -55,6 +70,9 @@ PlotService.Init()
 TempleService.Init(DataService, ProgressionService, PlotService, notifyRemote, upgradeRemote)
 GodService.Init(DataService, ProgressionService, TempleService, notifyRemote, godRemote)
 GodService.BuildHall()
+CombatService.Init(TempleService, EnemyService, fxRemote, combatRemotes)
+EnemyService.Init(DataService, ProgressionService, CombatService, fxRemote)
+EnemyService.SpawnPracticeField()
 
 --------------------------------------------------------------------------
 -- 3. Debug chat commands
@@ -153,6 +171,7 @@ local function onPlayerAdded(player)
 	ProgressionService.SetupPlayer(player)
 	GodService.SetupPlayer(player)
 	TempleService.SetupPlayer(player, plot)
+	CombatService.SetupPlayer(player)
 	player:SetAttribute("DataLoaded", true)
 	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
 end
@@ -168,6 +187,7 @@ Players.PlayerRemoving:Connect(function(player)
 	lastTeleport[player] = nil
 	TempleService.ReleasePlayer(player)
 	GodService.ReleasePlayer(player)
+	CombatService.ReleasePlayer(player)
 	PlotService.ReleasePlot(player)
 	DataService.ReleasePlayer(player) -- yields while saving
 end)
@@ -176,7 +196,7 @@ end)
 -- 5. Teleport requests (validated: never trust what the client sends)
 --------------------------------------------------------------------------
 teleportRemote.OnServerEvent:Connect(function(player, destination)
-	if destination ~= "Temple" and destination ~= "Plaza" then
+	if destination ~= "Temple" and destination ~= "Plaza" and destination ~= "Practice" then
 		return
 	end
 	if player:GetAttribute("DataLoaded") ~= true then
