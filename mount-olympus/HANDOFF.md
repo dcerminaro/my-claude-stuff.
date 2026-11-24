@@ -39,7 +39,7 @@ Follow the master specification in **Part C** exactly, including its section 19
 | 3. God Selection | **Confirmed** by the developer |
 | 4A. Combat core | **Confirmed** by the developer ("It works perfect!", v17) |
 | 4B. God abilities | **Confirmed** ("Phase 4 confirmed") |
-| 5. Arenas | **Built and server-tested**, live (v22, with wave difficulty ramp), awaiting "Phase 5 confirmed" |
+| 5. Arenas | **Built and server-tested**, live (v24: wave ramp incl. speed, stronger boss), awaiting "Phase 5 confirmed" |
 | 5–8 | Not started |
 
 ### How to set up Phase 1 on a Mac (or Windows PC)
@@ -294,11 +294,12 @@ environment, so a session can `rojo build` and publish via
    health per extra player.
    **Wave difficulty (developer request):** normal enemies' health and damage
    ramp up each wave — health ×0.7/0.9/1.15/1.4/1.7, damage
-   ×0.6/0.8/1.0/1.2/1.4 (`WaveHealth`/`WaveDamage` per arena). The boss is
-   not wave-scaled.
-4. **Training Champion:** 900 HP, big and gold-armoured; sword swing,
-   **Slam** (1.2 s red circle, 13-stud radius), **Charge** (1 s red lane,
-   26 studs). At 50% HP: enraged (faster attacks and walking) and summons 2
+   ×0.6/0.8/1.0/1.2/1.4, walking speed ×0.9/1.0/1.1/1.2/1.3
+   (`WaveHealth`/`WaveDamage`/`WaveSpeed` per arena). The boss is not
+   wave-scaled.
+4. **Training Champion** (buffed on request): 2,500 HP, big and
+   gold-armoured; sword swing 22, **Slam** 35 (1.2 s red circle, 13-stud
+   radius), **Charge** 30 (1 s red lane, 26 studs). At 50% HP: enraged (faster attacks and walking) and summons 2
    bandits. Bosses are not knocked back or staggered.
 5. **Rewards:** each enemy still pays XP/Gold as it dies. Victory adds 250 XP,
    200 Gold, 15 Divine Favor, 1 Ambrosia. Failure (everyone dead or left)

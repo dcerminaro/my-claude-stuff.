@@ -96,8 +96,8 @@ CombatConfig.Enemies = {
 	TrainingChampion = {
 		DisplayName = "Training Champion",
 		Boss = true,           -- big health bar, no knockback or stagger
-		MaxHealth = 900,
-		Damage = 14,           -- basic sword swing
+		MaxHealth = 2500,
+		Damage = 22,           -- basic sword swing
 		WalkSpeed = 13,
 		AttackRange = 6,
 		Windup = 0.6,
@@ -119,8 +119,8 @@ CombatConfig.Enemies = {
 		-- Special attacks, each with a clear red warning on the ground.
 		-- Range = how close the target must be to start it.
 		Attacks = {
-			{ Name = "Slam", Kind = "Slam", Windup = 1.2, Cooldown = 8, Range = 10, Radius = 13, Damage = 22 },
-			{ Name = "Charge", Kind = "Charge", Windup = 1.0, Cooldown = 10, Range = 30, MinRange = 9, Length = 26, Width = 6, Damage = 18 },
+			{ Name = "Slam", Kind = "Slam", Windup = 1.2, Cooldown = 8, Range = 10, Radius = 13, Damage = 35 },
+			{ Name = "Charge", Kind = "Charge", Windup = 1.0, Cooldown = 10, Range = 30, MinRange = 9, Length = 26, Width = 6, Damage = 30 },
 		},
 		-- Below half health: faster attacks, faster walking, calls for help once.
 		Phase2 = {

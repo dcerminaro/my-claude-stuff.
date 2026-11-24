@@ -138,6 +138,7 @@ ArenaConfig.Arenas = {
 		-- Multiplies normal enemies' health and damage; the boss is not scaled.
 		WaveHealth = { 0.7, 0.9, 1.15, 1.4, 1.7 },
 		WaveDamage = { 0.6, 0.8, 1.0, 1.2, 1.4 },
+		WaveSpeed = { 0.9, 1.0, 1.1, 1.2, 1.3 }, -- walking speed
 		-- Completion rewards (on top of what each enemy drops).
 		Rewards = { XP = 250, Gold = 200, DivineFavor = 15, Ambrosia = 1 },
 	},
@@ -288,8 +289,8 @@ CombatConfig.Enemies = {
 	TrainingChampion = {
 		DisplayName = "Training Champion",
 		Boss = true,           -- big health bar, no knockback or stagger
-		MaxHealth = 900,
-		Damage = 14,           -- basic sword swing
+		MaxHealth = 2500,
+		Damage = 22,           -- basic sword swing
 		WalkSpeed = 13,
 		AttackRange = 6,
 		Windup = 0.6,
@@ -311,8 +312,8 @@ CombatConfig.Enemies = {
 		-- Special attacks, each with a clear red warning on the ground.
 		-- Range = how close the target must be to start it.
 		Attacks = {
-			{ Name = "Slam", Kind = "Slam", Windup = 1.2, Cooldown = 8, Range = 10, Radius = 13, Damage = 22 },
-			{ Name = "Charge", Kind = "Charge", Windup = 1.0, Cooldown = 10, Range = 30, MinRange = 9, Length = 26, Width = 6, Damage = 18 },
+			{ Name = "Slam", Kind = "Slam", Windup = 1.2, Cooldown = 8, Range = 10, Radius = 13, Damage = 35 },
+			{ Name = "Charge", Kind = "Charge", Windup = 1.0, Cooldown = 10, Range = 30, MinRange = 9, Length = 26, Width = 6, Damage = 30 },
 		},
 		-- Below half health: faster attacks, faster walking, calls for help once.
 		Phase2 = {
@@ -468,7 +469,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v22"
+GameConfig.BuildLabel = "v24"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -2519,16 +2520,19 @@ local function spawnEnemy(run, enemyType, position, isBoss)
 	local healthMultiplier = 1 + partyExtra * (if isBoss then party.BossHealthPerExtraPlayer else party.HealthPerExtraPlayer)
 	-- Waves get harder: normal enemies get more health and damage each wave.
 	local damageMultiplier = 1
+	local speedMultiplier = 1
 	if not isBoss then
 		local wave = math.max(run.Wave, 1)
 		healthMultiplier *= (run.Arena.WaveHealth and run.Arena.WaveHealth[wave]) or 1
 		damageMultiplier = (run.Arena.WaveDamage and run.Arena.WaveDamage[wave]) or 1
+		speedMultiplier = (run.Arena.WaveSpeed and run.Arena.WaveSpeed[wave]) or 1
 	end
 	local cframe = CFrame.lookAt(position, Vector3.new(run.Center.X, position.Y, run.Center.Z))
 	local model
 	model = EnemyService.Spawn(enemyType, cframe, {
 		HealthMultiplier = healthMultiplier,
 		DamageMultiplier = damageMultiplier,
+		SpeedMultiplier = speedMultiplier,
 		AggroRange = ArenaConfig.Radius * 3, -- arena enemies always find you
 		LeashRange = ArenaConfig.Radius * 3,
 		Attributes = { RunId = run.Id },
@@ -3809,7 +3813,7 @@ return DiagnosticsService
 --
 -- Used by later systems:
 --   EnemyService.Spawn(enemyType, cframe, options) -> model
---       options = { HealthMultiplier, DamageMultiplier, RewardMultiplier,
+--       options = { HealthMultiplier, DamageMultiplier, SpeedMultiplier, RewardMultiplier,
 --                   AggroRange, LeashRange, Attributes = { name = value },
 --                   OnDeath = function(model), OnPhase2 = function(model) }
 --   EnemyService.Remove(model) -- removes an enemy silently (no rewards)
@@ -4482,7 +4486,7 @@ function EnemyService.Spawn(enemyType, cframe, options)
 	local healthMultiplier = options.HealthMultiplier or 1
 	humanoid.MaxHealth = math.floor(cfg.MaxHealth * healthMultiplier)
 	humanoid.Health = humanoid.MaxHealth
-	humanoid.WalkSpeed = cfg.WalkSpeed
+	humanoid.WalkSpeed = cfg.WalkSpeed * (options.SpeedMultiplier or 1)
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	humanoid.BreakJointsOnDeath = true
 

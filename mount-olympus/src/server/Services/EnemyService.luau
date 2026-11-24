@@ -17,7 +17,7 @@
 --
 -- Used by later systems:
 --   EnemyService.Spawn(enemyType, cframe, options) -> model
---       options = { HealthMultiplier, DamageMultiplier, RewardMultiplier,
+--       options = { HealthMultiplier, DamageMultiplier, SpeedMultiplier, RewardMultiplier,
 --                   AggroRange, LeashRange, Attributes = { name = value },
 --                   OnDeath = function(model), OnPhase2 = function(model) }
 --   EnemyService.Remove(model) -- removes an enemy silently (no rewards)
@@ -690,7 +690,7 @@ function EnemyService.Spawn(enemyType, cframe, options)
 	local healthMultiplier = options.HealthMultiplier or 1
 	humanoid.MaxHealth = math.floor(cfg.MaxHealth * healthMultiplier)
 	humanoid.Health = humanoid.MaxHealth
-	humanoid.WalkSpeed = cfg.WalkSpeed
+	humanoid.WalkSpeed = cfg.WalkSpeed * (options.SpeedMultiplier or 1)
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	humanoid.BreakJointsOnDeath = true
 
