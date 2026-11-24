@@ -88,7 +88,7 @@ CombatService.SetModifierProvider(AbilityService.GetModifiers)
 CombatService.SetDashHandler(AbilityService.OnDash)
 ArenaService.Init(DataService, ProgressionService, PlotService, EnemyService, notifyRemote, arenaActionRemote, arenaEventRemote)
 ArenaService.BuildGate()
-AscensionService.Init(DataService, ProgressionService, ArenaService, notifyRemote, fxRemote, ascensionRemote)
+AscensionService.Init(DataService, ProgressionService, ArenaService, notifyRemote, fxRemote, ascensionRemote, if GameConfig.Debug.Diagnostics then DiagnosticsService else nil)
 AscensionService.BuildChamber()
 if GameConfig.Debug.Diagnostics then
 	DiagnosticsService.Init(reportRemote)

@@ -26,6 +26,7 @@ local WorldBuilder = require(ServerScriptService:WaitForChild("Services"):WaitFo
 local AscensionService = {}
 
 local DataService = nil
+local DiagnosticsService = nil
 local ProgressionService = nil
 local ArenaService = nil
 local notifyRemote = nil
@@ -39,6 +40,12 @@ local CHAMBER_CENTER = Vector3.new(44, 1, 0)
 local function message(player, text)
 	if notifyRemote and player.Parent then
 		notifyRemote:FireClient(player, "Message", text)
+	end
+end
+
+local function note(player, text)
+	if DiagnosticsService then
+		DiagnosticsService.Note(player, text)
 	end
 end
 
@@ -58,6 +65,7 @@ local function applyPhysique(player, character, rank)
 		return humanoid:GetAppliedDescription()
 	end)
 	if not ok or not description then
+		note(player, "GetAppliedDescription failed: " .. tostring(description))
 		return
 	end
 	local base = originalScales[player]
@@ -85,9 +93,12 @@ local function applyPhysique(player, character, rank)
 		end
 	end
 	if changed then
-		pcall(function()
+		local applied, err = pcall(function()
 			humanoid:ApplyDescription(description)
 		end)
+		if not applied then
+			note(player, "ApplyDescription failed: " .. tostring(err))
+		end
 	end
 end
 
@@ -105,7 +116,9 @@ function AscensionService.ApplyLooks(player)
 		return -- a newer call (or a new character) took over
 	end
 	RankOutfits.Apply(character, data.RankIndex, godColor(data))
+	character:SetAttribute("LooksRank", data.RankIndex)
 end
+
 
 -- Just the outfit colours (e.g. after changing god).
 local function refreshOutfit(player)
@@ -245,8 +258,40 @@ end
 --------------------------------------------------------------------------
 -- Setup
 --------------------------------------------------------------------------
-function AscensionService.Init(dataService, progressionService, arenaService, notifyRemoteEvent, fxRemoteEvent, ascensionRemote)
+function AscensionService.Init(dataService, progressionService, arenaService, notifyRemoteEvent, fxRemoteEvent, ascensionRemote, diagnosticsService)
 	DataService = dataService
+	DiagnosticsService = diagnosticsService
+
+	-- Safety net: every 2 s, make sure everyone shows their rank looks
+	-- (avatar loading can replace body parts after we applied them).
+	task.spawn(function()
+		local failures = {}
+		while true do
+			task.wait(2)
+			for player in originalScales do
+				if player.Parent == nil then
+					originalScales[player] = nil
+				end
+			end
+			for _, player in game:GetService("Players"):GetPlayers() do
+				local data = DataService.GetData(player)
+				local character = player.Character
+				local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+				if data and humanoid and humanoid.Health > 0 then
+					local missingOutfit = data.RankIndex >= 2 and not character:FindFirstChild(RankOutfits.Name)
+					if character:GetAttribute("LooksRank") ~= data.RankIndex or missingOutfit then
+						local ok, err = pcall(AscensionService.ApplyLooks, player)
+						if not ok then
+							failures[player] = (failures[player] or 0) + 1
+							if failures[player] <= 3 then
+								note(player, "ApplyLooks error: " .. tostring(err))
+							end
+						end
+					end
+				end
+			end
+		end
+	end)
 	ProgressionService = progressionService
 	ArenaService = arenaService
 	notifyRemote = notifyRemoteEvent

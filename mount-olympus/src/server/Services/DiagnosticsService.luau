@@ -23,6 +23,13 @@ local queue = {} -- [userId] = { entries }
 local lastReport = {}
 local serverFps = 0
 
+-- Server-side notes about a player (e.g. an error applying their rank looks).
+function DiagnosticsService.Note(player, text)
+	local list = queue[player.UserId] or {}
+	table.insert(list, { Time = os.time(), PlaceVersion = game.PlaceVersion, ServerNote = string.sub(tostring(text), 1, 1000) })
+	queue[player.UserId] = list
+end
+
 function DiagnosticsService.Init(remote)
 	local store = DataStoreService:GetDataStore("OlympusDiagnostics")
 
