@@ -92,6 +92,45 @@ CombatConfig.Enemies = {
 			Weapon = Color3.fromRGB(110, 100, 90),
 		},
 	},
+	-- Phase 5 boss of the Mortal Training Pit.
+	TrainingChampion = {
+		DisplayName = "Training Champion",
+		Boss = true,           -- big health bar, no knockback or stagger
+		MaxHealth = 900,
+		Damage = 14,           -- basic sword swing
+		WalkSpeed = 13,
+		AttackRange = 6,
+		Windup = 0.6,
+		AttackCooldown = 1.4,
+		AggroRange = 90,
+		LeashRange = 200,
+		XP = 150,
+		Gold = 80,
+		RespawnTime = 0,
+		Appearance = {
+			Skin = Color3.fromRGB(204, 160, 120),
+			Shirt = Color3.fromRGB(200, 160, 60),  -- gold armour
+			Pants = Color3.fromRGB(150, 95, 45),   -- bronze
+			Width = 1.3,
+			Height = 1.35,
+			Weapon = Color3.fromRGB(230, 200, 120),
+			WeaponLength = 5,
+		},
+		-- Special attacks, each with a clear red warning on the ground.
+		-- Range = how close the target must be to start it.
+		Attacks = {
+			{ Name = "Slam", Kind = "Slam", Windup = 1.2, Cooldown = 8, Range = 10, Radius = 13, Damage = 22 },
+			{ Name = "Charge", Kind = "Charge", Windup = 1.0, Cooldown = 10, Range = 30, MinRange = 9, Length = 26, Width = 6, Damage = 18 },
+		},
+		-- Below half health: faster attacks, faster walking, calls for help once.
+		Phase2 = {
+			At = 0.5,
+			CooldownMultiplier = 0.65,
+			SpeedMultiplier = 1.2,
+			Summon = { Bandit = 2 },
+			Message = "The Training Champion is enraged!",
+		},
+	},
 	TrainingDummy = {
 		DisplayName = "Training Dummy",
 		MaxHealth = 500,

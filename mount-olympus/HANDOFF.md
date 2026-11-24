@@ -17,10 +17,8 @@ Follow the master specification in **Part C** exactly, including its section 19
   published from the cloud session with Open Cloud (see "Publishing without
   Studio" below), and server logic is checked with the Luau Execution API using
   a fake player before going live.
-- Phases 1–3 are **confirmed**. Phase 4 is split: **4A (core combat)** is
-  built and server-tested; **4B (god abilities Q/E/R/Dash/Form, hotbar with
-  cooldowns)** comes next. Do not start Phase 5 until the developer replies
-  **"Phase 4 confirmed"** after 4B.
+- Phases 1–4 are **confirmed**. Phase 5 (Arenas) is built and server-tested;
+  do not start Phase 6 until the developer replies **"Phase 5 confirmed"**.
 - Luau Execution sessions do **not** simulate physics (parts don't fall,
   Humanoids don't walk), so movement/chasing must be play-tested by the developer. Build each
   phase on top of the existing code; do not rewrite earlier phases unless a bug
@@ -40,7 +38,8 @@ Follow the master specification in **Part C** exactly, including its section 19
 | 2. Temple Tycoon | **Confirmed** by the developer |
 | 3. God Selection | **Confirmed** by the developer |
 | 4A. Combat core | **Confirmed** by the developer ("It works perfect!", v17) |
-| 4B. God abilities | **Built and server-tested**, live (v19), awaiting play-testing → then "Phase 4 confirmed" |
+| 4B. God abilities | **Confirmed** ("Phase 4 confirmed") |
+| 5. Arenas | **Built and server-tested**, live (v21), awaiting "Phase 5 confirmed" |
 | 5–8 | Not started |
 
 ### How to set up Phase 1 on a Mac (or Windows PC)
@@ -282,6 +281,29 @@ environment, so a session can `rojo build` and publish via
    DashTrail, Aura).
 7. New test command `!blessall` (current god's blessings to max level).
 
+### Design decisions made in Phase 5 (developer asked to confirm)
+1. **Arena Gate** (west side of the plaza, replaces the old marker): hold the
+   prompt to open the arena menu. 6 arenas listed; only Mortal Training Pit is
+   open (levels 1–15), the rest show "Coming in Phase 7".
+2. **Solo or party:** "Join Party" puts you in that arena's queue (max 4); any
+   member presses Start. Each run gets its own arena copy built far away
+   (`ArenaConfig.Origin`, up to 4 runs per server).
+3. **Waves:** 2 bandits · 3 bandits + skeleton · 2 bandits + 3 skeletons · 4 +
+   3 · Training Champion + 2 bandits. 3 s countdown, 4 s between waves. Party
+   scaling: +50% enemy health and +25% enemies per extra player; boss +60%
+   health per extra player.
+4. **Training Champion:** 900 HP, big and gold-armoured; sword swing,
+   **Slam** (1.2 s red circle, 13-stud radius), **Charge** (1 s red lane,
+   26 studs). At 50% HP: enraged (faster attacks and walking) and summons 2
+   bandits. Bosses are not knocked back or staggered.
+5. **Rewards:** each enemy still pays XP/Gold as it dies. Victory adds 250 XP,
+   200 Gold, 15 Divine Favor, 1 Ambrosia. Failure (everyone dead or left)
+   pays 30% × (waves cleared / 5) and no Ambrosia. Paid once per run.
+6. **Leaving:** dying or using a travel button takes you out of the run; the
+   results screen returns everyone to the plaza after 12 s (or on the button).
+7. The ascension trial (Training Champion → Warrior) is Phase 6; the boss
+   victory does not advance rank yet.
+
 ### Ideas from the developer for later (not built yet)
 - **Rank outfits and physique (Phase 6, Ascension):** each ascension rank gets
   its own outfit, and the character gets bigger with a more powerful physique
@@ -412,6 +434,15 @@ to all contributors once. **Phase 4B abilities** should damage via
 `CombatService.SetModifierProvider`; speed is folded into the
 ProgressionService bonus provider). Attributes `Cooldown_<slot>` = server time
 when ready. Ability numbers live in `Shared/AbilityConfig`.
+
+**ArenaService** (server, Phase 5) — `StartSolo(player, arenaId)`,
+`JoinQueue`, `StartParty`, `Leave`, `IsInRun`, `BuildGate`. Run state is
+published as player attributes `ArenaRunId, ArenaName, ArenaState
+(Countdown/Fighting/Intermission/Victory/Failed), ArenaWave, ArenaWaves,
+ArenaEnemiesLeft, ArenaTimerEnd`; results go to `ArenaEvent("Result", {...})`.
+**Phase 6** trials can reuse it (e.g. call `ProgressionService.AdvanceRank`
+when a boss run is won). Enemies spawned with `Attributes = {RunId}`; bosses
+have `IsBoss`, `DisplayName`, `Enraged`.
 
 **CombatFX remote** (server → clients): `("Damage", pos, amount, style)`,
 `("Hit", pos)`, `("Death", pos)`, `("Reward", pos, text)`.

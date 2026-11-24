@@ -11,9 +11,16 @@
 --   * Health bar over its head, damage numbers, death effect.
 --   * Rewards XP + Gold ONCE per kill to every player who damaged it.
 --
+--   * Bosses (CombatConfig `Boss = true`): special attacks with big red
+--     warnings (Slam: a circle; Charge: a line), an enraged second phase, and
+--     no knockback or stagger.
+--
 -- Used by later systems:
 --   EnemyService.Spawn(enemyType, cframe, options) -> model
---       options = { HealthMultiplier, DamageMultiplier, RewardMultiplier, OnDeath = function(model) }
+--       options = { HealthMultiplier, DamageMultiplier, RewardMultiplier,
+--                   AggroRange, LeashRange, Attributes = { name = value },
+--                   OnDeath = function(model), OnPhase2 = function(model) }
+--   EnemyService.Remove(model) -- removes an enemy silently (no rewards)
 --   EnemyService.DamageEnemy(model, amount, player) -> true/false
 --   EnemyService.GetEnemiesInRange(position, range) -> { record, ... }
 
@@ -99,6 +106,8 @@ local function buildRig(look)
 		description.RightLegColor = look.Pants
 		description.WidthScale = look.Width
 		description.DepthScale = look.Width
+		description.HeightScale = look.Height or 1
+		description.HeadScale = look.Height or 1
 		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R15)
 	end)
 	if ok and model then
@@ -108,19 +117,20 @@ local function buildRig(look)
 	return buildFallbackRig(look)
 end
 
-local function addWeapon(model, color)
+local function addWeapon(model, color, length)
 	local hand = model:FindFirstChild("RightHand") or model:FindFirstChild("UpperTorso")
 	if not hand or not color then
 		return
 	end
+	length = length or 3.6
 	local blade = Instance.new("Part")
 	blade.Name = "Weapon"
-	blade.Size = Vector3.new(0.25, 0.4, 3.6)
+	blade.Size = Vector3.new(0.25 * length / 3.6, 0.4 * length / 3.6, length)
 	blade.Material = Enum.Material.Metal
 	blade.Color = color
 	blade.CanCollide = false
 	blade.Massless = true
-	blade.CFrame = hand.CFrame * CFrame.new(0, -0.2, -1.8)
+	blade.CFrame = hand.CFrame * CFrame.new(0, -0.2, -length / 2)
 	local weld = Instance.new("WeldConstraint")
 	weld.Part0 = hand
 	weld.Part1 = blade
@@ -197,7 +207,7 @@ local function makeBody(enemyType, cfg)
 	if templates[enemyType] == nil then
 		templates[enemyType] = false -- "being built": other spawns wait for it
 		local template = buildRig(cfg.Appearance)
-		addWeapon(template, cfg.Appearance.Weapon)
+		addWeapon(template, cfg.Appearance.Weapon, cfg.Appearance.WeaponLength)
 		templates[enemyType] = template
 	end
 	while templates[enemyType] == false do
@@ -288,12 +298,11 @@ local function aliveCharacterRoot(player)
 end
 
 local function findTarget(record)
-	local cfg = record.Config
 	-- Whoever hit it recently is chased first (even from a little further away).
 	local attacker = record.LastAttacker
 	if attacker and attacker.Parent and os.clock() - record.LastDamagedAt < HEAL_DELAY then
 		local root = aliveCharacterRoot(attacker)
-		if root and (root.Position - record.Home).Magnitude <= cfg.LeashRange then
+		if root and (root.Position - record.Home).Magnitude <= record.LeashRange then
 			return attacker, (root.Position - record.Root.Position).Magnitude
 		end
 	end
@@ -302,9 +311,9 @@ local function findTarget(record)
 		local root = aliveCharacterRoot(player)
 		if root then
 			local distance = (root.Position - record.Root.Position).Magnitude
-			local range = if record.Target == player then cfg.AggroRange * 1.5 else cfg.AggroRange
+			local range = if record.Target == player then record.AggroRange * 1.5 else record.AggroRange
 			local fromHome = (root.Position - record.Home).Magnitude
-			if distance <= range and fromHome <= cfg.LeashRange and distance < bestDistance then
+			if distance <= range and fromHome <= record.LeashRange and distance < bestDistance then
 				best, bestDistance = player, distance
 			end
 		end
@@ -378,9 +387,140 @@ local function startAttack(record, target)
 				end
 			end
 		end
-		record.NextAttackAt = os.clock() + cfg.AttackCooldown
+		record.NextAttackAt = os.clock() + cfg.AttackCooldown * record.CooldownMultiplier
 		record.State = "Chase"
 	end)
+end
+
+--------------------------------------------------------------------------
+-- Boss special attacks
+--------------------------------------------------------------------------
+local WARNING_RED = Color3.fromRGB(255, 50, 40)
+
+local function warningPart(props)
+	local part = Instance.new("Part")
+	part.Name = "AttackWarning"
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.Material = Enum.Material.Neon
+	part.Color = WARNING_RED
+	part.Transparency = 0.55
+	for key, value in props do
+		part[key] = value
+	end
+	part.Parent = folder
+	return part
+end
+
+local function groundUnder(record)
+	return record.Root.Position.Y - record.Root.Size.Y / 2 - record.Humanoid.HipHeight + 0.1
+end
+
+local function glowWeapon(record)
+	local weapon = record.Model:FindFirstChild("Weapon")
+	if weapon then
+		record.WeaponLook = record.WeaponLook or { Material = weapon.Material, Color = weapon.Color }
+		weapon.Material = Enum.Material.Neon
+		weapon.Color = WARNING_RED
+	end
+end
+
+local function startSpecial(record, target, attack)
+	record.State = "Windup"
+	record.AttackReadyAt[attack.Name] = os.clock() + attack.Windup + attack.Cooldown * record.CooldownMultiplier
+	record.Humanoid:MoveTo(record.Root.Position)
+	local targetRoot = aliveCharacterRoot(target)
+	if targetRoot then
+		face(record, targetRoot.Position)
+	end
+	glowWeapon(record)
+	fxRemote:FireAllClients("EnemyAttack", record.Root.Position, record.Model, attack.Windup)
+	local root = record.Root
+	local ground = groundUnder(record)
+	local origin = Vector3.new(root.Position.X, ground, root.Position.Z)
+	local look = flat(root.CFrame.LookVector).Unit
+	local damage = attack.Damage * record.DamageMultiplier
+
+	if attack.Kind == "Slam" then
+		-- A big red circle around the boss; everyone inside when it lands is hit.
+		local d = attack.Radius * 2
+		local ring = warningPart({
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.2, d, d),
+			CFrame = CFrame.new(origin) * CFrame.Angles(0, 0, math.rad(90)),
+		})
+		record.Telegraph = { ring }
+		task.delay(attack.Windup, function()
+			clearTelegraph(record)
+			if record.Dead or not record.Model.Parent then
+				return
+			end
+			for _, player in getPlayers() do
+				local playerRoot = aliveCharacterRoot(player)
+				if playerRoot and flat(playerRoot.Position - origin).Magnitude <= attack.Radius then
+					CombatService.DamagePlayer(player, damage, origin)
+				end
+			end
+			fxRemote:FireAllClients("Shockwave", root.Position, WARNING_RED, attack.Radius)
+			record.State = "Chase"
+		end)
+	elseif attack.Kind == "Charge" then
+		-- A red lane in front; the boss rushes down it, hitting everyone inside.
+		local lane = warningPart({
+			Size = Vector3.new(attack.Width, 0.2, attack.Length),
+			CFrame = CFrame.lookAt(origin + look * (attack.Length / 2), origin + look * attack.Length),
+		})
+		record.Telegraph = { lane }
+		task.delay(attack.Windup, function()
+			clearTelegraph(record)
+			if record.Dead or not record.Model.Parent then
+				return
+			end
+			local finish = origin + look * attack.Length
+			for _, player in getPlayers() do
+				local playerRoot = aliveCharacterRoot(player)
+				if playerRoot then
+					local offset = flat(playerRoot.Position - origin)
+					local along = offset:Dot(look)
+					local side = (offset - look * along).Magnitude
+					if along >= -1 and along <= attack.Length + 1 and side <= attack.Width / 2 + 1 then
+						CombatService.DamagePlayer(player, damage, origin)
+					end
+				end
+			end
+			-- The rush itself
+			local attachment = Instance.new("Attachment")
+			attachment.Parent = root
+			local push = Instance.new("LinearVelocity")
+			push.Attachment0 = attachment
+			push.RelativeTo = Enum.ActuatorRelativeTo.World
+			push.VectorVelocity = look * (attack.Length / 0.4)
+			push.MaxForce = 200000
+			push.Parent = root
+			Debris:AddItem(push, 0.4)
+			Debris:AddItem(attachment, 0.4)
+			fxRemote:FireAllClients("DashTrail", root.Position, WARNING_RED, finish + Vector3.new(0, root.Position.Y - origin.Y, 0))
+			task.delay(0.45, function()
+				record.State = "Chase"
+			end)
+		end)
+	end
+end
+
+-- A special attack that is ready and fits the distance, or nil.
+local function pickSpecial(record, distance, now)
+	local attacks = record.Config.Attacks
+	if not attacks then
+		return nil
+	end
+	for _, attack in attacks do
+		if now >= (record.AttackReadyAt[attack.Name] or 0) and distance <= attack.Range and distance >= (attack.MinRange or 0) then
+			return attack
+		end
+	end
+	return nil
 end
 
 local function think(record, now)
@@ -404,7 +544,7 @@ local function think(record, now)
 	record.Target = target
 	local fromHome = (record.Root.Position - record.Home).Magnitude
 
-	if not target or fromHome > cfg.LeashRange then
+	if not target or fromHome > record.LeashRange then
 		-- Go home, and heal up once nobody has hit it for a while.
 		if fromHome > 3 then
 			humanoid:MoveTo(record.Home)
@@ -415,7 +555,10 @@ local function think(record, now)
 	end
 
 	local targetRoot = aliveCharacterRoot(target)
-	if distance > cfg.AttackRange then
+	local special = pickSpecial(record, distance, now)
+	if special then
+		startSpecial(record, target, special)
+	elseif distance > cfg.AttackRange then
 		humanoid:MoveTo(targetRoot.Position)
 	elseif now >= record.NextAttackAt then
 		startAttack(record, target)
@@ -559,6 +702,13 @@ function EnemyService.Spawn(enemyType, cframe, options)
 		model:SetAttribute("Dummy", true) -- clients wobble it when hit
 	end
 	model:SetAttribute("IsEnemy", true)
+	if cfg.Boss then
+		model:SetAttribute("IsBoss", true)
+		model:SetAttribute("DisplayName", cfg.DisplayName)
+	end
+	for key, value in options.Attributes or {} do
+		model:SetAttribute(key, value)
+	end
 	model.Parent = folder
 	if not root.Anchored then
 		pcall(function()
@@ -583,8 +733,18 @@ function EnemyService.Spawn(enemyType, cframe, options)
 		DamageMultiplier = options.DamageMultiplier or 1,
 		RewardMultiplier = options.RewardMultiplier or 1,
 		OnDeath = options.OnDeath,
+		OnPhase2 = options.OnPhase2,
 		StaggerUntil = 0,
+		AggroRange = options.AggroRange or cfg.AggroRange or 0,
+		LeashRange = options.LeashRange or cfg.LeashRange or 0,
+		AttackReadyAt = {},
+		CooldownMultiplier = 1,
+		Phase2 = false,
 	}
+	-- Special attacks start on a short delay so a boss doesn't open with one.
+	for _, attack in cfg.Attacks or {} do
+		record.AttackReadyAt[attack.Name] = os.clock() + 3
+	end
 	addHealthBar(record)
 
 	local walkTrack = if cfg.Passive then nil else loadAnimation(humanoid, WALK_ANIMATION)
@@ -643,6 +803,21 @@ function EnemyService.DamageEnemy(model, amount, player, options)
 		return true
 	end
 
+	-- Boss second phase.
+	local phase2 = record.Config.Phase2
+	if phase2 and not record.Phase2 and record.Humanoid.Health <= record.Humanoid.MaxHealth * phase2.At then
+		record.Phase2 = true
+		record.CooldownMultiplier = phase2.CooldownMultiplier or 1
+		record.Humanoid.WalkSpeed *= phase2.SpeedMultiplier or 1
+		model:SetAttribute("Enraged", true)
+		if record.OnPhase2 then
+			task.spawn(record.OnPhase2, model)
+		end
+	end
+	if record.Config.Boss then
+		return true -- bosses aren't knocked back or staggered
+	end
+
 	-- Knock it back a little and interrupt its walking (not a wind-up already started).
 	local attackerRoot = player and aliveCharacterRoot(player)
 	if attackerRoot and not record.Root.Anchored then
@@ -664,6 +839,19 @@ function EnemyService.DamageEnemy(model, amount, player, options)
 		record.StaggerUntil = now + STAGGER_TIME
 	end
 	return true
+end
+
+-- Removes an enemy without rewards (e.g. when an arena run ends).
+function EnemyService.Remove(model)
+	local record = enemies[model]
+	if record then
+		record.Dead = true
+		enemies[model] = nil
+		clearTelegraph(record)
+	end
+	if model then
+		model:Destroy()
+	end
 end
 
 -- Living enemies whose root is within `range` of `position`.

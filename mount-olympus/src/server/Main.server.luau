@@ -25,6 +25,7 @@ local EnemyService = require(Services:WaitForChild("EnemyService"))
 local CombatService = require(Services:WaitForChild("CombatService"))
 local DiagnosticsService = require(Services:WaitForChild("DiagnosticsService"))
 local AbilityService = require(Services:WaitForChild("AbilityService"))
+local ArenaService = require(Services:WaitForChild("ArenaService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -62,6 +63,8 @@ local combatRemotes = {
 local fxRemote = newRemote("CombatFX") -- server -> clients damage numbers and effects
 local reportRemote = newRemote("ClientReport") -- client -> server diagnostics report
 local abilityRemote = newRemote("UseAbility") -- client -> server "use my Q / E / R / Form ability"
+local arenaActionRemote = newRemote("ArenaAction") -- client -> server arena menu requests
+local arenaEventRemote = newRemote("ArenaEvent") -- server -> client party queue and results
 
 remotes.Parent = ReplicatedStorage
 
@@ -81,6 +84,8 @@ EnemyService.SpawnPracticeField()
 AbilityService.Init(DataService, ProgressionService, TempleService, EnemyService, GodService, fxRemote, abilityRemote)
 CombatService.SetModifierProvider(AbilityService.GetModifiers)
 CombatService.SetDashHandler(AbilityService.OnDash)
+ArenaService.Init(DataService, ProgressionService, PlotService, EnemyService, notifyRemote, arenaActionRemote, arenaEventRemote)
+ArenaService.BuildGate()
 if GameConfig.Debug.Diagnostics then
 	DiagnosticsService.Init(reportRemote)
 end
@@ -203,6 +208,7 @@ Players.PlayerRemoving:Connect(function(player)
 	GodService.ReleasePlayer(player)
 	CombatService.ReleasePlayer(player)
 	AbilityService.ReleasePlayer(player)
+	ArenaService.ReleasePlayer(player)
 	PlotService.ReleasePlot(player)
 	DataService.ReleasePlayer(player) -- yields while saving
 end)
@@ -245,5 +251,8 @@ teleportRemote.OnServerEvent:Connect(function(player, destination)
 		return
 	end
 	lastTeleport[player] = now
+	if ArenaService.IsInRun(player) then
+		ArenaService.Leave(player) -- travelling away from an arena counts as leaving it
+	end
 	PlotService.TeleportPlayer(player, destination)
 end)

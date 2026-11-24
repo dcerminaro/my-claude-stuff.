@@ -107,6 +107,84 @@ return AbilityConfig
       </Item>
       <Item class="ModuleScript" referent="3">
         <Properties>
+          <string name="Name">ArenaConfig</string>
+          <string name="Source"><![CDATA[-- ArenaConfig (ModuleScript)
+-- Location: ReplicatedStorage > Shared > ArenaConfig
+--
+-- The PvE arenas (Phase 5). Each arena: 5 waves, the last with a boss.
+-- Waves list enemy types (from CombatConfig.Enemies) and how many; "Boss"
+-- names the boss. Add an arena by adding an entry and setting Available.
+-- All numbers are PLACEHOLDERS, balanced in Phase 8.
+
+local ArenaConfig = {}
+
+ArenaConfig.Arenas = {
+	{
+		Id = "MortalTrainingPit",
+		DisplayName = "Mortal Training Pit",
+		Description = "Bandits and skeletons. Defeat the Training Champion!",
+		MinLevel = 1,
+		MaxLevel = 15,
+		Available = true,
+		Color = Color3.fromRGB(205, 120, 60),
+		Waves = {
+			{ Bandit = 2 },
+			{ Bandit = 3, Skeleton = 1 },
+			{ Bandit = 2, Skeleton = 3 },
+			{ Bandit = 4, Skeleton = 3 },
+			{ Boss = "TrainingChampion", Bandit = 2 },
+		},
+		-- Completion rewards (on top of what each enemy drops).
+		Rewards = { XP = 250, Gold = 200, DivineFavor = 15, Ambrosia = 1 },
+	},
+	{ Id = "SpartanBattleground", DisplayName = "Spartan Battleground", Description = "Armored soldiers and beasts.", MinLevel = 16, MaxLevel = 35, Available = false },
+	{ Id = "LabyrinthOfCrete", DisplayName = "Labyrinth of Crete", Description = "Minotaurs and guardians.", MinLevel = 36, MaxLevel = 60, Available = false },
+	{ Id = "CursedTemple", DisplayName = "Cursed Temple", Description = "Gorgons and cursed warriors.", MinLevel = 61, MaxLevel = 90, Available = false },
+	{ Id = "GatesOfTheUnderworld", DisplayName = "Gates of the Underworld", Description = "Undead and underworld monsters.", MinLevel = 91, MaxLevel = 135, Available = false },
+	{ Id = "TitansColosseum", DisplayName = "Titan's Colosseum", Description = "Titan warriors and divine monsters.", MinLevel = 136, MaxLevel = 200, Available = false },
+}
+
+ArenaConfig.ById = {}
+for _, arena in ArenaConfig.Arenas do
+	ArenaConfig.ById[arena.Id] = arena
+end
+
+-- Bigger parties: tougher and more numerous enemies.
+ArenaConfig.Party = {
+	MaxPlayers = 4,
+	HealthPerExtraPlayer = 0.5,     -- +50% enemy health per extra player
+	CountPerExtraPlayer = 0.25,     -- +25% enemies per extra player (rounded)
+	BossHealthPerExtraPlayer = 0.6, -- +60% boss health per extra player
+}
+
+ArenaConfig.CountdownTime = 3      -- seconds before wave 1
+ArenaConfig.IntermissionTime = 4   -- seconds between waves
+ArenaConfig.ReturnDelay = 12       -- seconds on the results screen before going home
+ArenaConfig.FailRewardMultiplier = 0.3 -- a failed run pays 30% x (waves cleared / 5)
+ArenaConfig.MaxRuns = 4            -- arenas that can run at the same time on one server
+
+-- Where arena copies are built (far from the hub), one slot per running arena.
+ArenaConfig.Origin = Vector3.new(0, 1, 1500)
+ArenaConfig.SlotSpacing = 400
+ArenaConfig.Radius = 45
+
+-- Why an arena can't be entered, or nil if it can.
+function ArenaConfig.LockReason(arena, level)
+	if not arena.Available then
+		return "Coming in Phase 7"
+	end
+	if level < arena.MinLevel then
+		return ("Reach level %d"):format(arena.MinLevel)
+	end
+	return nil
+end
+
+return ArenaConfig
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="4">
+        <Properties>
           <string name="Name">CombatConfig</string>
           <string name="Source"><![CDATA[-- CombatConfig (ModuleScript)
 -- Location: ReplicatedStorage > Shared > CombatConfig
@@ -202,6 +280,45 @@ CombatConfig.Enemies = {
 			Weapon = Color3.fromRGB(110, 100, 90),
 		},
 	},
+	-- Phase 5 boss of the Mortal Training Pit.
+	TrainingChampion = {
+		DisplayName = "Training Champion",
+		Boss = true,           -- big health bar, no knockback or stagger
+		MaxHealth = 900,
+		Damage = 14,           -- basic sword swing
+		WalkSpeed = 13,
+		AttackRange = 6,
+		Windup = 0.6,
+		AttackCooldown = 1.4,
+		AggroRange = 90,
+		LeashRange = 200,
+		XP = 150,
+		Gold = 80,
+		RespawnTime = 0,
+		Appearance = {
+			Skin = Color3.fromRGB(204, 160, 120),
+			Shirt = Color3.fromRGB(200, 160, 60),  -- gold armour
+			Pants = Color3.fromRGB(150, 95, 45),   -- bronze
+			Width = 1.3,
+			Height = 1.35,
+			Weapon = Color3.fromRGB(230, 200, 120),
+			WeaponLength = 5,
+		},
+		-- Special attacks, each with a clear red warning on the ground.
+		-- Range = how close the target must be to start it.
+		Attacks = {
+			{ Name = "Slam", Kind = "Slam", Windup = 1.2, Cooldown = 8, Range = 10, Radius = 13, Damage = 22 },
+			{ Name = "Charge", Kind = "Charge", Windup = 1.0, Cooldown = 10, Range = 30, MinRange = 9, Length = 26, Width = 6, Damage = 18 },
+		},
+		-- Below half health: faster attacks, faster walking, calls for help once.
+		Phase2 = {
+			At = 0.5,
+			CooldownMultiplier = 0.65,
+			SpeedMultiplier = 1.2,
+			Summon = { Bandit = 2 },
+			Message = "The Training Champion is enraged!",
+		},
+	},
 	TrainingDummy = {
 		DisplayName = "Training Dummy",
 		MaxHealth = 500,
@@ -246,7 +363,7 @@ return CombatConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="4">
+      <Item class="ModuleScript" referent="5">
         <Properties>
           <string name="Name">GameConfig</string>
           <string name="Source"><![CDATA[-- GameConfig (ModuleScript)
@@ -347,7 +464,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v19"
+GameConfig.BuildLabel = "v21"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -369,7 +486,7 @@ return GameConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="5">
+      <Item class="ModuleScript" referent="6">
         <Properties>
           <string name="Name">GodConfig</string>
           <string name="Source"><![CDATA[-- GodConfig (ModuleScript)
@@ -488,11 +605,11 @@ return GodConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="6">
+      <Item class="Folder" referent="7">
         <Properties>
           <string name="Name">Gods</string>
         </Properties>
-        <Item class="ModuleScript" referent="7">
+        <Item class="ModuleScript" referent="8">
           <Properties>
             <string name="Name">Apollo</string>
             <string name="Source"><![CDATA[-- Apollo (ModuleScript)
@@ -518,7 +635,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="8">
+        <Item class="ModuleScript" referent="9">
           <Properties>
             <string name="Name">Ares</string>
             <string name="Source"><![CDATA[-- Ares (ModuleScript)
@@ -555,7 +672,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="9">
+        <Item class="ModuleScript" referent="10">
           <Properties>
             <string name="Name">Athena</string>
             <string name="Source"><![CDATA[-- Athena (ModuleScript)
@@ -581,7 +698,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="10">
+        <Item class="ModuleScript" referent="11">
           <Properties>
             <string name="Name">Hades</string>
             <string name="Source"><![CDATA[-- Hades (ModuleScript)
@@ -607,7 +724,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="11">
+        <Item class="ModuleScript" referent="12">
           <Properties>
             <string name="Name">Poseidon</string>
             <string name="Source"><![CDATA[-- Poseidon (ModuleScript)
@@ -633,7 +750,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="12">
+        <Item class="ModuleScript" referent="13">
           <Properties>
             <string name="Name">Zeus</string>
             <string name="Source"><![CDATA[-- Zeus (ModuleScript)
@@ -676,7 +793,7 @@ return {
           </Properties>
         </Item>
       </Item>
-      <Item class="ModuleScript" referent="13">
+      <Item class="ModuleScript" referent="14">
         <Properties>
           <string name="Name">Progression</string>
           <string name="Source"><![CDATA[-- Progression (ModuleScript)
@@ -740,7 +857,7 @@ return Progression
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="14">
+      <Item class="ModuleScript" referent="15">
         <Properties>
           <string name="Name">SwordAnimator</string>
           <string name="Source"><![CDATA[-- SwordAnimator (ModuleScript, used by the client only)
@@ -1057,7 +1174,7 @@ return SwordAnimator
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="15">
+      <Item class="ModuleScript" referent="16">
         <Properties>
           <string name="Name">SwordBuilder</string>
           <string name="Source"><![CDATA[-- SwordBuilder (ModuleScript)
@@ -1205,7 +1322,7 @@ return SwordBuilder
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="16">
+      <Item class="ModuleScript" referent="17">
         <Properties>
           <string name="Name">SwordPoses</string>
           <string name="Source"><![CDATA[-- SwordPoses (ModuleScript)
@@ -1360,7 +1477,7 @@ return Poses
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="17">
+      <Item class="ModuleScript" referent="18">
         <Properties>
           <string name="Name">TempleConfig</string>
           <string name="Source"><![CDATA[-- TempleConfig (ModuleScript)
@@ -1532,11 +1649,11 @@ return TempleConfig
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="18">
+  <Item class="ServerScriptService" referent="19">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Script" referent="19">
+    <Item class="Script" referent="20">
       <Properties>
         <string name="Name">Main</string>
         <token name="RunContext">0</token>
@@ -1567,6 +1684,7 @@ local EnemyService = require(Services:WaitForChild("EnemyService"))
 local CombatService = require(Services:WaitForChild("CombatService"))
 local DiagnosticsService = require(Services:WaitForChild("DiagnosticsService"))
 local AbilityService = require(Services:WaitForChild("AbilityService"))
+local ArenaService = require(Services:WaitForChild("ArenaService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -1604,6 +1722,8 @@ local combatRemotes = {
 local fxRemote = newRemote("CombatFX") -- server -> clients damage numbers and effects
 local reportRemote = newRemote("ClientReport") -- client -> server diagnostics report
 local abilityRemote = newRemote("UseAbility") -- client -> server "use my Q / E / R / Form ability"
+local arenaActionRemote = newRemote("ArenaAction") -- client -> server arena menu requests
+local arenaEventRemote = newRemote("ArenaEvent") -- server -> client party queue and results
 
 remotes.Parent = ReplicatedStorage
 
@@ -1623,6 +1743,8 @@ EnemyService.SpawnPracticeField()
 AbilityService.Init(DataService, ProgressionService, TempleService, EnemyService, GodService, fxRemote, abilityRemote)
 CombatService.SetModifierProvider(AbilityService.GetModifiers)
 CombatService.SetDashHandler(AbilityService.OnDash)
+ArenaService.Init(DataService, ProgressionService, PlotService, EnemyService, notifyRemote, arenaActionRemote, arenaEventRemote)
+ArenaService.BuildGate()
 if GameConfig.Debug.Diagnostics then
 	DiagnosticsService.Init(reportRemote)
 end
@@ -1745,6 +1867,7 @@ Players.PlayerRemoving:Connect(function(player)
 	GodService.ReleasePlayer(player)
 	CombatService.ReleasePlayer(player)
 	AbilityService.ReleasePlayer(player)
+	ArenaService.ReleasePlayer(player)
 	PlotService.ReleasePlot(player)
 	DataService.ReleasePlayer(player) -- yields while saving
 end)
@@ -1787,16 +1910,19 @@ teleportRemote.OnServerEvent:Connect(function(player, destination)
 		return
 	end
 	lastTeleport[player] = now
+	if ArenaService.IsInRun(player) then
+		ArenaService.Leave(player) -- travelling away from an arena counts as leaving it
+	end
 	PlotService.TeleportPlayer(player, destination)
 end)
 ]]></string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="20">
+    <Item class="Folder" referent="21">
       <Properties>
         <string name="Name">Services</string>
       </Properties>
-      <Item class="ModuleScript" referent="21">
+      <Item class="ModuleScript" referent="22">
         <Properties>
           <string name="Name">AbilityService</string>
           <string name="Source"><![CDATA[-- AbilityService (ModuleScript)
@@ -2167,7 +2293,631 @@ return AbilityService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="22">
+      <Item class="ModuleScript" referent="23">
+        <Properties>
+          <string name="Name">ArenaService</string>
+          <string name="Source"><![CDATA[-- ArenaService (ModuleScript)
+-- Location: ServerScriptService > Services > ArenaService
+--
+-- PvE arenas (Phase 5), all run by the server:
+--   * The Arena Gate in Olympus Plaza opens the arena menu.
+--   * Solo runs, or a party queue (up to 4) for one arena.
+--   * Each run gets its own copy of the arena, built far from the hub.
+--   * 5 waves (the last with a boss); enemies scale with party size.
+--   * Players who die or leave are out; the run fails if nobody is left.
+--   * Victory pays the arena's completion rewards; a failed run pays a part.
+--   * Rewards are paid once per run; everyone is sent back to the plaza.
+-- Run progress is published as player attributes for the HUD:
+--   ArenaRunId, ArenaName, ArenaState, ArenaWave, ArenaWaves,
+--   ArenaEnemiesLeft, ArenaTimerEnd (server time).
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+local Workspace = game:GetService("Workspace")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local ArenaConfig = require(Shared:WaitForChild("ArenaConfig"))
+local CombatConfig = require(Shared:WaitForChild("CombatConfig"))
+local WorldBuilder = require(ServerScriptService:WaitForChild("Services"):WaitForChild("WorldBuilder"))
+
+local ArenaService = {}
+
+local DataService = nil
+local ProgressionService = nil
+local PlotService = nil
+local EnemyService = nil
+local notifyRemote = nil
+local arenaEvent = nil
+
+local runs = {}      -- [runId] = run
+local playerRun = {} -- [Player] = run
+local queues = {}    -- [arenaId] = { Player, ... }
+local slotUsed = {}  -- [slot] = true
+local nextRunId = 0
+local arenasFolder = nil
+
+local ATTRIBUTES = { "ArenaRunId", "ArenaName", "ArenaState", "ArenaWave", "ArenaWaves", "ArenaEnemiesLeft", "ArenaTimerEnd" }
+
+--------------------------------------------------------------------------
+-- Helpers
+--------------------------------------------------------------------------
+local function message(player, text)
+	if notifyRemote and player.Parent then
+		notifyRemote:FireClient(player, "Message", text)
+	end
+end
+
+local function aliveRoot(player)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if humanoid and root and humanoid.Health > 0 then
+		return root, humanoid
+	end
+	return nil
+end
+
+local function playerLevel(player)
+	local data = DataService.GetData(player)
+	return if data then data.Level else 0
+end
+
+local function now()
+	return Workspace:GetServerTimeNow()
+end
+
+local function publish(run)
+	for player in run.Players do
+		if player.Parent then
+			player:SetAttribute("ArenaRunId", run.Id)
+			player:SetAttribute("ArenaName", run.Arena.DisplayName)
+			player:SetAttribute("ArenaState", run.State)
+			player:SetAttribute("ArenaWave", run.Wave)
+			player:SetAttribute("ArenaWaves", #run.Arena.Waves)
+			player:SetAttribute("ArenaEnemiesLeft", run.Remaining)
+			player:SetAttribute("ArenaTimerEnd", run.TimerEnd or 0)
+		end
+	end
+end
+
+local function clearAttributes(player)
+	for _, name in ATTRIBUTES do
+		player:SetAttribute(name, nil)
+	end
+end
+
+local function sendQueue(arenaId)
+	local queue = queues[arenaId] or {}
+	local names = {}
+	for _, player in queue do
+		table.insert(names, player.DisplayName)
+	end
+	for _, player in queue do
+		arenaEvent:FireClient(player, "Queue", arenaId, names)
+	end
+end
+
+local function leaveQueue(player)
+	for arenaId, queue in queues do
+		local index = table.find(queue, player)
+		if index then
+			table.remove(queue, index)
+			sendQueue(arenaId)
+			if player.Parent then
+				arenaEvent:FireClient(player, "Queue", nil, {})
+			end
+		end
+	end
+end
+
+--------------------------------------------------------------------------
+-- Building an arena copy (placeholder geometry)
+--------------------------------------------------------------------------
+local function buildArena(center, arena)
+	local model = Instance.new("Model")
+	model.Name = "Arena_" .. arena.Id
+	local MP = WorldBuilder.MakePart
+	local R = ArenaConfig.Radius
+	local stone = Color3.fromRGB(176, 160, 130)
+
+	MP(model, {
+		Name = "Floor",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(2, R * 2 + 6, R * 2 + 6),
+		CFrame = CFrame.new(center - Vector3.new(0, 1, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+		Material = Enum.Material.Sandstone,
+		Color = Color3.fromRGB(196, 170, 125),
+	})
+	MP(model, {
+		Name = "Centre",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.2, 14, 14),
+		CFrame = CFrame.new(center + Vector3.new(0, 0.05, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+		Material = Enum.Material.Slate,
+		Color = arena.Color or stone,
+	})
+	-- Ring wall of blocks and columns (keeps everyone inside)
+	local segments = 24
+	for i = 0, segments - 1 do
+		local angle = (i / segments) * math.pi * 2
+		local pos = center + Vector3.new(math.cos(angle) * (R + 1.5), 0, math.sin(angle) * (R + 1.5))
+		MP(model, {
+			Name = "Wall",
+			Size = Vector3.new(2 * math.pi * (R + 1.5) / segments + 0.5, 10, 3),
+			CFrame = CFrame.lookAt(pos + Vector3.new(0, 5, 0), center + Vector3.new(0, 5, 0)),
+			Material = Enum.Material.Slate,
+			Color = stone,
+		})
+		if i % 3 == 0 then
+			MP(model, {
+				Name = "Column",
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(16, 3.5, 3.5),
+				CFrame = CFrame.new(pos + Vector3.new(0, 8, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+			})
+			local fire = Instance.new("Fire")
+			fire.Size = 6
+			fire.Heat = 10
+			fire.Parent = MP(model, {
+				Name = "Torch",
+				Size = Vector3.new(1.6, 0.6, 1.6),
+				Position = pos + Vector3.new(0, 16.3, 0),
+				Material = Enum.Material.Metal,
+				Color = Color3.fromRGB(212, 175, 55),
+			})
+		end
+	end
+	local sign = MP(model, { Name = "Sign", Size = Vector3.new(1, 1, 1), Position = center + Vector3.new(0, 20, 0), Transparency = 1, CanCollide = false })
+	WorldBuilder.AddLabel(sign, arena.DisplayName, arena.Color or Color3.new(1, 1, 1), 0)
+	model.Parent = arenasFolder
+	return model
+end
+
+--------------------------------------------------------------------------
+-- Running a run
+--------------------------------------------------------------------------
+local finish -- forward declaration
+
+local function spawnPoint(run, index, count)
+	local angle = math.rad(-150 + 300 * ((index - 0.5) / math.max(count, 1))) - math.pi / 2
+	local r = ArenaConfig.Radius - 8
+	return run.Center + Vector3.new(math.cos(angle) * r, 0, math.sin(angle) * r)
+end
+
+local function onEnemyGone(run, model)
+	if not run.Enemies[model] then
+		return
+	end
+	run.Enemies[model] = nil
+	run.Remaining -= 1
+	publish(run)
+	if run.Remaining > 0 or run.Finished or run.State ~= "Fighting" then
+		return
+	end
+	run.Cleared = run.Wave
+	if run.Wave >= #run.Arena.Waves then
+		finish(run, true)
+		return
+	end
+	run.State = "Intermission"
+	run.TimerEnd = now() + ArenaConfig.IntermissionTime
+	publish(run)
+	task.delay(ArenaConfig.IntermissionTime, function()
+		if not run.Finished then
+			ArenaService._StartWave(run, run.Wave + 1)
+		end
+	end)
+end
+
+local function spawnEnemy(run, enemyType, position, isBoss)
+	local partyExtra = run.PartySize - 1
+	local party = ArenaConfig.Party
+	local healthMultiplier = 1 + partyExtra * (if isBoss then party.BossHealthPerExtraPlayer else party.HealthPerExtraPlayer)
+	local cframe = CFrame.lookAt(position, Vector3.new(run.Center.X, position.Y, run.Center.Z))
+	local model
+	model = EnemyService.Spawn(enemyType, cframe, {
+		HealthMultiplier = healthMultiplier,
+		AggroRange = ArenaConfig.Radius * 3, -- arena enemies always find you
+		LeashRange = ArenaConfig.Radius * 3,
+		Attributes = { RunId = run.Id },
+		OnDeath = function(deadModel)
+			onEnemyGone(run, deadModel)
+		end,
+		OnPhase2 = function(bossModel)
+			local cfg = CombatConfig.Enemies[enemyType]
+			local phase2 = cfg.Phase2
+			for player in run.Alive do
+				message(player, phase2.Message or "The boss is enraged!")
+			end
+			local root = bossModel:FindFirstChild("HumanoidRootPart")
+			local i = 0
+			for addType, count in phase2.Summon or {} do
+				for _ = 1, count do
+					i += 1
+					local base = if root then root.Position - Vector3.new(0, 3, 0) else run.Center
+					local offset = Vector3.new(math.cos(i * 2.1) * 8, 0, math.sin(i * 2.1) * 8)
+					spawnEnemy(run, addType, base + offset, false)
+				end
+			end
+			publish(run) -- show the summoned enemies in "Enemies left"
+		end,
+	})
+	if model then
+		run.Enemies[model] = true
+		run.Remaining += 1
+	end
+	return model
+end
+
+function ArenaService._StartWave(run, index)
+	run.Wave = index
+	run.State = "Fighting"
+	run.TimerEnd = 0
+	local wave = run.Arena.Waves[index]
+	local extra = (run.PartySize - 1) * ArenaConfig.Party.CountPerExtraPlayer
+
+	-- Work out the list first, so the remaining count is right from the start.
+	local list = {}
+	if wave.Boss then
+		table.insert(list, { wave.Boss, true })
+	end
+	for enemyType, count in wave do
+		if enemyType ~= "Boss" then
+			for _ = 1, math.floor(count * (1 + extra) + 0.5) do
+				table.insert(list, { enemyType, false })
+			end
+		end
+	end
+	for i, entry in list do
+		local position = if entry[2] then run.Center + Vector3.new(0, 0, -ArenaConfig.Radius + 12) else spawnPoint(run, i, #list)
+		spawnEnemy(run, entry[1], position, entry[2])
+	end
+	publish(run)
+	for player in run.Alive do
+		message(player, if wave.Boss then "Final wave: the boss appears!" else ("Wave %d of %d"):format(index, #run.Arena.Waves))
+	end
+end
+
+local function returnHome(player)
+	if player.Parent then
+		PlotService.TeleportPlayer(player, "Plaza")
+		clearAttributes(player)
+	end
+	playerRun[player] = nil
+end
+
+local function cleanup(run)
+	for model in run.Enemies do
+		EnemyService.Remove(model)
+	end
+	run.Enemies = {}
+	if run.Model then
+		run.Model:Destroy()
+	end
+	for _, connection in run.Connections do
+		connection:Disconnect()
+	end
+	slotUsed[run.Slot] = nil
+	runs[run.Id] = nil
+end
+
+finish = function(run, victory)
+	if run.Finished then
+		return
+	end
+	run.Finished = true
+	run.State = if victory then "Victory" else "Failed"
+	run.TimerEnd = now() + ArenaConfig.ReturnDelay
+
+	-- Remaining enemies vanish (no rewards for them).
+	for model in run.Enemies do
+		EnemyService.Remove(model)
+	end
+	run.Enemies = {}
+	run.Remaining = 0
+	publish(run)
+
+	local rewards = run.Arena.Rewards
+	local multiplier = if victory then 1 else ArenaConfig.FailRewardMultiplier * (run.Cleared / #run.Arena.Waves)
+	local elapsed = math.floor(os.clock() - run.StartedAt)
+	for player in run.Players do
+		if player.Parent and DataService.GetData(player) then
+			local paid = {}
+			for currency, amount in rewards do
+				local value = math.floor(amount * multiplier)
+				if currency == "Ambrosia" and not victory then
+					value = 0 -- Ambrosia only for winning
+				end
+				if value > 0 then
+					if currency == "XP" then
+						ProgressionService.AddXP(player, value, "Arena")
+					else
+						ProgressionService.AddCurrency(player, currency, value, "Arena")
+					end
+					paid[currency] = value
+				end
+			end
+			arenaEvent:FireClient(player, "Result", {
+				Victory = victory,
+				Arena = run.Arena.DisplayName,
+				WavesCleared = run.Cleared,
+				Waves = #run.Arena.Waves,
+				Seconds = elapsed,
+				Rewards = paid,
+			})
+		end
+	end
+
+	task.delay(ArenaConfig.ReturnDelay, function()
+		for player in run.Players do
+			if playerRun[player] == run then
+				returnHome(player)
+			end
+		end
+		cleanup(run)
+	end)
+end
+
+-- A player stops taking part (died, left the arena or the game).
+local function playerOut(run, player)
+	if not run.Alive[player] then
+		return
+	end
+	run.Alive[player] = nil
+	if not run.Finished and next(run.Alive) == nil then
+		finish(run, false)
+	end
+end
+
+local function startRun(arenaId, members)
+	local arena = ArenaConfig.ById[arenaId]
+	if not arena or not arena.Available then
+		return false, "That arena isn't open yet."
+	end
+	local slot = nil
+	for i = 1, ArenaConfig.MaxRuns do
+		if not slotUsed[i] then
+			slot = i
+			break
+		end
+	end
+	if not slot then
+		return false, "All arenas are busy. Try again in a minute."
+	end
+	local ready = {}
+	for _, player in members do
+		if player.Parent and not playerRun[player] and aliveRoot(player) and playerLevel(player) >= arena.MinLevel then
+			table.insert(ready, player)
+		end
+	end
+	if #ready == 0 then
+		return false, ("You need level %d and to be alive to enter."):format(arena.MinLevel)
+	end
+
+	slotUsed[slot] = true
+	nextRunId += 1
+	local center = ArenaConfig.Origin + Vector3.new((slot - 1) * ArenaConfig.SlotSpacing, 0, 0)
+	local run = {
+		Id = nextRunId,
+		Arena = arena,
+		Slot = slot,
+		Center = center,
+		Players = {},
+		Alive = {},
+		PartySize = #ready,
+		Wave = 0,
+		Cleared = 0,
+		Remaining = 0,
+		Enemies = {},
+		State = "Countdown",
+		TimerEnd = now() + ArenaConfig.CountdownTime,
+		Finished = false,
+		StartedAt = os.clock(),
+		Connections = {},
+	}
+	runs[run.Id] = run
+	run.Model = buildArena(center, arena)
+
+	for i, player in ready do
+		leaveQueue(player)
+		run.Players[player] = true
+		run.Alive[player] = true
+		playerRun[player] = run
+		local pos = center + Vector3.new((i - (#ready + 1) / 2) * 5, 3, ArenaConfig.Radius - 10)
+		player.Character:PivotTo(CFrame.lookAt(pos, Vector3.new(center.X, pos.Y, center.Z)))
+		local _, humanoid = aliveRoot(player)
+		if humanoid then
+			table.insert(run.Connections, humanoid.Died:Connect(function()
+				playerOut(run, player)
+			end))
+		end
+	end
+	publish(run)
+	task.delay(ArenaConfig.CountdownTime, function()
+		if not run.Finished then
+			ArenaService._StartWave(run, 1)
+		end
+	end)
+	return true, run
+end
+
+--------------------------------------------------------------------------
+-- Requests
+--------------------------------------------------------------------------
+function ArenaService.StartSolo(player, arenaId)
+	if playerRun[player] then
+		return false
+	end
+	local ok, result = startRun(arenaId, { player })
+	if not ok then
+		message(player, result)
+	end
+	return ok, result
+end
+
+function ArenaService.JoinQueue(player, arenaId)
+	local arena = ArenaConfig.ById[arenaId]
+	if not arena or playerRun[player] then
+		return false
+	end
+	local reason = ArenaConfig.LockReason(arena, playerLevel(player))
+	if reason then
+		message(player, reason .. " to enter " .. arena.DisplayName .. ".")
+		return false
+	end
+	leaveQueue(player)
+	queues[arenaId] = queues[arenaId] or {}
+	if #queues[arenaId] >= ArenaConfig.Party.MaxPlayers then
+		message(player, "That party is full.")
+		return false
+	end
+	table.insert(queues[arenaId], player)
+	sendQueue(arenaId)
+	return true
+end
+
+function ArenaService.StartParty(player)
+	for arenaId, queue in queues do
+		if table.find(queue, player) then
+			local members = table.clone(queue)
+			local ok, result = startRun(arenaId, members)
+			if not ok then
+				message(player, result)
+			end
+			return ok, result
+		end
+	end
+	return false
+end
+
+-- Leaving: during a run you're out; after it you just go home early.
+function ArenaService.Leave(player)
+	local run = playerRun[player]
+	if not run then
+		return false
+	end
+	playerOut(run, player)
+	returnHome(player)
+	return true
+end
+
+function ArenaService.IsInRun(player)
+	return playerRun[player] ~= nil
+end
+
+--------------------------------------------------------------------------
+-- Arena Gate in Olympus Plaza
+--------------------------------------------------------------------------
+function ArenaService.BuildGate()
+	local hub = Workspace:WaitForChild("Hub")
+	local marker = hub:FindFirstChild("Arena Gate")
+	if marker then
+		marker:Destroy() -- the old "coming in Phase 5" marker
+	end
+	if hub:FindFirstChild("ArenaGate") then
+		return
+	end
+	local gate = Instance.new("Model")
+	gate.Name = "ArenaGate"
+	local MP = WorldBuilder.MakePart
+	local base = Vector3.new(-44, 1, 0)
+	local bronze = Color3.fromRGB(150, 95, 45)
+	for _, z in { -5, 5 } do
+		MP(gate, {
+			Name = "Pillar",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(14, 2.4, 2.4),
+			CFrame = CFrame.new(base + Vector3.new(0, 7, z)) * CFrame.Angles(0, 0, math.rad(90)),
+		})
+	end
+	MP(gate, { Name = "Lintel", Size = Vector3.new(3, 2, 13), Position = base + Vector3.new(0, 15, 0), Material = Enum.Material.Metal, Color = bronze })
+	local portal = MP(gate, {
+		Name = "Portal",
+		Size = Vector3.new(0.4, 13, 8),
+		Position = base + Vector3.new(0, 7.5, 0),
+		Material = Enum.Material.Neon,
+		Color = Color3.fromRGB(230, 90, 50),
+		Transparency = 0.35,
+		CanCollide = false,
+	})
+	WorldBuilder.AddLabel(portal, "Arena Gate", Color3.fromRGB(255, 140, 90), 9)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = "Open"
+	prompt.ObjectText = "Arena Gate"
+	prompt.HoldDuration = 0.2
+	prompt.MaxActivationDistance = 12
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = portal
+	prompt.Triggered:Connect(function(player)
+		notifyRemote:FireClient(player, "OpenArenaMenu")
+	end)
+	gate.Parent = hub
+end
+
+--------------------------------------------------------------------------
+-- Setup
+--------------------------------------------------------------------------
+function ArenaService.Init(dataService, progressionService, plotService, enemyService, notifyRemoteEvent, arenaActionRemote, arenaEventRemote)
+	DataService = dataService
+	ProgressionService = progressionService
+	PlotService = plotService
+	EnemyService = enemyService
+	notifyRemote = notifyRemoteEvent
+	arenaEvent = arenaEventRemote
+
+	arenasFolder = Workspace:FindFirstChild("Arenas") or Instance.new("Folder")
+	arenasFolder.Name = "Arenas"
+	arenasFolder.Parent = Workspace
+
+	if arenaActionRemote then
+		local last = {}
+		arenaActionRemote.OnServerEvent:Connect(function(player, action, arg)
+			local t = os.clock()
+			if last[player] and t - last[player] < 0.5 then
+				return
+			end
+			last[player] = t
+			if action == "StartSolo" and type(arg) == "string" then
+				ArenaService.StartSolo(player, arg)
+			elseif action == "JoinQueue" and type(arg) == "string" then
+				ArenaService.JoinQueue(player, arg)
+			elseif action == "LeaveQueue" then
+				leaveQueue(player)
+			elseif action == "StartParty" then
+				ArenaService.StartParty(player)
+			elseif action == "Leave" then
+				ArenaService.Leave(player)
+			end
+		end)
+	end
+end
+
+function ArenaService.ReleasePlayer(player)
+	leaveQueue(player)
+	local run = playerRun[player]
+	if run then
+		playerOut(run, player)
+		run.Players[player] = nil
+		playerRun[player] = nil
+	end
+end
+
+-- Test helpers
+function ArenaService._GetRun(player)
+	return playerRun[player]
+end
+function ArenaService._PlayerOut(player)
+	local run = playerRun[player]
+	if run then
+		playerOut(run, player)
+	end
+end
+
+return ArenaService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="24">
         <Properties>
           <string name="Name">CombatService</string>
           <string name="Source"><![CDATA[-- CombatService (ModuleScript)
@@ -2544,7 +3294,7 @@ return CombatService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="23">
+      <Item class="ModuleScript" referent="25">
         <Properties>
           <string name="Name">DataService</string>
           <string name="Source"><![CDATA[-- DataService (ModuleScript)
@@ -2924,7 +3674,7 @@ return DataService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="24">
+      <Item class="ModuleScript" referent="26">
         <Properties>
           <string name="Name">DiagnosticsService</string>
           <string name="Source"><![CDATA[-- DiagnosticsService (ModuleScript)
@@ -3025,7 +3775,7 @@ return DiagnosticsService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="25">
+      <Item class="ModuleScript" referent="27">
         <Properties>
           <string name="Name">EnemyService</string>
           <string name="Source"><![CDATA[-- EnemyService (ModuleScript)
@@ -3041,9 +3791,16 @@ return DiagnosticsService
 --   * Health bar over its head, damage numbers, death effect.
 --   * Rewards XP + Gold ONCE per kill to every player who damaged it.
 --
+--   * Bosses (CombatConfig `Boss = true`): special attacks with big red
+--     warnings (Slam: a circle; Charge: a line), an enraged second phase, and
+--     no knockback or stagger.
+--
 -- Used by later systems:
 --   EnemyService.Spawn(enemyType, cframe, options) -> model
---       options = { HealthMultiplier, DamageMultiplier, RewardMultiplier, OnDeath = function(model) }
+--       options = { HealthMultiplier, DamageMultiplier, RewardMultiplier,
+--                   AggroRange, LeashRange, Attributes = { name = value },
+--                   OnDeath = function(model), OnPhase2 = function(model) }
+--   EnemyService.Remove(model) -- removes an enemy silently (no rewards)
 --   EnemyService.DamageEnemy(model, amount, player) -> true/false
 --   EnemyService.GetEnemiesInRange(position, range) -> { record, ... }
 
@@ -3129,6 +3886,8 @@ local function buildRig(look)
 		description.RightLegColor = look.Pants
 		description.WidthScale = look.Width
 		description.DepthScale = look.Width
+		description.HeightScale = look.Height or 1
+		description.HeadScale = look.Height or 1
 		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R15)
 	end)
 	if ok and model then
@@ -3138,19 +3897,20 @@ local function buildRig(look)
 	return buildFallbackRig(look)
 end
 
-local function addWeapon(model, color)
+local function addWeapon(model, color, length)
 	local hand = model:FindFirstChild("RightHand") or model:FindFirstChild("UpperTorso")
 	if not hand or not color then
 		return
 	end
+	length = length or 3.6
 	local blade = Instance.new("Part")
 	blade.Name = "Weapon"
-	blade.Size = Vector3.new(0.25, 0.4, 3.6)
+	blade.Size = Vector3.new(0.25 * length / 3.6, 0.4 * length / 3.6, length)
 	blade.Material = Enum.Material.Metal
 	blade.Color = color
 	blade.CanCollide = false
 	blade.Massless = true
-	blade.CFrame = hand.CFrame * CFrame.new(0, -0.2, -1.8)
+	blade.CFrame = hand.CFrame * CFrame.new(0, -0.2, -length / 2)
 	local weld = Instance.new("WeldConstraint")
 	weld.Part0 = hand
 	weld.Part1 = blade
@@ -3227,7 +3987,7 @@ local function makeBody(enemyType, cfg)
 	if templates[enemyType] == nil then
 		templates[enemyType] = false -- "being built": other spawns wait for it
 		local template = buildRig(cfg.Appearance)
-		addWeapon(template, cfg.Appearance.Weapon)
+		addWeapon(template, cfg.Appearance.Weapon, cfg.Appearance.WeaponLength)
 		templates[enemyType] = template
 	end
 	while templates[enemyType] == false do
@@ -3318,12 +4078,11 @@ local function aliveCharacterRoot(player)
 end
 
 local function findTarget(record)
-	local cfg = record.Config
 	-- Whoever hit it recently is chased first (even from a little further away).
 	local attacker = record.LastAttacker
 	if attacker and attacker.Parent and os.clock() - record.LastDamagedAt < HEAL_DELAY then
 		local root = aliveCharacterRoot(attacker)
-		if root and (root.Position - record.Home).Magnitude <= cfg.LeashRange then
+		if root and (root.Position - record.Home).Magnitude <= record.LeashRange then
 			return attacker, (root.Position - record.Root.Position).Magnitude
 		end
 	end
@@ -3332,9 +4091,9 @@ local function findTarget(record)
 		local root = aliveCharacterRoot(player)
 		if root then
 			local distance = (root.Position - record.Root.Position).Magnitude
-			local range = if record.Target == player then cfg.AggroRange * 1.5 else cfg.AggroRange
+			local range = if record.Target == player then record.AggroRange * 1.5 else record.AggroRange
 			local fromHome = (root.Position - record.Home).Magnitude
-			if distance <= range and fromHome <= cfg.LeashRange and distance < bestDistance then
+			if distance <= range and fromHome <= record.LeashRange and distance < bestDistance then
 				best, bestDistance = player, distance
 			end
 		end
@@ -3408,9 +4167,140 @@ local function startAttack(record, target)
 				end
 			end
 		end
-		record.NextAttackAt = os.clock() + cfg.AttackCooldown
+		record.NextAttackAt = os.clock() + cfg.AttackCooldown * record.CooldownMultiplier
 		record.State = "Chase"
 	end)
+end
+
+--------------------------------------------------------------------------
+-- Boss special attacks
+--------------------------------------------------------------------------
+local WARNING_RED = Color3.fromRGB(255, 50, 40)
+
+local function warningPart(props)
+	local part = Instance.new("Part")
+	part.Name = "AttackWarning"
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.Material = Enum.Material.Neon
+	part.Color = WARNING_RED
+	part.Transparency = 0.55
+	for key, value in props do
+		part[key] = value
+	end
+	part.Parent = folder
+	return part
+end
+
+local function groundUnder(record)
+	return record.Root.Position.Y - record.Root.Size.Y / 2 - record.Humanoid.HipHeight + 0.1
+end
+
+local function glowWeapon(record)
+	local weapon = record.Model:FindFirstChild("Weapon")
+	if weapon then
+		record.WeaponLook = record.WeaponLook or { Material = weapon.Material, Color = weapon.Color }
+		weapon.Material = Enum.Material.Neon
+		weapon.Color = WARNING_RED
+	end
+end
+
+local function startSpecial(record, target, attack)
+	record.State = "Windup"
+	record.AttackReadyAt[attack.Name] = os.clock() + attack.Windup + attack.Cooldown * record.CooldownMultiplier
+	record.Humanoid:MoveTo(record.Root.Position)
+	local targetRoot = aliveCharacterRoot(target)
+	if targetRoot then
+		face(record, targetRoot.Position)
+	end
+	glowWeapon(record)
+	fxRemote:FireAllClients("EnemyAttack", record.Root.Position, record.Model, attack.Windup)
+	local root = record.Root
+	local ground = groundUnder(record)
+	local origin = Vector3.new(root.Position.X, ground, root.Position.Z)
+	local look = flat(root.CFrame.LookVector).Unit
+	local damage = attack.Damage * record.DamageMultiplier
+
+	if attack.Kind == "Slam" then
+		-- A big red circle around the boss; everyone inside when it lands is hit.
+		local d = attack.Radius * 2
+		local ring = warningPart({
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.2, d, d),
+			CFrame = CFrame.new(origin) * CFrame.Angles(0, 0, math.rad(90)),
+		})
+		record.Telegraph = { ring }
+		task.delay(attack.Windup, function()
+			clearTelegraph(record)
+			if record.Dead or not record.Model.Parent then
+				return
+			end
+			for _, player in getPlayers() do
+				local playerRoot = aliveCharacterRoot(player)
+				if playerRoot and flat(playerRoot.Position - origin).Magnitude <= attack.Radius then
+					CombatService.DamagePlayer(player, damage, origin)
+				end
+			end
+			fxRemote:FireAllClients("Shockwave", root.Position, WARNING_RED, attack.Radius)
+			record.State = "Chase"
+		end)
+	elseif attack.Kind == "Charge" then
+		-- A red lane in front; the boss rushes down it, hitting everyone inside.
+		local lane = warningPart({
+			Size = Vector3.new(attack.Width, 0.2, attack.Length),
+			CFrame = CFrame.lookAt(origin + look * (attack.Length / 2), origin + look * attack.Length),
+		})
+		record.Telegraph = { lane }
+		task.delay(attack.Windup, function()
+			clearTelegraph(record)
+			if record.Dead or not record.Model.Parent then
+				return
+			end
+			local finish = origin + look * attack.Length
+			for _, player in getPlayers() do
+				local playerRoot = aliveCharacterRoot(player)
+				if playerRoot then
+					local offset = flat(playerRoot.Position - origin)
+					local along = offset:Dot(look)
+					local side = (offset - look * along).Magnitude
+					if along >= -1 and along <= attack.Length + 1 and side <= attack.Width / 2 + 1 then
+						CombatService.DamagePlayer(player, damage, origin)
+					end
+				end
+			end
+			-- The rush itself
+			local attachment = Instance.new("Attachment")
+			attachment.Parent = root
+			local push = Instance.new("LinearVelocity")
+			push.Attachment0 = attachment
+			push.RelativeTo = Enum.ActuatorRelativeTo.World
+			push.VectorVelocity = look * (attack.Length / 0.4)
+			push.MaxForce = 200000
+			push.Parent = root
+			Debris:AddItem(push, 0.4)
+			Debris:AddItem(attachment, 0.4)
+			fxRemote:FireAllClients("DashTrail", root.Position, WARNING_RED, finish + Vector3.new(0, root.Position.Y - origin.Y, 0))
+			task.delay(0.45, function()
+				record.State = "Chase"
+			end)
+		end)
+	end
+end
+
+-- A special attack that is ready and fits the distance, or nil.
+local function pickSpecial(record, distance, now)
+	local attacks = record.Config.Attacks
+	if not attacks then
+		return nil
+	end
+	for _, attack in attacks do
+		if now >= (record.AttackReadyAt[attack.Name] or 0) and distance <= attack.Range and distance >= (attack.MinRange or 0) then
+			return attack
+		end
+	end
+	return nil
 end
 
 local function think(record, now)
@@ -3434,7 +4324,7 @@ local function think(record, now)
 	record.Target = target
 	local fromHome = (record.Root.Position - record.Home).Magnitude
 
-	if not target or fromHome > cfg.LeashRange then
+	if not target or fromHome > record.LeashRange then
 		-- Go home, and heal up once nobody has hit it for a while.
 		if fromHome > 3 then
 			humanoid:MoveTo(record.Home)
@@ -3445,7 +4335,10 @@ local function think(record, now)
 	end
 
 	local targetRoot = aliveCharacterRoot(target)
-	if distance > cfg.AttackRange then
+	local special = pickSpecial(record, distance, now)
+	if special then
+		startSpecial(record, target, special)
+	elseif distance > cfg.AttackRange then
 		humanoid:MoveTo(targetRoot.Position)
 	elseif now >= record.NextAttackAt then
 		startAttack(record, target)
@@ -3589,6 +4482,13 @@ function EnemyService.Spawn(enemyType, cframe, options)
 		model:SetAttribute("Dummy", true) -- clients wobble it when hit
 	end
 	model:SetAttribute("IsEnemy", true)
+	if cfg.Boss then
+		model:SetAttribute("IsBoss", true)
+		model:SetAttribute("DisplayName", cfg.DisplayName)
+	end
+	for key, value in options.Attributes or {} do
+		model:SetAttribute(key, value)
+	end
 	model.Parent = folder
 	if not root.Anchored then
 		pcall(function()
@@ -3613,8 +4513,18 @@ function EnemyService.Spawn(enemyType, cframe, options)
 		DamageMultiplier = options.DamageMultiplier or 1,
 		RewardMultiplier = options.RewardMultiplier or 1,
 		OnDeath = options.OnDeath,
+		OnPhase2 = options.OnPhase2,
 		StaggerUntil = 0,
+		AggroRange = options.AggroRange or cfg.AggroRange or 0,
+		LeashRange = options.LeashRange or cfg.LeashRange or 0,
+		AttackReadyAt = {},
+		CooldownMultiplier = 1,
+		Phase2 = false,
 	}
+	-- Special attacks start on a short delay so a boss doesn't open with one.
+	for _, attack in cfg.Attacks or {} do
+		record.AttackReadyAt[attack.Name] = os.clock() + 3
+	end
 	addHealthBar(record)
 
 	local walkTrack = if cfg.Passive then nil else loadAnimation(humanoid, WALK_ANIMATION)
@@ -3673,6 +4583,21 @@ function EnemyService.DamageEnemy(model, amount, player, options)
 		return true
 	end
 
+	-- Boss second phase.
+	local phase2 = record.Config.Phase2
+	if phase2 and not record.Phase2 and record.Humanoid.Health <= record.Humanoid.MaxHealth * phase2.At then
+		record.Phase2 = true
+		record.CooldownMultiplier = phase2.CooldownMultiplier or 1
+		record.Humanoid.WalkSpeed *= phase2.SpeedMultiplier or 1
+		model:SetAttribute("Enraged", true)
+		if record.OnPhase2 then
+			task.spawn(record.OnPhase2, model)
+		end
+	end
+	if record.Config.Boss then
+		return true -- bosses aren't knocked back or staggered
+	end
+
 	-- Knock it back a little and interrupt its walking (not a wind-up already started).
 	local attackerRoot = player and aliveCharacterRoot(player)
 	if attackerRoot and not record.Root.Anchored then
@@ -3694,6 +4619,19 @@ function EnemyService.DamageEnemy(model, amount, player, options)
 		record.StaggerUntil = now + STAGGER_TIME
 	end
 	return true
+end
+
+-- Removes an enemy without rewards (e.g. when an arena run ends).
+function EnemyService.Remove(model)
+	local record = enemies[model]
+	if record then
+		record.Dead = true
+		enemies[model] = nil
+		clearTelegraph(record)
+	end
+	if model then
+		model:Destroy()
+	end
 end
 
 -- Living enemies whose root is within `range` of `position`.
@@ -3743,7 +4681,7 @@ return EnemyService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="26">
+      <Item class="ModuleScript" referent="28">
         <Properties>
           <string name="Name">GodService</string>
           <string name="Source"><![CDATA[-- GodService (ModuleScript)
@@ -4199,7 +5137,7 @@ return GodService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="27">
+      <Item class="ModuleScript" referent="29">
         <Properties>
           <string name="Name">PlotService</string>
           <string name="Source"><![CDATA[-- PlotService (ModuleScript)
@@ -4327,7 +5265,7 @@ return PlotService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="28">
+      <Item class="ModuleScript" referent="30">
         <Properties>
           <string name="Name">ProgressionService</string>
           <string name="Source"><![CDATA[-- ProgressionService (ModuleScript)
@@ -4602,7 +5540,7 @@ return ProgressionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="29">
+      <Item class="ModuleScript" referent="31">
         <Properties>
           <string name="Name">TempleModels</string>
           <string name="Source"><![CDATA[-- TempleModels (ModuleScript)
@@ -5084,7 +6022,7 @@ return TempleModels
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="30">
+      <Item class="ModuleScript" referent="32">
         <Properties>
           <string name="Name">TempleService</string>
           <string name="Source"><![CDATA[-- TempleService (ModuleScript)
@@ -5491,7 +6429,7 @@ return TempleService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="31">
+      <Item class="ModuleScript" referent="33">
         <Properties>
           <string name="Name">WorldBuilder</string>
           <string name="Source"><![CDATA[-- WorldBuilder (ModuleScript)
@@ -5731,16 +6669,16 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="32">
+  <Item class="StarterPlayer" referent="34">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <token name="AvatarJointUpgrade_SerializedRollout">1</token>
     </Properties>
-    <Item class="StarterCharacterScripts" referent="33">
+    <Item class="StarterCharacterScripts" referent="35">
       <Properties>
         <string name="Name">StarterCharacterScripts</string>
       </Properties>
-      <Item class="Script" referent="34">
+      <Item class="Script" referent="36">
         <Properties>
           <string name="Name">Health</string>
           <token name="RunContext">0</token>
@@ -5754,11 +6692,11 @@ return WorldBuilder
         </Properties>
       </Item>
     </Item>
-    <Item class="StarterPlayerScripts" referent="35">
+    <Item class="StarterPlayerScripts" referent="37">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="36">
+      <Item class="LocalScript" referent="38">
         <Properties>
           <string name="Name">AbilityController</string>
           <string name="Source"><![CDATA[-- AbilityController (LocalScript)
@@ -6225,7 +7163,359 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="37">
+      <Item class="LocalScript" referent="39">
+        <Properties>
+          <string name="Name">ArenaUI</string>
+          <string name="Source"><![CDATA[-- ArenaUI (LocalScript)
+-- Location: StarterPlayer > StarterPlayerScripts > ArenaUI
+--
+-- Phase 5 interface:
+--   * Arena Gate menu: arenas with level ranges / lock reasons, Fight Solo,
+--     Join Party, and the party list with Start / Leave.
+--   * During a run: wave and enemies-left tracker, countdowns, boss health bar,
+--     and a Leave button.
+--   * Results screen (victory or defeat) with rewards.
+-- Display only: the server runs the arena and decides everything.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local ArenaConfig = require(Shared:WaitForChild("ArenaConfig"))
+local Progression = require(Shared:WaitForChild("Progression"))
+
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local actionRemote = Remotes:WaitForChild("ArenaAction")
+local eventRemote = Remotes:WaitForChild("ArenaEvent")
+local notifyRemote = Remotes:WaitForChild("Notify")
+
+local THEME = {
+	Marble = Color3.fromRGB(246, 242, 232),
+	MarbleDark = Color3.fromRGB(228, 220, 204),
+	Gold = Color3.fromRGB(212, 175, 55),
+	Bronze = Color3.fromRGB(140, 92, 45),
+	Text = Color3.fromRGB(58, 44, 28),
+	SubText = Color3.fromRGB(110, 95, 75),
+	White = Color3.new(1, 1, 1),
+	Ready = Color3.fromRGB(70, 150, 70),
+	Party = Color3.fromRGB(70, 110, 180),
+	Locked = Color3.fromRGB(130, 130, 140),
+	Danger = Color3.fromRGB(190, 50, 40),
+}
+local TITLE_FONT = Enum.Font.Garamond
+local BODY_FONT = Enum.Font.GothamBold
+local SMALL_FONT = Enum.Font.Gotham
+
+--------------------------------------------------------------------------
+-- Small UI helpers
+--------------------------------------------------------------------------
+local function create(className, props, children)
+	local inst = Instance.new(className)
+	for key, value in props do
+		if key ~= "Parent" then
+			inst[key] = value
+		end
+	end
+	for _, child in children or {} do
+		child.Parent = inst
+	end
+	if props.Parent then
+		inst.Parent = props.Parent
+	end
+	return inst
+end
+local function corner(r)
+	return create("UICorner", { CornerRadius = UDim.new(0, r) })
+end
+local function stroke(color, thickness)
+	return create("UIStroke", { Color = color, Thickness = thickness, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+end
+local function padding(px)
+	return create("UIPadding", { PaddingTop = UDim.new(0, px), PaddingBottom = UDim.new(0, px), PaddingLeft = UDim.new(0, px), PaddingRight = UDim.new(0, px) })
+end
+local function text(props)
+	props.BackgroundTransparency = 1
+	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
+	props.TextColor3 = props.TextColor3 or THEME.Text
+	props.Font = props.Font or SMALL_FONT
+	return create("TextLabel", props)
+end
+local function button(props)
+	props.AutoButtonColor = true
+	props.Font = props.Font or BODY_FONT
+	props.TextColor3 = props.TextColor3 or THEME.White
+	props.TextSize = props.TextSize or 15
+	return create("TextButton", props, { corner(8) })
+end
+
+local gui = create("ScreenGui", { Name = "ArenaUI", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, DisplayOrder = 7, Parent = playerGui })
+local uiScale = create("UIScale", { Parent = gui })
+local function updateScale()
+	local camera = Workspace.CurrentCamera
+	local viewport = if camera then camera.ViewportSize else Vector2.new(1280, 720)
+	uiScale.Scale = math.clamp(math.min(viewport.X / 1280, viewport.Y / 720), 0.7, 1.2)
+end
+updateScale()
+if Workspace.CurrentCamera then
+	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+end
+
+local function serverNow()
+	return Workspace:GetServerTimeNow()
+end
+
+--------------------------------------------------------------------------
+-- 1. Arena Gate menu
+--------------------------------------------------------------------------
+local menu = create("Frame", {
+	Name = "Menu",
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(640, 500),
+	BackgroundColor3 = THEME.Marble,
+	Visible = false,
+	Parent = gui,
+}, { corner(12), stroke(Color3.fromRGB(230, 90, 50), 3), padding(14) })
+text({ Size = UDim2.new(1, -50, 0, 36), Font = TITLE_FONT, TextSize = 34, Text = "Arena Gate", Parent = menu })
+local closeMenu = button({ AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.fromOffset(40, 40), BackgroundColor3 = THEME.Bronze, Text = "X", TextSize = 20, Parent = menu })
+text({ Position = UDim2.fromOffset(0, 38), Size = UDim2.new(1, 0, 0, 18), TextSize = 14, TextColor3 = THEME.SubText, Text = "5 waves, a boss in the last one. Fight alone or with up to 4 players.", Parent = menu })
+
+local partyBar = create("Frame", {
+	Name = "Party",
+	AnchorPoint = Vector2.new(0, 1),
+	Position = UDim2.fromScale(0, 1),
+	Size = UDim2.new(1, 0, 0, 56),
+	BackgroundColor3 = Color3.fromRGB(215, 225, 240),
+	Visible = false,
+	Parent = menu,
+}, { corner(8), padding(8) })
+local partyLabel = text({ Size = UDim2.new(1, -240, 1, 0), Font = BODY_FONT, TextSize = 14, TextWrapped = true, Text = "", Parent = partyBar })
+local startParty = button({ AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -112, 0.5, 0), Size = UDim2.fromOffset(110, 40), BackgroundColor3 = THEME.Ready, Text = "Start", Parent = partyBar })
+local leaveParty = button({ AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(104, 40), BackgroundColor3 = THEME.Bronze, Text = "Leave party", Parent = partyBar })
+
+local list = create("ScrollingFrame", {
+	Position = UDim2.fromOffset(0, 64),
+	Size = UDim2.new(1, 0, 1, -64),
+	BackgroundTransparency = 1,
+	BorderSizePixel = 0,
+	ScrollBarThickness = 6,
+	ScrollBarImageColor3 = THEME.Bronze,
+	CanvasSize = UDim2.new(),
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	Parent = menu,
+}, { create("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }), create("UIPadding", { PaddingRight = UDim.new(0, 10) }) })
+
+local rows = {}
+for order, arena in ArenaConfig.Arenas do
+	local row = create("Frame", { Size = UDim2.new(1, 0, 0, 72), BackgroundColor3 = THEME.MarbleDark, LayoutOrder = order, Parent = list }, { corner(8), padding(8) })
+	text({ Size = UDim2.new(1, -240, 0, 22), Font = BODY_FONT, TextSize = 17, TextColor3 = arena.Color or THEME.Text, Text = arena.DisplayName, Parent = row })
+	text({ Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, -240, 0, 18), TextSize = 13, TextColor3 = THEME.SubText, Text = ("Levels %d-%d · %s"):format(arena.MinLevel, arena.MaxLevel, arena.Description), TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
+	local status = text({ Position = UDim2.fromOffset(0, 42), Size = UDim2.new(1, -240, 0, 16), Font = BODY_FONT, TextSize = 13, TextColor3 = THEME.Danger, Text = "", Parent = row })
+	local solo = button({ AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -116, 0.5, 0), Size = UDim2.fromOffset(110, 44), BackgroundColor3 = THEME.Ready, Text = "Fight Solo", Parent = row })
+	local party = button({ AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(110, 44), BackgroundColor3 = THEME.Party, Text = "Join Party", Parent = row })
+	solo.Activated:Connect(function()
+		if not ArenaConfig.LockReason(arena, player:GetAttribute("Level") or 1) then
+			actionRemote:FireServer("StartSolo", arena.Id)
+			menu.Visible = false
+		end
+	end)
+	party.Activated:Connect(function()
+		if not ArenaConfig.LockReason(arena, player:GetAttribute("Level") or 1) then
+			actionRemote:FireServer("JoinQueue", arena.Id)
+		end
+	end)
+	rows[arena.Id] = { Arena = arena, Status = status, Solo = solo, Party = party }
+end
+
+local function refreshMenu()
+	local level = player:GetAttribute("Level") or 1
+	for _, r in rows do
+		local reason = ArenaConfig.LockReason(r.Arena, level)
+		r.Status.Text = if reason then "Locked: " .. reason else ""
+		r.Solo.Visible = reason == nil
+		r.Party.Visible = reason == nil
+	end
+end
+player:GetAttributeChangedSignal("Level"):Connect(refreshMenu)
+refreshMenu()
+
+closeMenu.Activated:Connect(function()
+	menu.Visible = false
+end)
+startParty.Activated:Connect(function()
+	actionRemote:FireServer("StartParty")
+	menu.Visible = false
+end)
+leaveParty.Activated:Connect(function()
+	actionRemote:FireServer("LeaveQueue")
+end)
+
+--------------------------------------------------------------------------
+-- 2. In-run tracker and boss bar (top centre)
+--------------------------------------------------------------------------
+local tracker = create("Frame", {
+	Name = "Tracker",
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 8),
+	Size = UDim2.fromOffset(420, 64),
+	BackgroundColor3 = THEME.Marble,
+	BackgroundTransparency = 0.05,
+	Visible = false,
+	Parent = gui,
+}, { corner(10), stroke(THEME.Gold, 2), padding(8) })
+local trackerTitle = text({ Size = UDim2.new(1, -90, 0, 22), Font = TITLE_FONT, TextSize = 22, Text = "", Parent = tracker })
+local trackerStatus = text({ Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, -90, 0, 22), Font = BODY_FONT, TextSize = 16, Text = "", Parent = tracker })
+local leaveButton = button({ AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.fromOffset(80, 40), BackgroundColor3 = THEME.Danger, Text = "Leave", Parent = tracker })
+leaveButton.Activated:Connect(function()
+	actionRemote:FireServer("Leave")
+end)
+
+local bossFrame = create("Frame", {
+	Name = "Boss",
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 80),
+	Size = UDim2.fromOffset(520, 46),
+	BackgroundTransparency = 1,
+	Visible = false,
+	Parent = gui,
+})
+local bossName = text({ Size = UDim2.new(1, 0, 0, 20), Font = TITLE_FONT, TextSize = 22, TextColor3 = THEME.White, TextStrokeTransparency = 0.3, TextXAlignment = Enum.TextXAlignment.Center, Text = "", Parent = bossFrame })
+local bossBack = create("Frame", { Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, 0, 0, 20), BackgroundColor3 = Color3.fromRGB(40, 25, 25), Parent = bossFrame }, { corner(6), stroke(THEME.Gold, 2) })
+local bossFill = create("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(200, 60, 45), Parent = bossBack }, { corner(6) })
+local bossHp = text({ Size = UDim2.fromScale(1, 1), Font = BODY_FONT, TextSize = 13, TextColor3 = THEME.White, TextStrokeTransparency = 0.4, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 2, Text = "", Parent = bossBack })
+
+local function findBoss(runId)
+	local enemies = Workspace:FindFirstChild("Enemies")
+	if not enemies then
+		return nil
+	end
+	for _, model in enemies:GetChildren() do
+		if model:GetAttribute("IsBoss") and model:GetAttribute("RunId") == runId then
+			local humanoid = model:FindFirstChildOfClass("Humanoid")
+			if humanoid and humanoid.Health > 0 then
+				return model, humanoid
+			end
+		end
+	end
+	return nil
+end
+
+local function updateTracker()
+	local runId = player:GetAttribute("ArenaRunId")
+	tracker.Visible = runId ~= nil
+	if not runId then
+		bossFrame.Visible = false
+		return
+	end
+	local state = player:GetAttribute("ArenaState") or ""
+	local wave = player:GetAttribute("ArenaWave") or 0
+	local waves = player:GetAttribute("ArenaWaves") or 5
+	local left = player:GetAttribute("ArenaEnemiesLeft") or 0
+	local timer = math.max(0, math.ceil((player:GetAttribute("ArenaTimerEnd") or 0) - serverNow()))
+	trackerTitle.Text = player:GetAttribute("ArenaName") or "Arena"
+	if state == "Countdown" then
+		trackerStatus.Text = ("Get ready... %d"):format(timer)
+	elseif state == "Fighting" then
+		trackerStatus.Text = ("Wave %d / %d   ·   Enemies left: %d"):format(wave, waves, left)
+	elseif state == "Intermission" then
+		trackerStatus.Text = ("Wave %d cleared! Next wave in %d"):format(wave, timer)
+	elseif state == "Victory" then
+		trackerStatus.Text = ("Victory! Returning in %d"):format(timer)
+	elseif state == "Failed" then
+		trackerStatus.Text = ("Defeated. Returning in %d"):format(timer)
+	end
+
+	local boss, humanoid = findBoss(runId)
+	bossFrame.Visible = boss ~= nil
+	if boss then
+		local enraged = boss:GetAttribute("Enraged") == true
+		bossName.Text = (boss:GetAttribute("DisplayName") or boss.Name) .. (if enraged then "  (ENRAGED)" else "")
+		bossFill.BackgroundColor3 = if enraged then Color3.fromRGB(235, 40, 30) else Color3.fromRGB(200, 60, 45)
+		bossFill.Size = UDim2.fromScale(math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1), 1)
+		bossHp.Text = ("%s / %s"):format(Progression.FormatNumber(math.ceil(humanoid.Health)), Progression.FormatNumber(humanoid.MaxHealth))
+	end
+end
+
+task.spawn(function()
+	while true do
+		task.wait(0.1)
+		updateTracker()
+	end
+end)
+
+--------------------------------------------------------------------------
+-- 3. Results screen
+--------------------------------------------------------------------------
+local results = create("Frame", {
+	Name = "Results",
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(440, 340),
+	BackgroundColor3 = THEME.Marble,
+	Visible = false,
+	ZIndex = 5,
+	Parent = gui,
+}, { corner(14), padding(16) })
+local resultsStroke = stroke(THEME.Gold, 4)
+resultsStroke.Parent = results
+local resultsTitle = text({ Size = UDim2.new(1, 0, 0, 50), Font = TITLE_FONT, TextSize = 46, TextXAlignment = Enum.TextXAlignment.Center, Text = "", Parent = results })
+local resultsInfo = text({ Position = UDim2.fromOffset(0, 54), Size = UDim2.new(1, 0, 0, 40), TextSize = 15, TextColor3 = THEME.SubText, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Text = "", Parent = results })
+local resultsRewards = text({ Position = UDim2.fromOffset(0, 100), Size = UDim2.new(1, 0, 0, 130), Font = BODY_FONT, TextSize = 19, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Top, Text = "", Parent = results })
+local homeButton = button({ AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = UDim2.fromOffset(220, 48), BackgroundColor3 = THEME.Gold, TextColor3 = THEME.Text, TextSize = 18, Text = "Return to Olympus", ZIndex = 6, Parent = results })
+homeButton.Activated:Connect(function()
+	results.Visible = false
+	actionRemote:FireServer("Leave")
+end)
+
+local REWARD_NAMES = { XP = "XP", Gold = "Gold", DivineFavor = "Divine Favor", Ambrosia = "Ambrosia" }
+local REWARD_ORDER = { "XP", "Gold", "DivineFavor", "Ambrosia" }
+
+--------------------------------------------------------------------------
+-- Server events
+--------------------------------------------------------------------------
+eventRemote.OnClientEvent:Connect(function(kind, a, b)
+	if kind == "Queue" then
+		local arena = a and ArenaConfig.ById[a]
+		partyBar.Visible = arena ~= nil
+		if arena then
+			partyLabel.Text = ("Party for %s (%d/%d): %s"):format(arena.DisplayName, #b, ArenaConfig.Party.MaxPlayers, table.concat(b, ", "))
+		end
+	elseif kind == "Result" and type(a) == "table" then
+		local victory = a.Victory == true
+		resultsTitle.Text = if victory then "VICTORY!" else "DEFEATED"
+		resultsTitle.TextColor3 = if victory then THEME.Gold else THEME.Danger
+		resultsStroke.Color = if victory then THEME.Gold else THEME.Danger
+		local seconds = tonumber(a.Seconds) or 0
+		resultsInfo.Text = ("%s · waves cleared %d/%d · time %d:%02d"):format(tostring(a.Arena), a.WavesCleared or 0, a.Waves or 5, seconds // 60, seconds % 60)
+		local lines = {}
+		for _, key in REWARD_ORDER do
+			local value = type(a.Rewards) == "table" and a.Rewards[key]
+			if value and value > 0 then
+				table.insert(lines, ("+%s %s"):format(Progression.FormatNumber(value), REWARD_NAMES[key]))
+			end
+		end
+		resultsRewards.Text = if #lines > 0 then table.concat(lines, "\n") else "No rewards this time.\nClear more waves for a bigger share!"
+		results.Visible = true
+		task.delay(ArenaConfig.ReturnDelay + 1, function()
+			results.Visible = false
+		end)
+	end
+end)
+
+notifyRemote.OnClientEvent:Connect(function(kind)
+	if kind == "OpenArenaMenu" then
+		refreshMenu()
+		menu.Visible = true
+	end
+end)
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="LocalScript" referent="40">
         <Properties>
           <string name="Name">CombatController</string>
           <string name="Source"><![CDATA[-- CombatController (LocalScript)
@@ -6852,7 +8142,7 @@ updateEnabled()
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="38">
+      <Item class="LocalScript" referent="41">
         <Properties>
           <string name="Name">Diagnostics</string>
           <string name="Source"><![CDATA[-- Diagnostics (LocalScript)
@@ -6950,7 +8240,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="39">
+      <Item class="LocalScript" referent="42">
         <Properties>
           <string name="Name">GodUI</string>
           <string name="Source"><![CDATA[-- GodUI (LocalScript)
@@ -7529,7 +8819,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="40">
+      <Item class="LocalScript" referent="43">
         <Properties>
           <string name="Name">HUDController</string>
           <string name="Source"><![CDATA[-- HUDController (LocalScript)
@@ -8006,7 +9296,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="41">
+      <Item class="LocalScript" referent="44">
         <Properties>
           <string name="Name">TempleUI</string>
           <string name="Source"><![CDATA[-- TempleUI (LocalScript)

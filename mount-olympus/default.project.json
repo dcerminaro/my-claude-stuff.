@@ -34,6 +34,9 @@
         },
         "AbilityController": {
           "$path": "src/client/AbilityController.client.luau"
+        },
+        "ArenaUI": {
+          "$path": "src/client/ArenaUI.client.luau"
         }
       },
       "StarterCharacterScripts": {
