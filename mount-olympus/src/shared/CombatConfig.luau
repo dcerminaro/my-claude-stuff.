@@ -56,8 +56,8 @@ CombatConfig.Enemies = {
 		Damage = 8,
 		WalkSpeed = 12,
 		AttackRange = 5,
-		Windup = 0.7,
-		AttackCooldown = 1.6,
+		Windup = 0.45,
+		AttackCooldown = 1.0,
 		AggroRange = 22,
 		LeashRange = 55,
 		XP = 25,
@@ -77,8 +77,8 @@ CombatConfig.Enemies = {
 		Damage = 10,
 		WalkSpeed = 14,
 		AttackRange = 5,
-		Windup = 0.6,
-		AttackCooldown = 1.8,
+		Windup = 0.4,
+		AttackCooldown = 1.1,
 		AggroRange = 22,
 		LeashRange = 55,
 		XP = 35,
@@ -100,8 +100,8 @@ CombatConfig.Enemies = {
 		Damage = 22,           -- basic sword swing
 		WalkSpeed = 13,
 		AttackRange = 6,
-		Windup = 0.6,
-		AttackCooldown = 1.4,
+		Windup = 0.4,
+		AttackCooldown = 0.9,
 		AggroRange = 90,
 		LeashRange = 200,
 		XP = 150,
@@ -119,8 +119,8 @@ CombatConfig.Enemies = {
 		-- Special attacks, each with a clear red warning on the ground.
 		-- Range = how close the target must be to start it.
 		Attacks = {
-			{ Name = "Slam", Kind = "Slam", Windup = 1.2, Cooldown = 8, Range = 10, Radius = 13, Damage = 35 },
-			{ Name = "Charge", Kind = "Charge", Windup = 1.0, Cooldown = 10, Range = 30, MinRange = 9, Length = 26, Width = 6, Damage = 30 },
+			{ Name = "Slam", Kind = "Slam", Windup = 0.9, Cooldown = 6, Range = 10, Radius = 13, Damage = 35 },
+			{ Name = "Charge", Kind = "Charge", Windup = 0.75, Cooldown = 7, Range = 30, MinRange = 9, Length = 26, Width = 6, Damage = 30 },
 		},
 		-- Below half health: faster attacks, faster walking, calls for help once.
 		Phase2 = {
