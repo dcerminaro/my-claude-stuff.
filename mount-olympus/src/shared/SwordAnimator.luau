@@ -1,8 +1,11 @@
 -- SwordAnimator (ModuleScript, used by the client only)
 -- Location: ReplicatedStorage > Shared > SwordAnimator
 --
--- Plays our own sword animations (SwordPoses) by setting the R15 joints
--- every frame, right after Roblox's normal animations (walk, jump...).
+-- Plays our own sword animations (SwordPoses) on R15 joints every frame.
+-- Roblox's Animator owns each joint's Transform (walk, idle...), so writing
+-- there loses the race. Instead we set the joint's C0, which the Animator
+-- never touches, and cancel the Animator's current Transform on the joints
+-- we drive. That keeps the sword arm steady and the swings visible.
 -- It runs on every player's device for every nearby sword-holder: you,
 -- other players (when the server tells us they swung) and enemies.
 --   * Holding a weapon: the ready stance (right arm only, legs still walk).
@@ -32,6 +35,26 @@ local BLEND_SPEED = 18   -- how fast the stance changes (hold <-> block)
 local active = setmetatable({}, { __mode = "k" })  -- [Model] = { Keys, Start, Duration, Joints }
 local current = setmetatable({}, { __mode = "k" }) -- [Model] = { [joint] = CFrame currently applied }
 local motorCache = setmetatable({}, { __mode = "k" })
+local baseC0 = setmetatable({}, { __mode = "k" }) -- [Motor6D] = its original C0
+
+-- Pose a joint: C0 * pose * Transform^-1 * Transform = C0 * pose, whatever
+-- the Animator writes into Transform.
+local function setJoint(motor, pose)
+	local base = baseC0[motor]
+	if not base then
+		base = motor.C0
+		baseC0[motor] = base
+	end
+	motor.C0 = base * pose * motor.Transform:Inverse()
+end
+
+local function releaseJoint(motor)
+	local base = baseC0[motor]
+	if base then
+		motor.C0 = base
+		baseC0[motor] = nil
+	end
+end
 
 local function toCFrame(e)
 	return CFrame.Angles(math.rad(e[1]), math.rad(e[2]), math.rad(e[3]))
@@ -107,21 +130,21 @@ local function apply(model, target, dt, instant)
 	end
 	local alpha = if instant then 1 else math.min(1, dt * BLEND_SPEED)
 	-- Joints we drove last frame but not now: blend back to neutral, then let go.
-	for joint, cf in cur do
+	for joint in cur do
 		if not target[joint] then
+			-- No longer ours: hand the joint back to Roblox's animations.
 			local motor = getMotor(model, joint)
-			local blended = cf:Lerp(CFrame.new(), alpha)
 			if motor then
-				motor.Transform = blended
+				releaseJoint(motor)
 			end
-			cur[joint] = if alpha >= 1 then nil else blended
+			cur[joint] = nil
 		end
 	end
 	for joint, cf in target do
 		local motor = getMotor(model, joint)
 		if motor then
 			local blended = if cur[joint] then cur[joint]:Lerp(cf, alpha) else cf
-			motor.Transform = blended
+			setJoint(motor, blended)
 			cur[joint] = blended
 		end
 	end
@@ -192,7 +215,7 @@ function SwordAnimator.Play(model, moveName)
 	end
 end
 
--- Runs each frame right after Roblox's own animations, so our poses win.
-RunService.PreSimulation:Connect(step)
+-- Right before each frame is drawn, using that frame's animation values.
+RunService.PreRender:Connect(step)
 
 return SwordAnimator

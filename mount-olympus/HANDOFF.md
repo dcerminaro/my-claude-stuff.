@@ -214,6 +214,12 @@ environment, so a session can `rojo build` and publish via
      player); the lunge no longer pushes forward; upper-body twist reduced.
      Enemies use Roblox's classic break-apart death, with every piece made
      solid so it lands and tumbles, fading after 2 s, removed at 3.2 s.
+   - Fourth fix round ("no swing animations, sword wobbly in the hand"):
+     writing `Motor6D.Transform` lost to Roblox's Animator on the device, so
+     our poses never showed and the arm followed the walk/idle animation.
+     `SwordAnimator` now sets `C0 = originalC0 * pose * Transform:Inverse()`
+     in `PreRender` (the Animator never touches C0; the inverse cancels its
+     motion on the joints we drive) and restores the original C0 when done.
 
 ### Build label and update restarts
 - `GameConfig.BuildLabel` (e.g. "v13") is shown bottom-left. **Bump it to the
