@@ -32,11 +32,12 @@ ArenaConfig.Arenas = {
 		-- Completion rewards (on top of what each enemy drops).
 		Rewards = { XP = 250, Gold = 200, DivineFavor = 15, Ambrosia = 1 },
 	},
-	{ Id = "SpartanBattleground", DisplayName = "Spartan Battleground", Description = "Armored soldiers and beasts.", MinLevel = 16, MaxLevel = 35, Available = false },
-	{ Id = "LabyrinthOfCrete", DisplayName = "Labyrinth of Crete", Description = "Minotaurs and guardians.", MinLevel = 36, MaxLevel = 60, Available = false },
-	{ Id = "CursedTemple", DisplayName = "Cursed Temple", Description = "Gorgons and cursed warriors.", MinLevel = 61, MaxLevel = 90, Available = false },
-	{ Id = "GatesOfTheUnderworld", DisplayName = "Gates of the Underworld", Description = "Undead and underworld monsters.", MinLevel = 91, MaxLevel = 135, Available = false },
-	{ Id = "TitansColosseum", DisplayName = "Titan's Colosseum", Description = "Titan warriors and divine monsters.", MinLevel = 136, MaxLevel = 200, Available = false },
+	-- RequiredRank (Phase 6): the ascension rank needed to enter (2 = Warrior ...).
+	{ Id = "SpartanBattleground", DisplayName = "Spartan Battleground", Description = "Armored soldiers and beasts.", MinLevel = 16, MaxLevel = 35, RequiredRank = 2, Available = false },
+	{ Id = "LabyrinthOfCrete", DisplayName = "Labyrinth of Crete", Description = "Minotaurs and guardians.", MinLevel = 36, MaxLevel = 60, RequiredRank = 3, Available = false },
+	{ Id = "CursedTemple", DisplayName = "Cursed Temple", Description = "Gorgons and cursed warriors.", MinLevel = 61, MaxLevel = 90, RequiredRank = 4, Available = false },
+	{ Id = "GatesOfTheUnderworld", DisplayName = "Gates of the Underworld", Description = "Undead and underworld monsters.", MinLevel = 91, MaxLevel = 135, RequiredRank = 5, Available = false },
+	{ Id = "TitansColosseum", DisplayName = "Titan's Colosseum", Description = "Titan warriors and divine monsters.", MinLevel = 136, MaxLevel = 200, RequiredRank = 6, Available = false },
 }
 
 ArenaConfig.ById = {}
@@ -63,13 +64,18 @@ ArenaConfig.Origin = Vector3.new(0, 1, 1500)
 ArenaConfig.SlotSpacing = 400
 ArenaConfig.Radius = 45
 
+local RANK_NAMES = { "Mortal", "Warrior", "Champion", "Hero", "Demigod", "Lesser God", "Olympian", "Elder God" }
+
 -- Why an arena can't be entered, or nil if it can.
-function ArenaConfig.LockReason(arena, level)
+function ArenaConfig.LockReason(arena, level, rankIndex)
 	if not arena.Available then
 		return "Coming in Phase 7"
 	end
 	if level < arena.MinLevel then
 		return ("Reach level %d"):format(arena.MinLevel)
+	end
+	if arena.RequiredRank and (rankIndex or 1) < arena.RequiredRank then
+		return ("Ascend to %s"):format(RANK_NAMES[arena.RequiredRank])
 	end
 	return nil
 end

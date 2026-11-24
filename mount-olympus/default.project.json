@@ -37,6 +37,9 @@
         },
         "ArenaUI": {
           "$path": "src/client/ArenaUI.client.luau"
+        },
+        "AscensionUI": {
+          "$path": "src/client/AscensionUI.client.luau"
         }
       },
       "StarterCharacterScripts": {

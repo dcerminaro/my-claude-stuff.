@@ -26,6 +26,7 @@ local CombatService = require(Services:WaitForChild("CombatService"))
 local DiagnosticsService = require(Services:WaitForChild("DiagnosticsService"))
 local AbilityService = require(Services:WaitForChild("AbilityService"))
 local ArenaService = require(Services:WaitForChild("ArenaService"))
+local AscensionService = require(Services:WaitForChild("AscensionService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -65,6 +66,7 @@ local reportRemote = newRemote("ClientReport") -- client -> server diagnostics r
 local abilityRemote = newRemote("UseAbility") -- client -> server "use my Q / E / R / Form ability"
 local arenaActionRemote = newRemote("ArenaAction") -- client -> server arena menu requests
 local arenaEventRemote = newRemote("ArenaEvent") -- server -> client party queue and results
+local ascensionRemote = newRemote("AscensionAction") -- client -> server "start my ascension trial"
 
 remotes.Parent = ReplicatedStorage
 
@@ -86,6 +88,8 @@ CombatService.SetModifierProvider(AbilityService.GetModifiers)
 CombatService.SetDashHandler(AbilityService.OnDash)
 ArenaService.Init(DataService, ProgressionService, PlotService, EnemyService, notifyRemote, arenaActionRemote, arenaEventRemote)
 ArenaService.BuildGate()
+AscensionService.Init(DataService, ProgressionService, ArenaService, notifyRemote, fxRemote, ascensionRemote)
+AscensionService.BuildChamber()
 if GameConfig.Debug.Diagnostics then
 	DiagnosticsService.Init(reportRemote)
 end
@@ -143,7 +147,10 @@ local function runDebugCommand(player, message)
 	elseif command == "!loyalty" and number then
 		reply(if GodService.AddLoyalty(player, number) then "Added " .. number .. " loyalty" else "Choose a god first")
 	elseif command == "!rank" then
-		local _, text = ProgressionService.AdvanceRank(player, "Debug")
+		local ok, text = ProgressionService.AdvanceRank(player, "Debug")
+		if ok then
+			AscensionService.OnRankUp(player)
+		end
 		reply(text)
 	elseif command == "!save" then
 		reply(if DataService.SaveNow(player) then "Saved" else "Save failed (see Output)")
@@ -156,6 +163,7 @@ local function runDebugCommand(player, message)
 			ProgressionService.RefreshAll(player)
 			GodService.Refresh(player)
 			TempleService.Rebuild(player)
+			task.spawn(AscensionService.ApplyLooks, player)
 			reply("Progress reset to defaults")
 		end
 	else
@@ -191,6 +199,7 @@ local function onPlayerAdded(player)
 	TempleService.SetupPlayer(player, plot)
 	CombatService.SetupPlayer(player)
 	AbilityService.SetupPlayer(player)
+	AscensionService.SetupPlayer(player)
 	player:SetAttribute("DataLoaded", true)
 	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
 end
@@ -209,6 +218,7 @@ Players.PlayerRemoving:Connect(function(player)
 	CombatService.ReleasePlayer(player)
 	AbilityService.ReleasePlayer(player)
 	ArenaService.ReleasePlayer(player)
+	AscensionService.ReleasePlayer(player)
 	PlotService.ReleasePlot(player)
 	DataService.ReleasePlayer(player) -- yields while saving
 end)

@@ -17,8 +17,14 @@ Follow the master specification in **Part C** exactly, including its section 19
   published from the cloud session with Open Cloud (see "Publishing without
   Studio" below), and server logic is checked with the Luau Execution API using
   a fake player before going live.
-- Phases 1–4 are **confirmed**. Phase 5 (Arenas) is built and server-tested;
-  do not start Phase 6 until the developer replies **"Phase 5 confirmed"**.
+- Phases 1–5 are done (5 accepted with "move on"). Phase 6 (Ascension) is
+  built and server-tested; do not start Phase 7 until the developer replies
+  **"Phase 6 confirmed"**.
+- **Open balance question:** the developer tests with a level-200 Elder God
+  (base attack 408, 2,090 HP, everything maxed), so the level 1–15 arena feels
+  easy no matter how strong enemies are. Proposed "level sync" (scale player
+  stats to the arena's max level inside arenas); the developer chose to skip
+  it for now. Revisit in Phase 8 balancing.
 - Luau Execution sessions do **not** simulate physics (parts don't fall,
   Humanoids don't walk), so movement/chasing must be play-tested by the developer. Build each
   phase on top of the existing code; do not rewrite earlier phases unless a bug
@@ -39,7 +45,8 @@ Follow the master specification in **Part C** exactly, including its section 19
 | 3. God Selection | **Confirmed** by the developer |
 | 4A. Combat core | **Confirmed** by the developer ("It works perfect!", v17) |
 | 4B. God abilities | **Confirmed** ("Phase 4 confirmed") |
-| 5. Arenas | **Built and server-tested**, live (v25: wave ramp incl. speed, stronger boss, faster enemy attacks), awaiting "Phase 5 confirmed" |
+| 5. Arenas | **Accepted** — developer said "move on to phase 6" (v25) |
+| 6. Ascension | **Built and server-tested**, live (v28), awaiting "Phase 6 confirmed" |
 | 5–8 | Not started |
 
 ### How to set up Phase 1 on a Mac (or Windows PC)
@@ -312,6 +319,36 @@ environment, so a session can `rojo build` and publish via
 7. The ascension trial (Training Champion → Warrior) is Phase 6; the boss
    victory does not advance rank yet.
 
+### Design decisions made in Phase 6 (developer asked to confirm)
+1. **Ascension Chamber** (east side of the plaza, replaces the marker): 8 rank
+   pillars (lit on your screen for ranks you've reached) and an altar that
+   opens the Ascension screen.
+2. **Trials** are solo arena runs started from that screen once you're at
+   your rank's level cap. Winning calls `ProgressionService.AdvanceRank`.
+   - Warrior: Training Champion one-on-one (2,500 HP).
+   - Champion: "Spartan Arena" — 3 waves of strong bandits/skeletons (health
+     ×3–4, damage ×2–2.5, speed ×1.2–1.3), Training Champion with double
+     health (placeholder enemies until Phase 7).
+   - Hero (Minotaur), Demigod (Divine Trial), Lesser God (Cerberus), Olympian
+     (Gauntlet), Elder God (Titan King): show "arrives in Phase 7".
+   Trials give no completion reward (enemies still drop XP/Gold).
+3. **Rank looks (developer request):** outfit pieces built from parts and
+   welded OVER the player's own avatar (`Shared/RankOutfits`, preview
+   `docs/rank-outfits-preview.png`): Warrior leather pads/bracers/belt;
+   Champion bronze chest plate + greaves; Hero red cape; Demigod steel armour,
+   gold trim, glowing chest gem, aura; Lesser God gold armour, laurel wreath,
+   god-coloured cape; Olympian feathered wings of light; Elder God halo and a
+   stronger aura. **Physique:** the player's own body scales × (height
+   +3%/rank, width +5%/rank, depth +4%/rank), applied with
+   `Humanoid:ApplyDescription` after the avatar loads (Elder God ≈ 1.21 tall,
+   1.35 wide). Not asked yet: whether outfits should replace the avatar's
+   clothes instead of layering — chose layering.
+4. **Area restrictions:** later arenas also need a rank (`RequiredRank`:
+   Spartan Warrior, Labyrinth Champion, Cursed Temple Hero, Underworld Demigod,
+   Titan's Colosseum Lesser God).
+5. Rank-up plays a pillar of light, ring and particle burst for everyone
+   (`CombatFX("Ascend", pos, color, player)`). `!rank` also triggers it.
+
 ### Ideas from the developer for later (not built yet)
 - **Rank outfits and physique (Phase 6, Ascension):** each ascension rank gets
   its own outfit, and the character gets bigger with a more powerful physique
@@ -451,6 +488,14 @@ ArenaEnemiesLeft, ArenaTimerEnd`; results go to `ArenaEvent("Result", {...})`.
 **Phase 6** trials can reuse it (e.g. call `ProgressionService.AdvanceRank`
 when a boss run is won). Enemies spawned with `Attributes = {RunId}`; bosses
 have `IsBoss`, `DisplayName`, `Enraged`.
+
+**AscensionService** (server, Phase 6) — `NextTrial(player)` → trial,
+reason; `StartTrial(player)` (uses `ArenaService.StartTrial(player, trial,
+onVictory)`); `ApplyLooks(player)` (physique + outfit + aura);
+`OnRankUp(player)`; `BuildChamber()`. Trials are in `Shared/AscensionConfig`
+(indexed by the rank they lead to). **Phase 7** should add the missing trial
+waves (set `Available = true`) once the Minotaur, Cerberus, Titan King and
+god Divine Trials exist.
 
 **CombatFX remote** (server → clients): `("Damage", pos, amount, style)`,
 `("Hit", pos)`, `("Death", pos)`, `("Reward", pos, text)`.

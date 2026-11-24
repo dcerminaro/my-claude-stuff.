@@ -150,13 +150,13 @@ for order, arena in ArenaConfig.Arenas do
 	local solo = button({ AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -116, 0.5, 0), Size = UDim2.fromOffset(110, 44), BackgroundColor3 = THEME.Ready, Text = "Fight Solo", Parent = row })
 	local party = button({ AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(110, 44), BackgroundColor3 = THEME.Party, Text = "Join Party", Parent = row })
 	solo.Activated:Connect(function()
-		if not ArenaConfig.LockReason(arena, player:GetAttribute("Level") or 1) then
+		if not ArenaConfig.LockReason(arena, player:GetAttribute("Level") or 1, player:GetAttribute("RankIndex") or 1) then
 			actionRemote:FireServer("StartSolo", arena.Id)
 			menu.Visible = false
 		end
 	end)
 	party.Activated:Connect(function()
-		if not ArenaConfig.LockReason(arena, player:GetAttribute("Level") or 1) then
+		if not ArenaConfig.LockReason(arena, player:GetAttribute("Level") or 1, player:GetAttribute("RankIndex") or 1) then
 			actionRemote:FireServer("JoinQueue", arena.Id)
 		end
 	end)
@@ -166,7 +166,7 @@ end
 local function refreshMenu()
 	local level = player:GetAttribute("Level") or 1
 	for _, r in rows do
-		local reason = ArenaConfig.LockReason(r.Arena, level)
+		local reason = ArenaConfig.LockReason(r.Arena, level, player:GetAttribute("RankIndex") or 1)
 		r.Status.Text = if reason then "Locked: " .. reason else ""
 		r.Solo.Visible = reason == nil
 		r.Party.Visible = reason == nil

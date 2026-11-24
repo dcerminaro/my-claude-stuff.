@@ -142,11 +142,12 @@ ArenaConfig.Arenas = {
 		-- Completion rewards (on top of what each enemy drops).
 		Rewards = { XP = 250, Gold = 200, DivineFavor = 15, Ambrosia = 1 },
 	},
-	{ Id = "SpartanBattleground", DisplayName = "Spartan Battleground", Description = "Armored soldiers and beasts.", MinLevel = 16, MaxLevel = 35, Available = false },
-	{ Id = "LabyrinthOfCrete", DisplayName = "Labyrinth of Crete", Description = "Minotaurs and guardians.", MinLevel = 36, MaxLevel = 60, Available = false },
-	{ Id = "CursedTemple", DisplayName = "Cursed Temple", Description = "Gorgons and cursed warriors.", MinLevel = 61, MaxLevel = 90, Available = false },
-	{ Id = "GatesOfTheUnderworld", DisplayName = "Gates of the Underworld", Description = "Undead and underworld monsters.", MinLevel = 91, MaxLevel = 135, Available = false },
-	{ Id = "TitansColosseum", DisplayName = "Titan's Colosseum", Description = "Titan warriors and divine monsters.", MinLevel = 136, MaxLevel = 200, Available = false },
+	-- RequiredRank (Phase 6): the ascension rank needed to enter (2 = Warrior ...).
+	{ Id = "SpartanBattleground", DisplayName = "Spartan Battleground", Description = "Armored soldiers and beasts.", MinLevel = 16, MaxLevel = 35, RequiredRank = 2, Available = false },
+	{ Id = "LabyrinthOfCrete", DisplayName = "Labyrinth of Crete", Description = "Minotaurs and guardians.", MinLevel = 36, MaxLevel = 60, RequiredRank = 3, Available = false },
+	{ Id = "CursedTemple", DisplayName = "Cursed Temple", Description = "Gorgons and cursed warriors.", MinLevel = 61, MaxLevel = 90, RequiredRank = 4, Available = false },
+	{ Id = "GatesOfTheUnderworld", DisplayName = "Gates of the Underworld", Description = "Undead and underworld monsters.", MinLevel = 91, MaxLevel = 135, RequiredRank = 5, Available = false },
+	{ Id = "TitansColosseum", DisplayName = "Titan's Colosseum", Description = "Titan warriors and divine monsters.", MinLevel = 136, MaxLevel = 200, RequiredRank = 6, Available = false },
 }
 
 ArenaConfig.ById = {}
@@ -173,13 +174,18 @@ ArenaConfig.Origin = Vector3.new(0, 1, 1500)
 ArenaConfig.SlotSpacing = 400
 ArenaConfig.Radius = 45
 
+local RANK_NAMES = { "Mortal", "Warrior", "Champion", "Hero", "Demigod", "Lesser God", "Olympian", "Elder God" }
+
 -- Why an arena can't be entered, or nil if it can.
-function ArenaConfig.LockReason(arena, level)
+function ArenaConfig.LockReason(arena, level, rankIndex)
 	if not arena.Available then
 		return "Coming in Phase 7"
 	end
 	if level < arena.MinLevel then
 		return ("Reach level %d"):format(arena.MinLevel)
+	end
+	if arena.RequiredRank and (rankIndex or 1) < arena.RequiredRank then
+		return ("Ascend to %s"):format(RANK_NAMES[arena.RequiredRank])
 	end
 	return nil
 end
@@ -189,6 +195,85 @@ return ArenaConfig
         </Properties>
       </Item>
       <Item class="ModuleScript" referent="4">
+        <Properties>
+          <string name="Name">AscensionConfig</string>
+          <string name="Source"><![CDATA[-- AscensionConfig (ModuleScript)
+-- Location: ReplicatedStorage > Shared > AscensionConfig
+--
+-- Phase 6: ascension trials, rank looks (outfit + physique + aura).
+-- Ranks themselves (names, level ranges) are in GameConfig.Ranks.
+-- To rank up: reach the top level of your rank, then win the trial for the
+-- NEXT rank. Trials are short solo arena runs (see ArenaService.StartTrial).
+-- All numbers are PLACEHOLDERS, balanced in Phase 8.
+
+local AscensionConfig = {}
+
+-- Trial for reaching rank N (index = rank number, 2 = Warrior ... 8 = Elder God).
+-- Ids match GameConfig.Ranks[N].Trial.
+AscensionConfig.Trials = {
+	[2] = {
+		Id = "TrainingChampion",
+		Name = "Defeat the Training Champion",
+		Description = "Face the Training Champion alone.",
+		Available = true,
+		Color = Color3.fromRGB(205, 150, 60),
+		Waves = { { Boss = "TrainingChampion" } },
+	},
+	[3] = {
+		Id = "SpartanArena",
+		Name = "Complete the Spartan Arena trial",
+		Description = "Three brutal waves, then a champion at full strength. (Placeholder enemies until Phase 7.)",
+		Available = true,
+		Color = Color3.fromRGB(180, 55, 45),
+		Waves = {
+			{ Bandit = 4, Skeleton = 2 },
+			{ Bandit = 5, Skeleton = 4 },
+			{ Boss = "TrainingChampion", Skeleton = 3 },
+		},
+		WaveHealth = { 3, 3.5, 4 },
+		WaveDamage = { 2, 2.2, 2.5 },
+		WaveSpeed = { 1.2, 1.25, 1.3 },
+		BossHealth = 2, -- the champion has double health here
+	},
+	[4] = { Id = "Minotaur", Name = "Defeat the Minotaur", Description = "The Minotaur arrives in Phase 7.", Available = false },
+	[5] = { Id = "DivineTrial", Name = "Complete your god's Divine Trial", Description = "Divine Trials arrive in Phase 7.", Available = false },
+	[6] = { Id = "Cerberus", Name = "Defeat Cerberus", Description = "Cerberus arrives in Phase 7.", Available = false },
+	[7] = { Id = "OlympianGauntlet", Name = "Complete the Olympian Gauntlet", Description = "The Gauntlet arrives in Phase 7.", Available = false },
+	[8] = { Id = "TitanKing", Name = "Defeat the Titan King", Description = "The Titan King arrives in Phase 7.", Available = false },
+}
+
+-- Body size per rank, multiplying the player's own avatar proportions.
+-- Wider/deeper grows faster than height: a bigger, more powerful build.
+AscensionConfig.Physique = {}
+for rank = 1, 8 do
+	AscensionConfig.Physique[rank] = {
+		Height = 1 + 0.03 * (rank - 1),
+		Width = 1 + 0.05 * (rank - 1),
+		Depth = 1 + 0.04 * (rank - 1),
+		Head = 1 + 0.01 * (rank - 1),
+	}
+end
+
+-- Shown in the Ascension Chamber.
+AscensionConfig.Perks = {
+	[1] = "Your journey begins.",
+	[2] = "Leather shoulder pads, bracers and belt · a stronger build",
+	[3] = "Bronze chest plate and greaves",
+	[4] = "A hero's red cape",
+	[5] = "Steel armour, a glowing chest gem and a divine aura",
+	[6] = "Golden armour, a laurel wreath and a cape in your god's colour",
+	[7] = "Wings of light",
+	[8] = "A halo and a blazing aura",
+}
+
+-- Aura particles per second from Demigod upwards.
+AscensionConfig.AuraRate = { [5] = 4, [6] = 6, [7] = 9, [8] = 14 }
+
+return AscensionConfig
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="5">
         <Properties>
           <string name="Name">CombatConfig</string>
           <string name="Source"><![CDATA[-- CombatConfig (ModuleScript)
@@ -368,7 +453,7 @@ return CombatConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="5">
+      <Item class="ModuleScript" referent="6">
         <Properties>
           <string name="Name">GameConfig</string>
           <string name="Source"><![CDATA[-- GameConfig (ModuleScript)
@@ -469,7 +554,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v25"
+GameConfig.BuildLabel = "v28"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -491,7 +576,7 @@ return GameConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="6">
+      <Item class="ModuleScript" referent="7">
         <Properties>
           <string name="Name">GodConfig</string>
           <string name="Source"><![CDATA[-- GodConfig (ModuleScript)
@@ -610,11 +695,11 @@ return GodConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="7">
+      <Item class="Folder" referent="8">
         <Properties>
           <string name="Name">Gods</string>
         </Properties>
-        <Item class="ModuleScript" referent="8">
+        <Item class="ModuleScript" referent="9">
           <Properties>
             <string name="Name">Apollo</string>
             <string name="Source"><![CDATA[-- Apollo (ModuleScript)
@@ -640,7 +725,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="9">
+        <Item class="ModuleScript" referent="10">
           <Properties>
             <string name="Name">Ares</string>
             <string name="Source"><![CDATA[-- Ares (ModuleScript)
@@ -677,7 +762,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="10">
+        <Item class="ModuleScript" referent="11">
           <Properties>
             <string name="Name">Athena</string>
             <string name="Source"><![CDATA[-- Athena (ModuleScript)
@@ -703,7 +788,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="11">
+        <Item class="ModuleScript" referent="12">
           <Properties>
             <string name="Name">Hades</string>
             <string name="Source"><![CDATA[-- Hades (ModuleScript)
@@ -729,7 +814,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="12">
+        <Item class="ModuleScript" referent="13">
           <Properties>
             <string name="Name">Poseidon</string>
             <string name="Source"><![CDATA[-- Poseidon (ModuleScript)
@@ -755,7 +840,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="13">
+        <Item class="ModuleScript" referent="14">
           <Properties>
             <string name="Name">Zeus</string>
             <string name="Source"><![CDATA[-- Zeus (ModuleScript)
@@ -798,7 +883,7 @@ return {
           </Properties>
         </Item>
       </Item>
-      <Item class="ModuleScript" referent="14">
+      <Item class="ModuleScript" referent="15">
         <Properties>
           <string name="Name">Progression</string>
           <string name="Source"><![CDATA[-- Progression (ModuleScript)
@@ -862,7 +947,214 @@ return Progression
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="15">
+      <Item class="ModuleScript" referent="16">
+        <Properties>
+          <string name="Name">RankOutfits</string>
+          <string name="Source"><![CDATA[-- RankOutfits (ModuleScript)
+-- Location: ReplicatedStorage > Shared > RankOutfits
+--
+-- Builds the rank outfit out of parts and welds it OVER the player's own
+-- avatar (their look is kept). Each rank adds pieces; materials improve:
+-- leather (Warrior) -> bronze (Champion, Hero) -> steel (Demigod) -> gold.
+-- Pieces are sized from the body part they sit on, so they fit any avatar.
+-- RankOutfits.Apply(character, rankIndex, godColor) replaces any old outfit.
+
+local AscensionConfig = require(script.Parent:WaitForChild("AscensionConfig"))
+
+local RankOutfits = {}
+
+RankOutfits.Name = "RankOutfit"
+
+local LEATHER = { Color3.fromRGB(110, 72, 40), Enum.Material.Leather }
+local BRONZE = { Color3.fromRGB(176, 112, 56), Enum.Material.Metal }
+local STEEL = { Color3.fromRGB(200, 205, 215), Enum.Material.Metal }
+local GOLD = { Color3.fromRGB(226, 186, 72), Enum.Material.Metal }
+local HERO_RED = Color3.fromRGB(165, 30, 35)
+
+local function armour(rank)
+	if rank >= 6 then
+		return GOLD
+	elseif rank >= 5 then
+		return STEEL
+	elseif rank >= 3 then
+		return BRONZE
+	end
+	return LEATHER
+end
+
+local function piece(model, bodyPart, name, size, offset, look, props)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Size = size
+	p.Color = look[1]
+	p.Material = look[2]
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Massless = true
+	p.CastShadow = false
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	for key, value in props or {} do
+		p[key] = value
+	end
+	p.CFrame = bodyPart.CFrame * offset
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = bodyPart
+	weld.Part1 = p
+	weld.Parent = p
+	p.Parent = model
+	return p
+end
+
+function RankOutfits.Apply(character, rank, godColor)
+	local old = character:FindFirstChild(RankOutfits.Name)
+	if old then
+		old:Destroy()
+	end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	local oldAura = root and root:FindFirstChild("RankAura")
+	if oldAura then
+		oldAura:Destroy()
+	end
+	if rank < 2 then
+		return nil
+	end
+
+	local model = Instance.new("Model")
+	model.Name = RankOutfits.Name
+	local metal = armour(rank)
+	local trim = if rank >= 5 then GOLD else metal
+	local glow = { godColor, Enum.Material.Neon }
+	local function part(name)
+		return character:FindFirstChild(name)
+	end
+
+	-- Warrior: shoulder pads, bracers, belt
+	for _, side in { "Left", "Right" } do
+		local upper = part(side .. "UpperArm")
+		if upper then
+			local s = upper.Size
+			piece(model, upper, side .. "ShoulderPad", Vector3.new(s.X * 1.45, 0.32, s.Z * 1.4), CFrame.new(0, s.Y / 2 - 0.08, 0), metal)
+			if rank >= 5 then
+				piece(model, upper, side .. "ShoulderTrim", Vector3.new(s.X * 1.5, 0.1, s.Z * 1.45), CFrame.new(0, s.Y / 2 - 0.26, 0), trim)
+			end
+		end
+		local lower = part(side .. "LowerArm")
+		if lower then
+			local s = lower.Size
+			piece(model, lower, side .. "Bracer", Vector3.new(s.X * 1.2, s.Y * 0.55, s.Z * 1.2), CFrame.new(0, -s.Y * 0.12, 0), metal)
+		end
+	end
+	local lowerTorso = part("LowerTorso")
+	if lowerTorso then
+		local s = lowerTorso.Size
+		piece(model, lowerTorso, "Belt", Vector3.new(s.X * 1.08, s.Y * 0.38, s.Z * 1.12), CFrame.new(0, s.Y * 0.12, 0), if rank >= 5 then GOLD else LEATHER)
+		piece(model, lowerTorso, "Buckle", Vector3.new(s.X * 0.22, s.Y * 0.3, 0.1), CFrame.new(0, s.Y * 0.12, -s.Z * 0.56 - 0.03), trim)
+	end
+
+	-- Champion: chest plate, greaves
+	local upperTorso = part("UpperTorso")
+	if rank >= 3 then
+		if upperTorso then
+			local s = upperTorso.Size
+			piece(model, upperTorso, "ChestPlate", Vector3.new(s.X * 1.06, s.Y * 0.82, s.Z * 1.16), CFrame.new(0, s.Y * 0.04, 0), metal)
+			piece(model, upperTorso, "ChestRidge", Vector3.new(s.X * 0.12, s.Y * 0.7, 0.08), CFrame.new(0, s.Y * 0.04, -s.Z * 0.58 - 0.02), trim)
+		end
+		for _, side in { "Left", "Right" } do
+			local leg = part(side .. "LowerLeg")
+			if leg then
+				local s = leg.Size
+				piece(model, leg, side .. "Greave", Vector3.new(s.X * 1.18, s.Y * 0.72, s.Z * 1.18), CFrame.new(0, s.Y * 0.06, 0), metal)
+			end
+		end
+	end
+
+	-- Hero: cape (red, then the god's colour from Lesser God)
+	if rank >= 4 and upperTorso then
+		local s = upperTorso.Size
+		local length = s.Y * 2.3
+		piece(model, upperTorso, "Cape", Vector3.new(s.X * 0.95, length, 0.1),
+			CFrame.new(0, s.Y / 2 - length / 2 + 0.05, s.Z / 2 + 0.12) * CFrame.Angles(math.rad(-6), 0, 0),
+			{ if rank >= 6 then godColor else HERO_RED, Enum.Material.Fabric })
+	end
+
+	-- Demigod: glowing chest gem
+	if rank >= 5 and upperTorso then
+		local s = upperTorso.Size
+		piece(model, upperTorso, "ChestGem", Vector3.new(0.38, 0.38, 0.38), CFrame.new(0, s.Y * 0.18, -s.Z * 0.58 - 0.08), glow, { Shape = Enum.PartType.Ball })
+	end
+
+	-- Lesser God: laurel wreath
+	local head = part("Head")
+	if rank >= 6 and head then
+		local s = head.Size
+		local radius = math.max(s.X, s.Z) * 0.55
+		for i = 0, 11 do
+			local angle = (i / 12) * math.pi * 2
+			if i ~= 0 and i ~= 11 then -- gap at the front
+				piece(model, head, "Leaf" .. i, Vector3.new(0.12, 0.16, 0.42),
+					CFrame.new(math.sin(angle) * radius, s.Y * 0.22, -math.cos(angle) * radius) * CFrame.Angles(0, -angle, math.rad(25)),
+					{ Color3.fromRGB(200, 170, 60), Enum.Material.Metal })
+			end
+		end
+	end
+
+	-- Olympian: wings of light, three fanned feathers per side
+	if rank >= 7 and upperTorso then
+		local s = upperTorso.Size
+		for _, side in { -1, 1 } do
+			for i = 0, 2 do
+				local length = s.Y * (1.25 - i * 0.25)
+				local angle = 25 + i * 22 -- tilt outwards from straight up
+				local base = CFrame.new(side * s.X * 0.18, s.Y * 0.28, s.Z / 2 + 0.18)
+				piece(model, upperTorso, ("Wing%s%d"):format(if side < 0 then "L" else "R", i),
+					Vector3.new(s.X * 0.32, length, 0.06),
+					base * CFrame.Angles(math.rad(-18), 0, math.rad(-side * angle)) * CFrame.new(0, length / 2, 0),
+					glow, { Transparency = 0.3 })
+			end
+		end
+	end
+
+	-- Elder God: halo
+	if rank >= 8 and head then
+		local s = head.Size
+		local radius = math.max(s.X, s.Z) * 0.5
+		for i = 0, 15 do
+			local angle = (i / 16) * math.pi * 2
+			piece(model, head, "Halo" .. i, Vector3.new(0.12, 0.08, radius * 0.42),
+				CFrame.new(math.sin(angle) * radius, s.Y / 2 + 0.55, -math.cos(angle) * radius) * CFrame.Angles(0, -angle + math.pi / 2, 0),
+				{ Color3.fromRGB(255, 236, 160), Enum.Material.Neon })
+		end
+	end
+
+	model.Parent = character
+
+	-- Aura from Demigod upwards
+	local rate = AscensionConfig.AuraRate[rank]
+	if rate and root then
+		local attachment = Instance.new("Attachment")
+		attachment.Name = "RankAura"
+		attachment.Parent = root
+		local emitter = Instance.new("ParticleEmitter")
+		emitter.Color = ColorSequence.new(godColor)
+		emitter.LightEmission = 1
+		emitter.Rate = rate
+		emitter.Lifetime = NumberRange.new(0.8, 1.4)
+		emitter.Speed = NumberRange.new(1, 2.5)
+		emitter.SpreadAngle = Vector2.new(180, 180)
+		emitter.Acceleration = Vector3.new(0, 3, 0)
+		emitter.Size = NumberSequence.new(0.35, 0)
+		emitter.Parent = attachment
+	end
+	return model
+end
+
+return RankOutfits
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="17">
         <Properties>
           <string name="Name">SwordAnimator</string>
           <string name="Source"><![CDATA[-- SwordAnimator (ModuleScript, used by the client only)
@@ -1179,7 +1471,7 @@ return SwordAnimator
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="16">
+      <Item class="ModuleScript" referent="18">
         <Properties>
           <string name="Name">SwordBuilder</string>
           <string name="Source"><![CDATA[-- SwordBuilder (ModuleScript)
@@ -1327,7 +1619,7 @@ return SwordBuilder
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="17">
+      <Item class="ModuleScript" referent="19">
         <Properties>
           <string name="Name">SwordPoses</string>
           <string name="Source"><![CDATA[-- SwordPoses (ModuleScript)
@@ -1482,7 +1774,7 @@ return Poses
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="18">
+      <Item class="ModuleScript" referent="20">
         <Properties>
           <string name="Name">TempleConfig</string>
           <string name="Source"><![CDATA[-- TempleConfig (ModuleScript)
@@ -1654,11 +1946,11 @@ return TempleConfig
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="19">
+  <Item class="ServerScriptService" referent="21">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Script" referent="20">
+    <Item class="Script" referent="22">
       <Properties>
         <string name="Name">Main</string>
         <token name="RunContext">0</token>
@@ -1690,6 +1982,7 @@ local CombatService = require(Services:WaitForChild("CombatService"))
 local DiagnosticsService = require(Services:WaitForChild("DiagnosticsService"))
 local AbilityService = require(Services:WaitForChild("AbilityService"))
 local ArenaService = require(Services:WaitForChild("ArenaService"))
+local AscensionService = require(Services:WaitForChild("AscensionService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -1729,6 +2022,7 @@ local reportRemote = newRemote("ClientReport") -- client -> server diagnostics r
 local abilityRemote = newRemote("UseAbility") -- client -> server "use my Q / E / R / Form ability"
 local arenaActionRemote = newRemote("ArenaAction") -- client -> server arena menu requests
 local arenaEventRemote = newRemote("ArenaEvent") -- server -> client party queue and results
+local ascensionRemote = newRemote("AscensionAction") -- client -> server "start my ascension trial"
 
 remotes.Parent = ReplicatedStorage
 
@@ -1750,6 +2044,8 @@ CombatService.SetModifierProvider(AbilityService.GetModifiers)
 CombatService.SetDashHandler(AbilityService.OnDash)
 ArenaService.Init(DataService, ProgressionService, PlotService, EnemyService, notifyRemote, arenaActionRemote, arenaEventRemote)
 ArenaService.BuildGate()
+AscensionService.Init(DataService, ProgressionService, ArenaService, notifyRemote, fxRemote, ascensionRemote)
+AscensionService.BuildChamber()
 if GameConfig.Debug.Diagnostics then
 	DiagnosticsService.Init(reportRemote)
 end
@@ -1807,7 +2103,10 @@ local function runDebugCommand(player, message)
 	elseif command == "!loyalty" and number then
 		reply(if GodService.AddLoyalty(player, number) then "Added " .. number .. " loyalty" else "Choose a god first")
 	elseif command == "!rank" then
-		local _, text = ProgressionService.AdvanceRank(player, "Debug")
+		local ok, text = ProgressionService.AdvanceRank(player, "Debug")
+		if ok then
+			AscensionService.OnRankUp(player)
+		end
 		reply(text)
 	elseif command == "!save" then
 		reply(if DataService.SaveNow(player) then "Saved" else "Save failed (see Output)")
@@ -1820,6 +2119,7 @@ local function runDebugCommand(player, message)
 			ProgressionService.RefreshAll(player)
 			GodService.Refresh(player)
 			TempleService.Rebuild(player)
+			task.spawn(AscensionService.ApplyLooks, player)
 			reply("Progress reset to defaults")
 		end
 	else
@@ -1855,6 +2155,7 @@ local function onPlayerAdded(player)
 	TempleService.SetupPlayer(player, plot)
 	CombatService.SetupPlayer(player)
 	AbilityService.SetupPlayer(player)
+	AscensionService.SetupPlayer(player)
 	player:SetAttribute("DataLoaded", true)
 	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
 end
@@ -1873,6 +2174,7 @@ Players.PlayerRemoving:Connect(function(player)
 	CombatService.ReleasePlayer(player)
 	AbilityService.ReleasePlayer(player)
 	ArenaService.ReleasePlayer(player)
+	AscensionService.ReleasePlayer(player)
 	PlotService.ReleasePlot(player)
 	DataService.ReleasePlayer(player) -- yields while saving
 end)
@@ -1923,11 +2225,11 @@ end)
 ]]></string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="21">
+    <Item class="Folder" referent="23">
       <Properties>
         <string name="Name">Services</string>
       </Properties>
-      <Item class="ModuleScript" referent="22">
+      <Item class="ModuleScript" referent="24">
         <Properties>
           <string name="Name">AbilityService</string>
           <string name="Source"><![CDATA[-- AbilityService (ModuleScript)
@@ -2298,7 +2600,7 @@ return AbilityService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="23">
+      <Item class="ModuleScript" referent="25">
         <Properties>
           <string name="Name">ArenaService</string>
           <string name="Source"><![CDATA[-- ArenaService (ModuleScript)
@@ -2518,6 +2820,9 @@ local function spawnEnemy(run, enemyType, position, isBoss)
 	local partyExtra = run.PartySize - 1
 	local party = ArenaConfig.Party
 	local healthMultiplier = 1 + partyExtra * (if isBoss then party.BossHealthPerExtraPlayer else party.HealthPerExtraPlayer)
+	if isBoss then
+		healthMultiplier *= run.Arena.BossHealth or 1 -- e.g. a tougher boss in a trial
+	end
 	-- Waves get harder: normal enemies get more health and damage each wave.
 	local damageMultiplier = 1
 	local speedMultiplier = 1
@@ -2632,8 +2937,11 @@ finish = function(run, victory)
 	run.Enemies = {}
 	run.Remaining = 0
 	publish(run)
+	if victory and run.OnVictory then
+		task.spawn(run.OnVictory, run) -- e.g. an ascension trial ranks the player up
+	end
 
-	local rewards = run.Arena.Rewards
+	local rewards = run.Arena.Rewards or {}
 	local multiplier = if victory then 1 else ArenaConfig.FailRewardMultiplier * (run.Cleared / #run.Arena.Waves)
 	local elapsed = math.floor(os.clock() - run.StartedAt)
 	for player in run.Players do
@@ -2685,8 +2993,8 @@ local function playerOut(run, player)
 	end
 end
 
-local function startRun(arenaId, members)
-	local arena = ArenaConfig.ById[arenaId]
+-- `arena` is an ArenaConfig entry, or a trial built by StartTrial.
+local function startRun(arena, members, onVictory)
 	if not arena or not arena.Available then
 		return false, "That arena isn't open yet."
 	end
@@ -2730,6 +3038,7 @@ local function startRun(arenaId, members)
 		Finished = false,
 		StartedAt = os.clock(),
 		Connections = {},
+		OnVictory = onVictory,
 	}
 	runs[run.Id] = run
 	run.Model = buildArena(center, arena)
@@ -2764,7 +3073,34 @@ function ArenaService.StartSolo(player, arenaId)
 	if playerRun[player] then
 		return false
 	end
-	local ok, result = startRun(arenaId, { player })
+	local ok, result = startRun(ArenaConfig.ById[arenaId], { player })
+	if not ok then
+		message(player, result)
+	end
+	return ok, result
+end
+
+-- Phase 6: a solo ascension trial. `trial` is an AscensionConfig.Trials entry;
+-- onVictory(run) is called once if the player wins.
+function ArenaService.StartTrial(player, trial, onVictory)
+	if playerRun[player] then
+		return false
+	end
+	local arena = {
+		Id = "Trial_" .. trial.Id,
+		DisplayName = "Trial: " .. trial.Name,
+		Available = true,
+		MinLevel = 0,
+		Color = trial.Color,
+		Waves = trial.Waves,
+		WaveHealth = trial.WaveHealth,
+		WaveDamage = trial.WaveDamage,
+		WaveSpeed = trial.WaveSpeed,
+		BossHealth = trial.BossHealth,
+		Rewards = {},
+	}
+	leaveQueue(player)
+	local ok, result = startRun(arena, { player }, onVictory)
 	if not ok then
 		message(player, result)
 	end
@@ -2776,7 +3112,8 @@ function ArenaService.JoinQueue(player, arenaId)
 	if not arena or playerRun[player] then
 		return false
 	end
-	local reason = ArenaConfig.LockReason(arena, playerLevel(player))
+	local data = DataService.GetData(player)
+	local reason = ArenaConfig.LockReason(arena, playerLevel(player), data and data.RankIndex or 1)
 	if reason then
 		message(player, reason .. " to enter " .. arena.DisplayName .. ".")
 		return false
@@ -2796,7 +3133,7 @@ function ArenaService.StartParty(player)
 	for arenaId, queue in queues do
 		if table.find(queue, player) then
 			local members = table.clone(queue)
-			local ok, result = startRun(arenaId, members)
+			local ok, result = startRun(ArenaConfig.ById[arenaId], members)
 			if not ok then
 				message(player, result)
 			end
@@ -2933,7 +3270,305 @@ return ArenaService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="24">
+      <Item class="ModuleScript" referent="26">
+        <Properties>
+          <string name="Name">AscensionService</string>
+          <string name="Source"><![CDATA[-- AscensionService (ModuleScript)
+-- Location: ServerScriptService > Services > AscensionService
+--
+-- Phase 6, ascension:
+--   * Builds the Ascension Chamber in Olympus Plaza (8 rank pillars + altar).
+--   * Trials: at the top level of your rank you can start the trial for the
+--     next rank (a solo arena run). Winning it calls
+--     ProgressionService.AdvanceRank, which raises the rank and the level cap.
+--   * Rank looks: each rank makes the character bigger and broader (applied
+--     to the player's OWN avatar proportions) and adds outfit pieces and,
+--     from Demigod up, an aura (see RankOutfits / AscensionConfig).
+--   * Ranking up plays a pillar-of-light effect for everyone nearby.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+local Workspace = game:GetService("Workspace")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local GameConfig = require(Shared:WaitForChild("GameConfig"))
+local GodConfig = require(Shared:WaitForChild("GodConfig"))
+local Progression = require(Shared:WaitForChild("Progression"))
+local AscensionConfig = require(Shared:WaitForChild("AscensionConfig"))
+local RankOutfits = require(Shared:WaitForChild("RankOutfits"))
+local WorldBuilder = require(ServerScriptService:WaitForChild("Services"):WaitForChild("WorldBuilder"))
+
+local AscensionService = {}
+
+local DataService = nil
+local ProgressionService = nil
+local ArenaService = nil
+local notifyRemote = nil
+local fxRemote = nil
+
+local originalScales = {} -- [Player] = the avatar's own body scales
+local applyToken = {}     -- [Player] = number, so only the newest ApplyLooks finishes
+
+local CHAMBER_CENTER = Vector3.new(44, 1, 0)
+
+local function message(player, text)
+	if notifyRemote and player.Parent then
+		notifyRemote:FireClient(player, "Message", text)
+	end
+end
+
+local function godColor(data)
+	return GodConfig.GetColors(data and data.SelectedGod or "").Primary
+end
+
+--------------------------------------------------------------------------
+-- Rank looks
+--------------------------------------------------------------------------
+local function applyPhysique(player, character, rank)
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
+	local ok, description = pcall(function()
+		return humanoid:GetAppliedDescription()
+	end)
+	if not ok or not description then
+		return
+	end
+	local base = originalScales[player]
+	if not base then
+		base = {
+			Height = description.HeightScale,
+			Width = description.WidthScale,
+			Depth = description.DepthScale,
+			Head = description.HeadScale,
+		}
+		originalScales[player] = base
+	end
+	local scale = AscensionConfig.Physique[rank] or AscensionConfig.Physique[1]
+	local target = {
+		HeightScale = base.Height * scale.Height,
+		WidthScale = base.Width * scale.Width,
+		DepthScale = base.Depth * scale.Depth,
+		HeadScale = base.Head * scale.Head,
+	}
+	local changed = false
+	for property, value in target do
+		if math.abs(description[property] - value) > 0.001 then
+			description[property] = value
+			changed = true
+		end
+	end
+	if changed then
+		pcall(function()
+			humanoid:ApplyDescription(description)
+		end)
+	end
+end
+
+-- Size + outfit + aura for the player's current rank.
+function AscensionService.ApplyLooks(player)
+	local data = DataService.GetData(player)
+	local character = player.Character
+	if not data or not character or not character.Parent then
+		return
+	end
+	applyToken[player] = (applyToken[player] or 0) + 1
+	local token = applyToken[player]
+	applyPhysique(player, character, data.RankIndex)
+	if applyToken[player] ~= token or player.Character ~= character then
+		return -- a newer call (or a new character) took over
+	end
+	RankOutfits.Apply(character, data.RankIndex, godColor(data))
+end
+
+-- Just the outfit colours (e.g. after changing god).
+local function refreshOutfit(player)
+	local data = DataService.GetData(player)
+	if data and player.Character then
+		RankOutfits.Apply(player.Character, data.RankIndex, godColor(data))
+	end
+end
+
+function AscensionService.OnRankUp(player)
+	local data = DataService.GetData(player)
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if root then
+		fxRemote:FireAllClients("Ascend", root.Position, godColor(data), player)
+	end
+	task.spawn(AscensionService.ApplyLooks, player)
+end
+
+--------------------------------------------------------------------------
+-- Trials
+--------------------------------------------------------------------------
+-- The next trial and whether it can be started now. Returns trial, reason.
+function AscensionService.NextTrial(player)
+	local data = DataService.GetData(player)
+	if not data then
+		return nil, "Your data isn't loaded."
+	end
+	if data.RankIndex >= #GameConfig.Ranks then
+		return nil, "You are already an Elder God."
+	end
+	local trial = AscensionConfig.Trials[data.RankIndex + 1]
+	local cap = Progression.GetLevelCap(data.RankIndex)
+	if data.Level < cap then
+		return trial, ("Reach level %d first (you are level %d)."):format(cap, data.Level)
+	end
+	if not trial.Available then
+		return trial, trial.Description
+	end
+	return trial, nil
+end
+
+function AscensionService.StartTrial(player)
+	local trial, reason = AscensionService.NextTrial(player)
+	if reason then
+		message(player, reason)
+		return false
+	end
+	local ok = ArenaService.StartTrial(player, trial, function(run)
+		if not run.Players[player] or not player.Parent then
+			return
+		end
+		local advanced, text = ProgressionService.AdvanceRank(player, trial.Id)
+		if advanced then
+			AscensionService.OnRankUp(player)
+			message(player, text)
+		end
+	end)
+	return ok
+end
+
+--------------------------------------------------------------------------
+-- Ascension Chamber (placeholder build in Olympus Plaza)
+--------------------------------------------------------------------------
+function AscensionService.BuildChamber()
+	local hub = Workspace:WaitForChild("Hub")
+	local marker = hub:FindFirstChild("Ascension Chamber")
+	if marker then
+		marker:Destroy() -- the old "coming in Phase 6" marker
+	end
+	if hub:FindFirstChild("AscensionChamber") then
+		return
+	end
+	local chamber = Instance.new("Model")
+	chamber.Name = "AscensionChamber"
+	local MP = WorldBuilder.MakePart
+	local c = CHAMBER_CENTER
+
+	MP(chamber, {
+		Name = "Dais",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.8, 22, 22),
+		CFrame = CFrame.new(c + Vector3.new(0, 0.4, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+		Color = Color3.fromRGB(240, 236, 226),
+	})
+	-- One pillar per rank; its top glows on YOUR screen once you reach that rank.
+	for i, rank in GameConfig.Ranks do
+		local angle = math.rad(-90 + (i - 1) * 45)
+		local pos = c + Vector3.new(math.cos(angle) * 9, 0.8, math.sin(angle) * 9)
+		local height = 3 + i * 0.6
+		MP(chamber, {
+			Name = "Pillar" .. i,
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(height, 1.6, 1.6),
+			CFrame = CFrame.new(pos + Vector3.new(0, height / 2, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+		})
+		local top = MP(chamber, {
+			Name = "RankGlow" .. i,
+			Size = Vector3.new(1.4, 1.4, 1.4),
+			CFrame = CFrame.new(pos + Vector3.new(0, height + 0.9, 0)) * CFrame.Angles(0, math.rad(45), 0),
+			Material = Enum.Material.Neon,
+			Color = Color3.fromRGB(150, 150, 160),
+		})
+		top:SetAttribute("RankIndex", i)
+		WorldBuilder.AddLabel(top, rank.Name, rank.Color, 2)
+	end
+	local altar = MP(chamber, {
+		Name = "Altar",
+		Size = Vector3.new(4, 3, 4),
+		Position = c + Vector3.new(0, 2.3, 0),
+		Material = Enum.Material.Metal,
+		Color = Color3.fromRGB(212, 175, 55),
+	})
+	WorldBuilder.AddLabel(altar, "Ascension Chamber", Color3.fromRGB(120, 200, 255), 6)
+	MP(chamber, {
+		Name = "Beam",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(40, 1.2, 1.2),
+		CFrame = CFrame.new(c + Vector3.new(0, 23.8, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+		Material = Enum.Material.Neon,
+		Color = Color3.fromRGB(255, 236, 170),
+		Transparency = 0.6,
+		CanCollide = false,
+	})
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = "Ascend"
+	prompt.ObjectText = "Ascension Chamber"
+	prompt.HoldDuration = 0.2
+	prompt.MaxActivationDistance = 12
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = altar
+	prompt.Triggered:Connect(function(player)
+		notifyRemote:FireClient(player, "OpenAscension")
+	end)
+	chamber.Parent = hub
+end
+
+--------------------------------------------------------------------------
+-- Setup
+--------------------------------------------------------------------------
+function AscensionService.Init(dataService, progressionService, arenaService, notifyRemoteEvent, fxRemoteEvent, ascensionRemote)
+	DataService = dataService
+	ProgressionService = progressionService
+	ArenaService = arenaService
+	notifyRemote = notifyRemoteEvent
+	fxRemote = fxRemoteEvent
+
+	if ascensionRemote then
+		local last = {}
+		ascensionRemote.OnServerEvent:Connect(function(player, action)
+			local t = os.clock()
+			if last[player] and t - last[player] < 1 then
+				return
+			end
+			last[player] = t
+			if action == "StartTrial" then
+				AscensionService.StartTrial(player)
+			end
+		end)
+	end
+end
+
+function AscensionService.SetupPlayer(player)
+	-- Looks are applied once the avatar has fully loaded (body parts arrive late).
+	if typeof(player) == "Instance" then
+		player.CharacterAppearanceLoaded:Connect(function()
+			AscensionService.ApplyLooks(player)
+		end)
+		if player.Character and player:HasAppearanceLoaded() then
+			task.spawn(AscensionService.ApplyLooks, player)
+		end
+	elseif player.Character then
+		task.spawn(AscensionService.ApplyLooks, player)
+	end
+	player:GetAttributeChangedSignal("SelectedGod"):Connect(function()
+		refreshOutfit(player)
+	end)
+end
+
+function AscensionService.ReleasePlayer(player)
+	originalScales[player] = nil
+	applyToken[player] = nil
+end
+
+return AscensionService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="27">
         <Properties>
           <string name="Name">CombatService</string>
           <string name="Source"><![CDATA[-- CombatService (ModuleScript)
@@ -3310,7 +3945,7 @@ return CombatService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="25">
+      <Item class="ModuleScript" referent="28">
         <Properties>
           <string name="Name">DataService</string>
           <string name="Source"><![CDATA[-- DataService (ModuleScript)
@@ -3690,7 +4325,7 @@ return DataService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="26">
+      <Item class="ModuleScript" referent="29">
         <Properties>
           <string name="Name">DiagnosticsService</string>
           <string name="Source"><![CDATA[-- DiagnosticsService (ModuleScript)
@@ -3791,7 +4426,7 @@ return DiagnosticsService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="27">
+      <Item class="ModuleScript" referent="30">
         <Properties>
           <string name="Name">EnemyService</string>
           <string name="Source"><![CDATA[-- EnemyService (ModuleScript)
@@ -4697,7 +5332,7 @@ return EnemyService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="28">
+      <Item class="ModuleScript" referent="31">
         <Properties>
           <string name="Name">GodService</string>
           <string name="Source"><![CDATA[-- GodService (ModuleScript)
@@ -5153,7 +5788,7 @@ return GodService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="29">
+      <Item class="ModuleScript" referent="32">
         <Properties>
           <string name="Name">PlotService</string>
           <string name="Source"><![CDATA[-- PlotService (ModuleScript)
@@ -5281,7 +5916,7 @@ return PlotService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="30">
+      <Item class="ModuleScript" referent="33">
         <Properties>
           <string name="Name">ProgressionService</string>
           <string name="Source"><![CDATA[-- ProgressionService (ModuleScript)
@@ -5556,7 +6191,7 @@ return ProgressionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="31">
+      <Item class="ModuleScript" referent="34">
         <Properties>
           <string name="Name">TempleModels</string>
           <string name="Source"><![CDATA[-- TempleModels (ModuleScript)
@@ -6038,7 +6673,7 @@ return TempleModels
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="32">
+      <Item class="ModuleScript" referent="35">
         <Properties>
           <string name="Name">TempleService</string>
           <string name="Source"><![CDATA[-- TempleService (ModuleScript)
@@ -6445,7 +7080,7 @@ return TempleService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="33">
+      <Item class="ModuleScript" referent="36">
         <Properties>
           <string name="Name">WorldBuilder</string>
           <string name="Source"><![CDATA[-- WorldBuilder (ModuleScript)
@@ -6685,16 +7320,16 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="34">
+  <Item class="StarterPlayer" referent="37">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <token name="AvatarJointUpgrade_SerializedRollout">1</token>
     </Properties>
-    <Item class="StarterCharacterScripts" referent="35">
+    <Item class="StarterCharacterScripts" referent="38">
       <Properties>
         <string name="Name">StarterCharacterScripts</string>
       </Properties>
-      <Item class="Script" referent="36">
+      <Item class="Script" referent="39">
         <Properties>
           <string name="Name">Health</string>
           <token name="RunContext">0</token>
@@ -6708,11 +7343,11 @@ return WorldBuilder
         </Properties>
       </Item>
     </Item>
-    <Item class="StarterPlayerScripts" referent="37">
+    <Item class="StarterPlayerScripts" referent="40">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="38">
+      <Item class="LocalScript" referent="41">
         <Properties>
           <string name="Name">AbilityController</string>
           <string name="Source"><![CDATA[-- AbilityController (LocalScript)
@@ -7179,7 +7814,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="39">
+      <Item class="LocalScript" referent="42">
         <Properties>
           <string name="Name">ArenaUI</string>
           <string name="Source"><![CDATA[-- ArenaUI (LocalScript)
@@ -7334,13 +7969,13 @@ for order, arena in ArenaConfig.Arenas do
 	local solo = button({ AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -116, 0.5, 0), Size = UDim2.fromOffset(110, 44), BackgroundColor3 = THEME.Ready, Text = "Fight Solo", Parent = row })
 	local party = button({ AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(110, 44), BackgroundColor3 = THEME.Party, Text = "Join Party", Parent = row })
 	solo.Activated:Connect(function()
-		if not ArenaConfig.LockReason(arena, player:GetAttribute("Level") or 1) then
+		if not ArenaConfig.LockReason(arena, player:GetAttribute("Level") or 1, player:GetAttribute("RankIndex") or 1) then
 			actionRemote:FireServer("StartSolo", arena.Id)
 			menu.Visible = false
 		end
 	end)
 	party.Activated:Connect(function()
-		if not ArenaConfig.LockReason(arena, player:GetAttribute("Level") or 1) then
+		if not ArenaConfig.LockReason(arena, player:GetAttribute("Level") or 1, player:GetAttribute("RankIndex") or 1) then
 			actionRemote:FireServer("JoinQueue", arena.Id)
 		end
 	end)
@@ -7350,7 +7985,7 @@ end
 local function refreshMenu()
 	local level = player:GetAttribute("Level") or 1
 	for _, r in rows do
-		local reason = ArenaConfig.LockReason(r.Arena, level)
+		local reason = ArenaConfig.LockReason(r.Arena, level, player:GetAttribute("RankIndex") or 1)
 		r.Status.Text = if reason then "Locked: " .. reason else ""
 		r.Solo.Visible = reason == nil
 		r.Party.Visible = reason == nil
@@ -7531,7 +8166,319 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="40">
+      <Item class="LocalScript" referent="43">
+        <Properties>
+          <string name="Name">AscensionUI</string>
+          <string name="Source"><![CDATA[-- AscensionUI (LocalScript)
+-- Location: StarterPlayer > StarterPlayerScripts > AscensionUI
+--
+-- Phase 6 interface:
+--   * Ascension screen (from the altar in the Ascension Chamber): all 8 ranks
+--     with what each one gives, your next trial, its requirements, and the
+--     "Begin Trial" button.
+--   * Lights up the chamber's rank pillars you have reached (on your screen).
+--   * The rank-up effect: a pillar of light and a burst, seen by everyone.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local GameConfig = require(Shared:WaitForChild("GameConfig"))
+local Progression = require(Shared:WaitForChild("Progression"))
+local AscensionConfig = require(Shared:WaitForChild("AscensionConfig"))
+
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local ascensionRemote = Remotes:WaitForChild("AscensionAction")
+local notifyRemote = Remotes:WaitForChild("Notify")
+local fxRemote = Remotes:WaitForChild("CombatFX")
+
+local THEME = {
+	Marble = Color3.fromRGB(246, 242, 232),
+	MarbleDark = Color3.fromRGB(228, 220, 204),
+	Gold = Color3.fromRGB(212, 175, 55),
+	Bronze = Color3.fromRGB(140, 92, 45),
+	Text = Color3.fromRGB(58, 44, 28),
+	SubText = Color3.fromRGB(110, 95, 75),
+	White = Color3.new(1, 1, 1),
+	Ready = Color3.fromRGB(70, 150, 70),
+	Locked = Color3.fromRGB(130, 130, 140),
+	Sky = Color3.fromRGB(120, 200, 255),
+}
+
+local function create(className, props, children)
+	local inst = Instance.new(className)
+	for key, value in props do
+		if key ~= "Parent" then
+			inst[key] = value
+		end
+	end
+	for _, child in children or {} do
+		child.Parent = inst
+	end
+	if props.Parent then
+		inst.Parent = props.Parent
+	end
+	return inst
+end
+local function corner(r)
+	return create("UICorner", { CornerRadius = UDim.new(0, r) })
+end
+local function stroke(color, t)
+	return create("UIStroke", { Color = color, Thickness = t, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+end
+local function padding(px)
+	return create("UIPadding", { PaddingTop = UDim.new(0, px), PaddingBottom = UDim.new(0, px), PaddingLeft = UDim.new(0, px), PaddingRight = UDim.new(0, px) })
+end
+local function text(props)
+	props.BackgroundTransparency = 1
+	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
+	props.TextColor3 = props.TextColor3 or THEME.Text
+	props.Font = props.Font or Enum.Font.Gotham
+	return create("TextLabel", props)
+end
+
+local gui = create("ScreenGui", { Name = "AscensionUI", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, DisplayOrder = 8, Parent = playerGui })
+local uiScale = create("UIScale", { Parent = gui })
+local function updateScale()
+	local camera = Workspace.CurrentCamera
+	local viewport = if camera then camera.ViewportSize else Vector2.new(1280, 720)
+	uiScale.Scale = math.clamp(math.min(viewport.X / 1280, viewport.Y / 720), 0.7, 1.2)
+end
+updateScale()
+if Workspace.CurrentCamera then
+	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+end
+
+--------------------------------------------------------------------------
+-- Panel
+--------------------------------------------------------------------------
+local panel = create("Frame", {
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(660, 520),
+	BackgroundColor3 = THEME.Marble,
+	Visible = false,
+	Parent = gui,
+}, { corner(12), stroke(THEME.Sky, 3), padding(14) })
+text({ Size = UDim2.new(1, -50, 0, 36), Font = Enum.Font.Garamond, TextSize = 34, Text = "Ascension", Parent = panel })
+local closeButton = create("TextButton", {
+	AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.fromOffset(40, 40),
+	BackgroundColor3 = THEME.Bronze, Text = "X", Font = Enum.Font.GothamBold, TextSize = 20, TextColor3 = THEME.White, Parent = panel,
+}, { corner(8) })
+
+-- Next trial box
+local trialBox = create("Frame", {
+	Position = UDim2.fromOffset(0, 44),
+	Size = UDim2.new(1, 0, 0, 104),
+	BackgroundColor3 = Color3.fromRGB(222, 236, 248),
+	Parent = panel,
+}, { corner(10), padding(10) })
+local trialTitle = text({ Size = UDim2.new(1, -170, 0, 24), Font = Enum.Font.GothamBold, TextSize = 18, Text = "", Parent = trialBox })
+local trialDesc = text({ Position = UDim2.fromOffset(0, 26), Size = UDim2.new(1, -170, 0, 36), TextSize = 14, TextColor3 = THEME.SubText, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top, Text = "", Parent = trialBox })
+local trialReq = text({ Position = UDim2.fromOffset(0, 64), Size = UDim2.new(1, -170, 0, 20), Font = Enum.Font.GothamBold, TextSize = 14, Text = "", Parent = trialBox })
+local trialButton = create("TextButton", {
+	AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.fromOffset(150, 56),
+	BackgroundColor3 = THEME.Ready, Text = "Begin Trial", Font = Enum.Font.GothamBold, TextSize = 18, TextColor3 = THEME.White, Parent = trialBox,
+}, { corner(8) })
+
+-- Rank list
+local list = create("ScrollingFrame", {
+	Position = UDim2.fromOffset(0, 158),
+	Size = UDim2.new(1, 0, 1, -158),
+	BackgroundTransparency = 1,
+	BorderSizePixel = 0,
+	ScrollBarThickness = 6,
+	ScrollBarImageColor3 = THEME.Bronze,
+	CanvasSize = UDim2.new(),
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	Parent = panel,
+}, { create("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }), create("UIPadding", { PaddingRight = UDim.new(0, 10) }) })
+
+local rows = {}
+for i, rank in GameConfig.Ranks do
+	local row = create("Frame", { Size = UDim2.new(1, 0, 0, 52), BackgroundColor3 = THEME.MarbleDark, LayoutOrder = i, Parent = list }, { corner(8), padding(6) })
+	create("Frame", { Size = UDim2.fromOffset(10, 40), BackgroundColor3 = rank.Color, Parent = row }, { corner(4) })
+	text({ Position = UDim2.fromOffset(18, 0), Size = UDim2.new(1, -150, 0, 20), Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = rank.Color, Text = ("%s   (levels %d-%d)"):format(rank.Name, rank.MinLevel, rank.MaxLevel), Parent = row })
+	text({ Position = UDim2.fromOffset(18, 21), Size = UDim2.new(1, -150, 0, 18), TextSize = 13, TextColor3 = THEME.SubText, TextTruncate = Enum.TextTruncate.AtEnd, Text = AscensionConfig.Perks[i] or "", Parent = row })
+	local status = text({ AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.fromOffset(130, 24), Font = Enum.Font.GothamBold, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Right, Text = "", Parent = row })
+	rows[i] = status
+end
+
+local function refresh()
+	local rankIndex = player:GetAttribute("RankIndex") or 1
+	local level = player:GetAttribute("Level") or 1
+	for i, status in rows do
+		if i < rankIndex then
+			status.Text = "Achieved"
+			status.TextColor3 = THEME.Ready
+		elseif i == rankIndex then
+			status.Text = "Your rank"
+			status.TextColor3 = THEME.Sky
+		elseif i == rankIndex + 1 then
+			status.Text = "Next"
+			status.TextColor3 = THEME.Bronze
+		else
+			status.Text = "Locked"
+			status.TextColor3 = THEME.Locked
+		end
+	end
+
+	if rankIndex >= #GameConfig.Ranks then
+		trialTitle.Text = "You are an Elder God!"
+		trialDesc.Text = "You have completed every ascension."
+		trialReq.Text = ""
+		trialButton.Visible = false
+		return
+	end
+	local nextRank = GameConfig.Ranks[rankIndex + 1]
+	local trial = AscensionConfig.Trials[rankIndex + 1]
+	local cap = Progression.GetLevelCap(rankIndex)
+	trialTitle.Text = ("Become a %s: %s"):format(nextRank.Name, trial.Name)
+	trialTitle.TextColor3 = nextRank.Color
+	trialDesc.Text = trial.Description or ""
+	local ready = level >= cap and trial.Available
+	if level < cap then
+		trialReq.Text = ("Reach level %d (you are level %d)"):format(cap, level)
+		trialReq.TextColor3 = Color3.fromRGB(175, 55, 35)
+	elseif not trial.Available then
+		trialReq.Text = "This trial arrives in Phase 7"
+		trialReq.TextColor3 = Color3.fromRGB(175, 55, 35)
+	else
+		trialReq.Text = "You are ready!"
+		trialReq.TextColor3 = THEME.Ready
+	end
+	trialButton.Visible = true
+	trialButton.BackgroundColor3 = if ready then THEME.Ready else THEME.Locked
+	trialButton.AutoButtonColor = ready
+end
+
+for _, attribute in { "RankIndex", "Level" } do
+	player:GetAttributeChangedSignal(attribute):Connect(refresh)
+end
+refresh()
+
+trialButton.Activated:Connect(function()
+	ascensionRemote:FireServer("StartTrial") -- the server checks everything again
+	panel.Visible = false
+end)
+closeButton.Activated:Connect(function()
+	panel.Visible = false
+end)
+
+notifyRemote.OnClientEvent:Connect(function(kind)
+	if kind == "OpenAscension" then
+		refresh()
+		panel.Visible = true
+	end
+end)
+
+--------------------------------------------------------------------------
+-- Chamber pillars: the ranks you have reached glow in their colour
+--------------------------------------------------------------------------
+local function colourPillars()
+	local hub = Workspace:FindFirstChild("Hub")
+	local chamber = hub and hub:FindFirstChild("AscensionChamber")
+	if not chamber then
+		return
+	end
+	local rankIndex = player:GetAttribute("RankIndex") or 1
+	for _, part in chamber:GetChildren() do
+		local index = part:GetAttribute("RankIndex")
+		if index then
+			part.Color = if index <= rankIndex then GameConfig.Ranks[index].Color else Color3.fromRGB(150, 150, 160)
+			part.Transparency = if index <= rankIndex then 0 else 0.4
+		end
+	end
+end
+player:GetAttributeChangedSignal("RankIndex"):Connect(colourPillars)
+task.spawn(function()
+	local hub = Workspace:WaitForChild("Hub", 30)
+	if hub then
+		hub:WaitForChild("AscensionChamber", 30)
+		colourPillars()
+	end
+end)
+
+--------------------------------------------------------------------------
+-- Rank-up effect
+--------------------------------------------------------------------------
+local fxFolder = Workspace:FindFirstChild("ClientEffects") or Instance.new("Folder")
+fxFolder.Name = "ClientEffects"
+fxFolder.Parent = Workspace
+
+local function effectPart(props)
+	local part = Instance.new("Part")
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.CastShadow = false
+	part.Material = Enum.Material.Neon
+	for key, value in props do
+		part[key] = value
+	end
+	part.Parent = fxFolder
+	return part
+end
+
+fxRemote.OnClientEvent:Connect(function(kind, position, color)
+	if kind ~= "Ascend" or typeof(position) ~= "Vector3" or typeof(color) ~= "Color3" then
+		return
+	end
+	local ground = position - Vector3.new(0, 3, 0)
+	local pillar = effectPart({
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(80, 2, 2),
+		CFrame = CFrame.new(ground + Vector3.new(0, 40, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+		Color = Color3.fromRGB(255, 240, 190),
+		Transparency = 0.2,
+	})
+	TweenService:Create(pillar, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = Vector3.new(80, 9, 9) }):Play()
+	task.delay(0.5, function()
+		TweenService:Create(pillar, TweenInfo.new(1.4), { Transparency = 1, Size = Vector3.new(80, 12, 12) }):Play()
+	end)
+	Debris:AddItem(pillar, 2)
+
+	local ring = effectPart({
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.3, 2, 2),
+		CFrame = CFrame.new(ground + Vector3.new(0, 0.2, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+		Color = color,
+		Transparency = 0.2,
+	})
+	TweenService:Create(ring, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = Vector3.new(0.3, 40, 40), Transparency = 1 }):Play()
+	Debris:AddItem(ring, 0.9)
+
+	local holder = effectPart({ Size = Vector3.new(0.2, 0.2, 0.2), Transparency = 1, Position = position })
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Color = ColorSequence.new(color, Color3.fromRGB(255, 240, 190))
+	emitter.LightEmission = 1
+	emitter.Lifetime = NumberRange.new(0.8, 1.5)
+	emitter.Speed = NumberRange.new(10, 25)
+	emitter.SpreadAngle = Vector2.new(180, 180)
+	emitter.Acceleration = Vector3.new(0, 8, 0)
+	emitter.Size = NumberSequence.new(0.6, 0)
+	emitter.Rate = 0
+	emitter.Parent = holder
+	emitter:Emit(60)
+	local light = Instance.new("PointLight")
+	light.Color = Color3.fromRGB(255, 240, 190)
+	light.Range = 40
+	light.Brightness = 5
+	light.Parent = holder
+	TweenService:Create(light, TweenInfo.new(1.5), { Brightness = 0 }):Play()
+	Debris:AddItem(holder, 2)
+end)
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="LocalScript" referent="44">
         <Properties>
           <string name="Name">CombatController</string>
           <string name="Source"><![CDATA[-- CombatController (LocalScript)
@@ -8158,7 +9105,7 @@ updateEnabled()
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="41">
+      <Item class="LocalScript" referent="45">
         <Properties>
           <string name="Name">Diagnostics</string>
           <string name="Source"><![CDATA[-- Diagnostics (LocalScript)
@@ -8256,7 +9203,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="42">
+      <Item class="LocalScript" referent="46">
         <Properties>
           <string name="Name">GodUI</string>
           <string name="Source"><![CDATA[-- GodUI (LocalScript)
@@ -8835,7 +9782,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="43">
+      <Item class="LocalScript" referent="47">
         <Properties>
           <string name="Name">HUDController</string>
           <string name="Source"><![CDATA[-- HUDController (LocalScript)
@@ -9312,7 +10259,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="44">
+      <Item class="LocalScript" referent="48">
         <Properties>
           <string name="Name">TempleUI</string>
           <string name="Source"><![CDATA[-- TempleUI (LocalScript)

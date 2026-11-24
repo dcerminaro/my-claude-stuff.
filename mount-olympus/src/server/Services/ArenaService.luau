@@ -215,6 +215,9 @@ local function spawnEnemy(run, enemyType, position, isBoss)
 	local partyExtra = run.PartySize - 1
 	local party = ArenaConfig.Party
 	local healthMultiplier = 1 + partyExtra * (if isBoss then party.BossHealthPerExtraPlayer else party.HealthPerExtraPlayer)
+	if isBoss then
+		healthMultiplier *= run.Arena.BossHealth or 1 -- e.g. a tougher boss in a trial
+	end
 	-- Waves get harder: normal enemies get more health and damage each wave.
 	local damageMultiplier = 1
 	local speedMultiplier = 1
@@ -329,8 +332,11 @@ finish = function(run, victory)
 	run.Enemies = {}
 	run.Remaining = 0
 	publish(run)
+	if victory and run.OnVictory then
+		task.spawn(run.OnVictory, run) -- e.g. an ascension trial ranks the player up
+	end
 
-	local rewards = run.Arena.Rewards
+	local rewards = run.Arena.Rewards or {}
 	local multiplier = if victory then 1 else ArenaConfig.FailRewardMultiplier * (run.Cleared / #run.Arena.Waves)
 	local elapsed = math.floor(os.clock() - run.StartedAt)
 	for player in run.Players do
@@ -382,8 +388,8 @@ local function playerOut(run, player)
 	end
 end
 
-local function startRun(arenaId, members)
-	local arena = ArenaConfig.ById[arenaId]
+-- `arena` is an ArenaConfig entry, or a trial built by StartTrial.
+local function startRun(arena, members, onVictory)
 	if not arena or not arena.Available then
 		return false, "That arena isn't open yet."
 	end
@@ -427,6 +433,7 @@ local function startRun(arenaId, members)
 		Finished = false,
 		StartedAt = os.clock(),
 		Connections = {},
+		OnVictory = onVictory,
 	}
 	runs[run.Id] = run
 	run.Model = buildArena(center, arena)
@@ -461,7 +468,34 @@ function ArenaService.StartSolo(player, arenaId)
 	if playerRun[player] then
 		return false
 	end
-	local ok, result = startRun(arenaId, { player })
+	local ok, result = startRun(ArenaConfig.ById[arenaId], { player })
+	if not ok then
+		message(player, result)
+	end
+	return ok, result
+end
+
+-- Phase 6: a solo ascension trial. `trial` is an AscensionConfig.Trials entry;
+-- onVictory(run) is called once if the player wins.
+function ArenaService.StartTrial(player, trial, onVictory)
+	if playerRun[player] then
+		return false
+	end
+	local arena = {
+		Id = "Trial_" .. trial.Id,
+		DisplayName = "Trial: " .. trial.Name,
+		Available = true,
+		MinLevel = 0,
+		Color = trial.Color,
+		Waves = trial.Waves,
+		WaveHealth = trial.WaveHealth,
+		WaveDamage = trial.WaveDamage,
+		WaveSpeed = trial.WaveSpeed,
+		BossHealth = trial.BossHealth,
+		Rewards = {},
+	}
+	leaveQueue(player)
+	local ok, result = startRun(arena, { player }, onVictory)
 	if not ok then
 		message(player, result)
 	end
@@ -473,7 +507,8 @@ function ArenaService.JoinQueue(player, arenaId)
 	if not arena or playerRun[player] then
 		return false
 	end
-	local reason = ArenaConfig.LockReason(arena, playerLevel(player))
+	local data = DataService.GetData(player)
+	local reason = ArenaConfig.LockReason(arena, playerLevel(player), data and data.RankIndex or 1)
 	if reason then
 		message(player, reason .. " to enter " .. arena.DisplayName .. ".")
 		return false
@@ -493,7 +528,7 @@ function ArenaService.StartParty(player)
 	for arenaId, queue in queues do
 		if table.find(queue, player) then
 			local members = table.clone(queue)
-			local ok, result = startRun(arenaId, members)
+			local ok, result = startRun(ArenaConfig.ById[arenaId], members)
 			if not ok then
 				message(player, result)
 			end

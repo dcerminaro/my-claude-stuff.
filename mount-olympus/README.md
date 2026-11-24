@@ -2,7 +2,7 @@
 
 A Greek mythology RPG / temple tycoon for Roblox.
 
-- **Status:** Phases 1–4 confirmed by the developer. Phase 5 (Arenas) built, server-tested on Roblox, awaiting play-testing.
+- **Status:** Phases 1–5 done. Phase 6 (Ascension) built, server-tested on Roblox, awaiting play-testing.
 - **Full design spec, decisions, and roadmap:** [`HANDOFF.md`](HANDOFF.md).
 
 ## Fastest way to try it (no tools needed)
@@ -21,6 +21,7 @@ A Greek mythology RPG / temple tycoon for Roblox.
 | `src/shared/GameConfig.luau` | ReplicatedStorage › Shared › GameConfig | ModuleScript |
 | `src/shared/Progression.luau` | ReplicatedStorage › Shared › Progression | ModuleScript |
 | `src/shared/TempleConfig.luau` | ReplicatedStorage › Shared › TempleConfig | ModuleScript |
+| `src/shared/AscensionConfig.luau`, `RankOutfits.luau` | ReplicatedStorage › Shared › (same names) | ModuleScript |
 | `src/shared/ArenaConfig.luau` | ReplicatedStorage › Shared › ArenaConfig | ModuleScript |
 | `src/shared/AbilityConfig.luau` | ReplicatedStorage › Shared › AbilityConfig | ModuleScript |
 | `src/shared/SwordBuilder.luau`, `SwordPoses.luau`, `SwordAnimator.luau` | ReplicatedStorage › Shared › (same names) | ModuleScript |
@@ -37,6 +38,7 @@ A Greek mythology RPG / temple tycoon for Roblox.
 | `src/server/Services/GodService.luau` | ServerScriptService › Services › GodService | ModuleScript |
 | `src/server/Services/EnemyService.luau` | ServerScriptService › Services › EnemyService | ModuleScript |
 | `src/server/Services/CombatService.luau` | ServerScriptService › Services › CombatService | ModuleScript |
+| `src/server/Services/AscensionService.luau` | ServerScriptService › Services › AscensionService | ModuleScript |
 | `src/server/Services/ArenaService.luau` | ServerScriptService › Services › ArenaService | ModuleScript |
 | `src/server/Services/AbilityService.luau` | ServerScriptService › Services › AbilityService | ModuleScript |
 | `src/server/Services/DiagnosticsService.luau` | ServerScriptService › Services › DiagnosticsService | ModuleScript |
@@ -44,6 +46,7 @@ A Greek mythology RPG / temple tycoon for Roblox.
 | `src/client/TempleUI.client.luau` | StarterPlayer › StarterPlayerScripts › TempleUI | LocalScript |
 | `src/client/GodUI.client.luau` | StarterPlayer › StarterPlayerScripts › GodUI | LocalScript |
 | `src/client/CombatController.client.luau` | StarterPlayer › StarterPlayerScripts › CombatController | LocalScript |
+| `src/client/AscensionUI.client.luau` | StarterPlayer › StarterPlayerScripts › AscensionUI | LocalScript |
 | `src/client/ArenaUI.client.luau` | StarterPlayer › StarterPlayerScripts › ArenaUI | LocalScript |
 | `src/client/AbilityController.client.luau` | StarterPlayer › StarterPlayerScripts › AbilityController | LocalScript |
 | `src/client/Diagnostics.client.luau` | StarterPlayer › StarterPlayerScripts › Diagnostics | LocalScript |
