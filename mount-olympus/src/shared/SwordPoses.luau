@@ -34,14 +34,14 @@ local slash1Up = {
 	RightElbow = { 30, 0, 0 },
 	RightWrist = { -10, 0, 0 },
 	LeftShoulder = { 20, 0, -10 },
-	Waist = { 0, -25, 0 },
+	Waist = { 0, -15, 0 },
 }
 local slash1Down = {
 	RightShoulder = { 55, 0, -45 },
 	RightElbow = { 10, 0, 0 },
 	RightWrist = { -70, 0, 0 },
 	LeftShoulder = { -15, 0, -10 },
-	Waist = { 0, 30, 0 },
+	Waist = { 0, 18, 0 },
 }
 
 -- Slash 2: backhand, from the left across to the right.
@@ -50,14 +50,14 @@ local slash2Start = {
 	RightElbow = { 80, 0, 0 },
 	RightWrist = { -30, 0, 0 },
 	LeftShoulder = { 10, 0, -10 },
-	Waist = { 0, 30, 0 },
+	Waist = { 0, 18, 0 },
 }
 local slash2End = {
 	RightShoulder = { 85, 0, 60 },
 	RightElbow = { 5, 0, 0 },
 	RightWrist = { -80, 0, 0 },
 	LeftShoulder = { -10, 0, -15 },
-	Waist = { 0, -30, 0 },
+	Waist = { 0, -18, 0 },
 }
 
 -- Lunge: pull back, then thrust straight forward.
@@ -66,14 +66,14 @@ local lungeBack = {
 	RightElbow = { 110, 0, 0 },
 	RightWrist = { -120, 0, 0 },
 	LeftShoulder = { 40, 0, -20 },
-	Waist = { 0, -20, 0 },
+	Waist = { 0, -12, 0 },
 }
 local lungeThrust = {
 	RightShoulder = { 90, 0, 0 },
 	RightElbow = { 0, 0, 0 },
 	RightWrist = { -90, 0, 0 },
 	LeftShoulder = { -30, 0, -20 },
-	Waist = { 0, 15, 0 },
+	Waist = { 0, 8, 0 },
 }
 
 Poses.Moves = {

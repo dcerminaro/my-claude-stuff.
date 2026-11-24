@@ -249,7 +249,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v13"
+GameConfig.BuildLabel = "v14"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -1028,14 +1028,14 @@ local slash1Up = {
 	RightElbow = { 30, 0, 0 },
 	RightWrist = { -10, 0, 0 },
 	LeftShoulder = { 20, 0, -10 },
-	Waist = { 0, -25, 0 },
+	Waist = { 0, -15, 0 },
 }
 local slash1Down = {
 	RightShoulder = { 55, 0, -45 },
 	RightElbow = { 10, 0, 0 },
 	RightWrist = { -70, 0, 0 },
 	LeftShoulder = { -15, 0, -10 },
-	Waist = { 0, 30, 0 },
+	Waist = { 0, 18, 0 },
 }
 
 -- Slash 2: backhand, from the left across to the right.
@@ -1044,14 +1044,14 @@ local slash2Start = {
 	RightElbow = { 80, 0, 0 },
 	RightWrist = { -30, 0, 0 },
 	LeftShoulder = { 10, 0, -10 },
-	Waist = { 0, 30, 0 },
+	Waist = { 0, 18, 0 },
 }
 local slash2End = {
 	RightShoulder = { 85, 0, 60 },
 	RightElbow = { 5, 0, 0 },
 	RightWrist = { -80, 0, 0 },
 	LeftShoulder = { -10, 0, -15 },
-	Waist = { 0, -30, 0 },
+	Waist = { 0, -18, 0 },
 }
 
 -- Lunge: pull back, then thrust straight forward.
@@ -1060,14 +1060,14 @@ local lungeBack = {
 	RightElbow = { 110, 0, 0 },
 	RightWrist = { -120, 0, 0 },
 	LeftShoulder = { 40, 0, -20 },
-	Waist = { 0, -20, 0 },
+	Waist = { 0, -12, 0 },
 }
 local lungeThrust = {
 	RightShoulder = { 90, 0, 0 },
 	RightElbow = { 0, 0, 0 },
 	RightWrist = { -90, 0, 0 },
 	LeftShoulder = { -30, 0, -20 },
-	Waist = { 0, 15, 0 },
+	Waist = { 0, 8, 0 },
 }
 
 Poses.Moves = {
@@ -1551,6 +1551,7 @@ end)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PhysicsService = game:GetService("PhysicsService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CombatConfig = require(Shared:WaitForChild("CombatConfig"))
@@ -1567,6 +1568,33 @@ local fxRemote = nil
 local CFG = CombatConfig.Player
 local state = {} -- [Player] = { NextAttackAt, NextDashAt, InvulnerableUntil, Blocking, SavedWalkSpeed, Shield, LastDamagedAt }
 local random = Random.new()
+
+-- Players and enemies pass through each other, so bumping into an enemy can't
+-- lift you up ("random jumps") or shove you around mid-swing.
+CombatService.PLAYER_GROUP = "OlympusPlayers"
+CombatService.ENEMY_GROUP = "OlympusEnemies"
+
+local function setupCollisionGroups()
+	for _, name in { CombatService.PLAYER_GROUP, CombatService.ENEMY_GROUP } do
+		pcall(function()
+			PhysicsService:RegisterCollisionGroup(name)
+		end)
+	end
+	PhysicsService:CollisionGroupSetCollidable(CombatService.PLAYER_GROUP, CombatService.ENEMY_GROUP, false)
+end
+
+local function putInGroup(item)
+	if item:IsA("BasePart") then
+		item.CollisionGroup = CombatService.PLAYER_GROUP
+	end
+end
+
+local function watchCharacterGroup(character)
+	for _, item in character:GetDescendants() do
+		putInGroup(item)
+	end
+	character.DescendantAdded:Connect(putInGroup) -- avatar parts arrive later
+end
 
 --------------------------------------------------------------------------
 -- Helpers
@@ -1759,6 +1787,7 @@ function CombatService.Init(templeService, enemyService, fxRemoteEvent, remotes)
 	EnemyService = enemyService
 	fxRemote = fxRemoteEvent
 	Players.RespawnTime = CFG.RespawnTime
+	setupCollisionGroups()
 
 	if remotes then
 		remotes.Attack.OnServerEvent:Connect(function(player, combo)
@@ -1814,6 +1843,7 @@ function CombatService.SetupPlayer(player)
 		end
 	end)
 	if player.Character then
+		watchCharacterGroup(player.Character)
 		task.spawn(giveSword, player, player.Character)
 	end
 	-- Fires once the avatar's own body parts and clothes have been applied.
@@ -1823,6 +1853,7 @@ function CombatService.SetupPlayer(player)
 		end)
 	end
 	player.CharacterAdded:Connect(function(character)
+		watchCharacterGroup(character)
 		task.spawn(function()
 			character:WaitForChild("Humanoid", 10)
 			giveSword(player, character)
@@ -2656,11 +2687,17 @@ local function think(record, now)
 	elseif now >= record.NextAttackAt then
 		startAttack(record, target)
 	else
-		-- Waiting to attack again: take a tiny step toward the target so the
-		-- enemy turns to face it smoothly (snapping its rotation looked jerky).
+		-- Waiting to attack again: keep facing the target. A tiny step turns it
+		-- smoothly; up close (where a step would walk into you) it only turns
+		-- when it's facing well away.
 		local toward = flat(targetRoot.Position - record.Root.Position)
-		if toward.Magnitude > 0.5 then
+		if toward.Magnitude > 3.5 then
 			humanoid:MoveTo(record.Root.Position + toward.Unit * 0.5)
+		elseif toward.Magnitude > 0.5 then
+			humanoid:MoveTo(record.Root.Position)
+			if record.Root.CFrame.LookVector:Dot(toward.Unit) < 0.8 then
+				face(record, targetRoot.Position)
+			end
 		end
 	end
 end
@@ -2701,15 +2738,26 @@ local function die(record)
 		end
 	end
 
+	-- Roblox's classic death: the joints break and the body falls apart.
+	-- Make every piece land on the ground and tumble, then fade away.
 	fxRemote:FireAllClients("Death", position)
 	for _, item in record.Model:GetDescendants() do
 		if item:IsA("BasePart") then
-			TweenService:Create(item, TweenInfo.new(1), { Transparency = 1 }):Play()
+			item.CanCollide = true
+			item.Massless = false
+			item.AssemblyLinearVelocity += Vector3.new(math.random(-6, 6), math.random(4, 10), math.random(-6, 6))
 		elseif item:IsA("BillboardGui") then
 			item.Enabled = false
 		end
 	end
-	Debris:AddItem(record.Model, 1.5)
+	task.delay(2, function()
+		for _, item in record.Model:GetDescendants() do
+			if item:IsA("BasePart") then
+				TweenService:Create(item, TweenInfo.new(1), { Transparency = 1 }):Play()
+			end
+		end
+	end)
+	Debris:AddItem(record.Model, 3.2)
 
 	if record.OnDeath then
 		task.spawn(record.OnDeath, record.Model)
@@ -2756,6 +2804,11 @@ function EnemyService.Spawn(enemyType, cframe, options)
 
 	local model = makeBody(enemyType, cfg)
 	model.Name = enemyType
+	for _, item in model:GetDescendants() do
+		if item:IsA("BasePart") then
+			item.CollisionGroup = CombatService.ENEMY_GROUP
+		end
+	end
 
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
 	local root = model:FindFirstChild("HumanoidRootPart")
@@ -4961,7 +5014,6 @@ local fxRemote = Remotes:WaitForChild("CombatFX")
 
 local CFG = CombatConfig.Player
 local COMBO_RESET = 1.2 -- seconds; the combo starts over after a pause
-local LUNGE_SPEED = 24  -- small step forward on the 3rd hit of the combo
 
 -- Our own health bar replaces Roblox's default one; there are no tools, so
 -- the backpack bar isn't needed.
@@ -5230,23 +5282,6 @@ local function attack()
 	comboIndex = comboIndex % 3 + 1
 	SwordAnimator.Play(player.Character, SwordPoses.ComboOrder[comboIndex])
 	predictHits(root)
-	if comboIndex == 3 then
-		-- A small step forward on the lunge.
-		local attachment = Instance.new("Attachment")
-		attachment.Parent = root
-		local push = Instance.new("LinearVelocity")
-		push.Attachment0 = attachment
-		push.RelativeTo = Enum.ActuatorRelativeTo.World
-		push.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
-		push.PrimaryTangentAxis = Vector3.xAxis
-		push.SecondaryTangentAxis = Vector3.zAxis
-		local look = root.CFrame.LookVector
-		push.PlaneVelocity = Vector2.new(look.X, look.Z).Unit * LUNGE_SPEED
-		push.MaxForce = 60000
-		push.Parent = root
-		Debris:AddItem(push, 0.12)
-		Debris:AddItem(attachment, 0.12)
-	end
 	flashTrail()
 	attackRemote:FireServer(comboIndex)
 end

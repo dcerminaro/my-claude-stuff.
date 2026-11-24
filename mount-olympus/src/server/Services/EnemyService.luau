@@ -420,11 +420,17 @@ local function think(record, now)
 	elseif now >= record.NextAttackAt then
 		startAttack(record, target)
 	else
-		-- Waiting to attack again: take a tiny step toward the target so the
-		-- enemy turns to face it smoothly (snapping its rotation looked jerky).
+		-- Waiting to attack again: keep facing the target. A tiny step turns it
+		-- smoothly; up close (where a step would walk into you) it only turns
+		-- when it's facing well away.
 		local toward = flat(targetRoot.Position - record.Root.Position)
-		if toward.Magnitude > 0.5 then
+		if toward.Magnitude > 3.5 then
 			humanoid:MoveTo(record.Root.Position + toward.Unit * 0.5)
+		elseif toward.Magnitude > 0.5 then
+			humanoid:MoveTo(record.Root.Position)
+			if record.Root.CFrame.LookVector:Dot(toward.Unit) < 0.8 then
+				face(record, targetRoot.Position)
+			end
 		end
 	end
 end
@@ -465,15 +471,26 @@ local function die(record)
 		end
 	end
 
+	-- Roblox's classic death: the joints break and the body falls apart.
+	-- Make every piece land on the ground and tumble, then fade away.
 	fxRemote:FireAllClients("Death", position)
 	for _, item in record.Model:GetDescendants() do
 		if item:IsA("BasePart") then
-			TweenService:Create(item, TweenInfo.new(1), { Transparency = 1 }):Play()
+			item.CanCollide = true
+			item.Massless = false
+			item.AssemblyLinearVelocity += Vector3.new(math.random(-6, 6), math.random(4, 10), math.random(-6, 6))
 		elseif item:IsA("BillboardGui") then
 			item.Enabled = false
 		end
 	end
-	Debris:AddItem(record.Model, 1.5)
+	task.delay(2, function()
+		for _, item in record.Model:GetDescendants() do
+			if item:IsA("BasePart") then
+				TweenService:Create(item, TweenInfo.new(1), { Transparency = 1 }):Play()
+			end
+		end
+	end)
+	Debris:AddItem(record.Model, 3.2)
 
 	if record.OnDeath then
 		task.spawn(record.OnDeath, record.Model)
@@ -520,6 +537,11 @@ function EnemyService.Spawn(enemyType, cframe, options)
 
 	local model = makeBody(enemyType, cfg)
 	model.Name = enemyType
+	for _, item in model:GetDescendants() do
+		if item:IsA("BasePart") then
+			item.CollisionGroup = CombatService.ENEMY_GROUP
+		end
+	end
 
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
 	local root = model:FindFirstChild("HumanoidRootPart")

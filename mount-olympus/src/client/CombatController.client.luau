@@ -36,7 +36,6 @@ local fxRemote = Remotes:WaitForChild("CombatFX")
 
 local CFG = CombatConfig.Player
 local COMBO_RESET = 1.2 -- seconds; the combo starts over after a pause
-local LUNGE_SPEED = 24  -- small step forward on the 3rd hit of the combo
 
 -- Our own health bar replaces Roblox's default one; there are no tools, so
 -- the backpack bar isn't needed.
@@ -305,23 +304,6 @@ local function attack()
 	comboIndex = comboIndex % 3 + 1
 	SwordAnimator.Play(player.Character, SwordPoses.ComboOrder[comboIndex])
 	predictHits(root)
-	if comboIndex == 3 then
-		-- A small step forward on the lunge.
-		local attachment = Instance.new("Attachment")
-		attachment.Parent = root
-		local push = Instance.new("LinearVelocity")
-		push.Attachment0 = attachment
-		push.RelativeTo = Enum.ActuatorRelativeTo.World
-		push.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
-		push.PrimaryTangentAxis = Vector3.xAxis
-		push.SecondaryTangentAxis = Vector3.zAxis
-		local look = root.CFrame.LookVector
-		push.PlaneVelocity = Vector2.new(look.X, look.Z).Unit * LUNGE_SPEED
-		push.MaxForce = 60000
-		push.Parent = root
-		Debris:AddItem(push, 0.12)
-		Debris:AddItem(attachment, 0.12)
-	end
 	flashTrail()
 	attackRemote:FireServer(comboIndex)
 end

@@ -20,6 +20,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PhysicsService = game:GetService("PhysicsService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CombatConfig = require(Shared:WaitForChild("CombatConfig"))
@@ -36,6 +37,33 @@ local fxRemote = nil
 local CFG = CombatConfig.Player
 local state = {} -- [Player] = { NextAttackAt, NextDashAt, InvulnerableUntil, Blocking, SavedWalkSpeed, Shield, LastDamagedAt }
 local random = Random.new()
+
+-- Players and enemies pass through each other, so bumping into an enemy can't
+-- lift you up ("random jumps") or shove you around mid-swing.
+CombatService.PLAYER_GROUP = "OlympusPlayers"
+CombatService.ENEMY_GROUP = "OlympusEnemies"
+
+local function setupCollisionGroups()
+	for _, name in { CombatService.PLAYER_GROUP, CombatService.ENEMY_GROUP } do
+		pcall(function()
+			PhysicsService:RegisterCollisionGroup(name)
+		end)
+	end
+	PhysicsService:CollisionGroupSetCollidable(CombatService.PLAYER_GROUP, CombatService.ENEMY_GROUP, false)
+end
+
+local function putInGroup(item)
+	if item:IsA("BasePart") then
+		item.CollisionGroup = CombatService.PLAYER_GROUP
+	end
+end
+
+local function watchCharacterGroup(character)
+	for _, item in character:GetDescendants() do
+		putInGroup(item)
+	end
+	character.DescendantAdded:Connect(putInGroup) -- avatar parts arrive later
+end
 
 --------------------------------------------------------------------------
 -- Helpers
@@ -228,6 +256,7 @@ function CombatService.Init(templeService, enemyService, fxRemoteEvent, remotes)
 	EnemyService = enemyService
 	fxRemote = fxRemoteEvent
 	Players.RespawnTime = CFG.RespawnTime
+	setupCollisionGroups()
 
 	if remotes then
 		remotes.Attack.OnServerEvent:Connect(function(player, combo)
@@ -283,6 +312,7 @@ function CombatService.SetupPlayer(player)
 		end
 	end)
 	if player.Character then
+		watchCharacterGroup(player.Character)
 		task.spawn(giveSword, player, player.Character)
 	end
 	-- Fires once the avatar's own body parts and clothes have been applied.
@@ -292,6 +322,7 @@ function CombatService.SetupPlayer(player)
 		end)
 	end
 	player.CharacterAdded:Connect(function(character)
+		watchCharacterGroup(character)
 		task.spawn(function()
 			character:WaitForChild("Humanoid", 10)
 			giveSword(player, character)

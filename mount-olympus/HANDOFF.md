@@ -208,6 +208,12 @@ environment, so a session can `rojo build` and publish via
      server now (re)attaches the sword on `CharacterAppearanceLoaded` and
      checks every second that it is still held. Enemies no longer snap their
      rotation while waiting to attack (looked jerky / laggy).
+   - Third fix round ("random jumps, wobbly swings, no death animation"):
+     players and enemies are in collision groups `OlympusPlayers` /
+     `OlympusEnemies` that don't collide (bumping enemies used to lift the
+     player); the lunge no longer pushes forward; upper-body twist reduced.
+     Enemies use Roblox's classic break-apart death, with every piece made
+     solid so it lands and tumbles, fading after 2 s, removed at 3.2 s.
 
 ### Build label and update restarts
 - `GameConfig.BuildLabel` (e.g. "v13") is shown bottom-left. **Bump it to the
