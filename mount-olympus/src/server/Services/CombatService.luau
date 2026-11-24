@@ -35,6 +35,7 @@ local EnemyService = nil
 local fxRemote = nil
 local modifierProvider = nil -- Phase 4B: function(player) -> { AttackPercent, DamageTaken }
 local dashHandler = nil      -- Phase 4B: function(player, direction) for god dash abilities
+local counterHandler = nil   -- Phase 7A: function(player, attackerModel) -> true if the hit was parried
 
 local function modifiers(player)
 	return if modifierProvider then modifierProvider(player) else { AttackPercent = 0, DamageTaken = 1 }
@@ -210,6 +211,11 @@ function CombatService.BasicAttack(player, combo)
 		local damage = baseAttack * attack.DamageMultiplier * (1 + combatBonus) * (1 + buffBonus) * spread
 		if EnemyService.DamageEnemy(record.Model, damage, player) then
 			hits += 1
+			local lifeSteal = modifiers(player).LifeSteal or 0
+			local _, humanoid = getParts(player)
+			if lifeSteal > 0 and humanoid then
+				humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + damage * lifeSteal)
+			end
 			fxRemote:FireAllClients("Hit", record.Root.Position, record.Model, player)
 		end
 	end
@@ -236,7 +242,7 @@ end
 --------------------------------------------------------------------------
 -- Damage to players
 --------------------------------------------------------------------------
-function CombatService.DamagePlayer(player, amount, _sourcePosition)
+function CombatService.DamagePlayer(player, amount, _sourcePosition, attackerModel)
 	local st = state[player]
 	local _, humanoid, root = getParts(player)
 	if not st or not humanoid then
@@ -245,6 +251,10 @@ function CombatService.DamagePlayer(player, amount, _sourcePosition)
 	local now = os.clock()
 	if now < st.InvulnerableUntil then
 		fxRemote:FireAllClients("Damage", root.Position + Vector3.new(0, 3, 0), 0, "Dodged")
+		return 0
+	end
+	if counterHandler and counterHandler(player, attackerModel) then
+		fxRemote:FireAllClients("Damage", root.Position + Vector3.new(0, 3, 0), 0, "Countered")
 		return 0
 	end
 	local style = "Player"
@@ -313,6 +323,10 @@ end
 
 function CombatService.SetDashHandler(handler)
 	dashHandler = handler
+end
+
+function CombatService.SetCounterHandler(handler)
+	counterHandler = handler
 end
 
 function CombatService.SetupPlayer(player)

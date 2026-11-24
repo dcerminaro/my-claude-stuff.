@@ -17,9 +17,13 @@ Follow the master specification in **Part C** exactly, including its section 19
   published from the cloud session with Open Cloud (see "Publishing without
   Studio" below), and server logic is checked with the Luau Execution API using
   a fake player before going live.
-- Phases 1–5 are done (5 accepted with "move on"). Phase 6 (Ascension) is
-  built and server-tested; do not start Phase 7 until the developer replies
-  **"Phase 6 confirmed"**.
+- Phases 1–6 are done (5 and 6 accepted with "move on"). Phase 7 is split
+  into 7A–7E; deliver one part at a time and wait for the developer's OK.
+- **Open issue (rank looks):** on the developer's real avatar the rank outfit
+  and bigger physique did NOT show at v28 (works on test rigs). v30 added a
+  2-second re-apply loop and logs failures as `ServerNote` entries in the
+  `OlympusDiagnostics` store (client reports `HasRankOutfit`, `LooksRank`).
+  Read those first when returning to it. Developer chose to look at it later.
 - **Open balance question:** the developer tests with a level-200 Elder God
   (base attack 408, 2,090 HP, everything maxed), so the level 1–15 arena feels
   easy no matter how strong enemies are. Proposed "level sync" (scale player
@@ -46,7 +50,8 @@ Follow the master specification in **Part C** exactly, including its section 19
 | 4A. Combat core | **Confirmed** by the developer ("It works perfect!", v17) |
 | 4B. God abilities | **Confirmed** ("Phase 4 confirmed") |
 | 5. Arenas | **Accepted** — developer said "move on to phase 6" (v25) |
-| 6. Ascension | **Built and server-tested**, live (v28), awaiting "Phase 6 confirmed" |
+| 6. Ascension | **Accepted** — developer: "we can work on how it looks later, next phase" (v30) |
+| 7. Content Expansion | In progress: **7A gods built and server-tested, live (v33)** · 7B arenas/bosses/trials · 7C weapons/forge · 7D quests · 7E endgame |
 | 5–8 | Not started |
 
 ### How to set up Phase 1 on a Mac (or Windows PC)
@@ -348,6 +353,31 @@ environment, so a session can `rojo build` and publish via
    Titan's Colosseum Lesser God).
 5. Rank-up plays a pillar of light, ring and particle burst for everyone
    (`CombatFX("Ascend", pos, color, player)`). `!rank` also triggers it.
+
+### Design decisions made in Phase 7A (all six gods playable)
+1. **Poseidon** (water, crowd control): Water Blast (Q, line, pierces 3),
+   Tidal Dash (dash, strong knockback), Whirlpool (E, pulls in, 50% slow for
+   3 s, 5 damage ticks), Divine Tsunami (R, 22-stud cone wave, huge
+   knockback), Oceanic Ascension (Form: 30% less damage, +attack, 2%/s regen).
+2. **Hades** (shadow, life steal, summoning): Shadow Strike (Q, 30% life
+   steal), Soul Drain (dash, 50% life steal), Summon Undead (E, 2–3 spectral
+   spirits for 15 s that zap the nearest enemy every second), Army of the Dead
+   (R, 6 pulses with 25% life steal), Underworld Ascension (Form: +attack,
+   20% life steal on everything incl. basic attacks).
+3. **Athena** (defense, precision, counters): Spear Strike (Q, long narrow
+   thrust), Divine Shield (dash + 50% damage taken for 3 s), Counterattack
+   (E, 2.5 s parry: hits are negated and struck back), Aegis of Olympus (R,
+   blast + 60% less damage for you and nearby allies for 6 s), Divine
+   Guardian Form (Form: 40% less damage, +attack).
+4. **Apollo** (ranged, healing): Solar Arrow (Q, 40-stud piercing arrow),
+   Radiant Dash (dash heals 8%), Healing Light (E, heals you and nearby allies
+   25–35%), Solar Judgment (R, straight sunbeams), Sun God Form (Form:
+   +attack, +20% speed, 2%/s regen).
+5. Passive blessing bonuses mix attack / health / speed like Zeus and Ares.
+6. New ability kinds in `AbilityService`: Line, Pull, Cone, Summon, Counter,
+   Aegis, Heal; buffs now support `LifeSteal` and `RegenPercent`.
+   `EnemyService.Push` / `Slow`; `CombatService.DamagePlayer(..., attackerModel)`
+   + `SetCounterHandler`.
 
 ### Ideas from the developer for later (not built yet)
 - **Rank outfits and physique (Phase 6, Ascension):** each ascension rank gets

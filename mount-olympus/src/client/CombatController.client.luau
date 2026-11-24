@@ -118,6 +118,8 @@ local DAMAGE_COLORS = {
 	Blocked = Color3.fromRGB(120, 190, 255),
 	Dodged = Color3.fromRGB(200, 255, 200),
 	KnockedOut = Color3.fromRGB(255, 255, 255),
+	Heal = Color3.fromRGB(110, 255, 130),
+	Countered = Color3.fromRGB(255, 240, 200),
 }
 
 local function floatingText(position, textValue, color, size, rise)
@@ -265,6 +267,8 @@ fxRemote.OnClientEvent:Connect(function(kind, position, value, style)
 		local label = if style == "Dodged"
 			then "Dodged!"
 			elseif style == "KnockedOut" then "Knocked out!"
+			elseif style == "Heal" then "+" .. tostring(value)
+			elseif style == "Countered" then "Countered!"
 			elseif style == "Blocked" then ("%d (blocked)"):format(value)
 			else tostring(value)
 		floatingText(position + jitter, label, DAMAGE_COLORS[style] or DAMAGE_COLORS.Enemy, if style == "Enemy" then 26 else 22, 3)

@@ -383,7 +383,7 @@ local function startAttack(record, target)
 				local inRange = offset.Magnitude <= cfg.AttackRange + 1.5
 				local inFront = offset.Magnitude < 1 or root.CFrame.LookVector:Dot(offset.Unit) > 0.1
 				if inRange and inFront then
-					CombatService.DamagePlayer(player, cfg.Damage * record.DamageMultiplier, root.Position)
+					CombatService.DamagePlayer(player, cfg.Damage * record.DamageMultiplier, root.Position, record.Model)
 				end
 			end
 		end
@@ -460,7 +460,7 @@ local function startSpecial(record, target, attack)
 			for _, player in getPlayers() do
 				local playerRoot = aliveCharacterRoot(player)
 				if playerRoot and flat(playerRoot.Position - origin).Magnitude <= attack.Radius then
-					CombatService.DamagePlayer(player, damage, origin)
+					CombatService.DamagePlayer(player, damage, origin, record.Model)
 				end
 			end
 			fxRemote:FireAllClients("Shockwave", root.Position, WARNING_RED, attack.Radius)
@@ -486,7 +486,7 @@ local function startSpecial(record, target, attack)
 					local along = offset:Dot(look)
 					local side = (offset - look * along).Magnitude
 					if along >= -1 and along <= attack.Length + 1 and side <= attack.Width / 2 + 1 then
-						CombatService.DamagePlayer(player, damage, origin)
+						CombatService.DamagePlayer(player, damage, origin, record.Model)
 					end
 				end
 			end
@@ -839,6 +839,41 @@ function EnemyService.DamageEnemy(model, amount, player, options)
 		record.StaggerUntil = now + STAGGER_TIME
 	end
 	return true
+end
+
+-- Pushes an enemy (e.g. into a whirlpool) for a moment. Bosses resist.
+function EnemyService.Push(model, velocity, duration)
+	local record = enemies[model]
+	if not record or record.Dead or record.Root.Anchored or record.Config.Boss then
+		return
+	end
+	local attachment = Instance.new("Attachment")
+	attachment.Parent = record.Root
+	local push = Instance.new("LinearVelocity")
+	push.Attachment0 = attachment
+	push.RelativeTo = Enum.ActuatorRelativeTo.World
+	push.VectorVelocity = velocity
+	push.MaxForce = 40000
+	push.Parent = record.Root
+	Debris:AddItem(push, duration)
+	Debris:AddItem(attachment, duration)
+end
+
+-- Slows an enemy's walking (multiplier 0.5 = half speed) for a while.
+function EnemyService.Slow(model, multiplier, duration)
+	local record = enemies[model]
+	if not record or record.Dead or record.Slowed then
+		return
+	end
+	record.Slowed = true
+	local humanoid = record.Humanoid
+	humanoid.WalkSpeed *= multiplier
+	task.delay(duration, function()
+		record.Slowed = false
+		if humanoid.Parent then
+			humanoid.WalkSpeed /= multiplier
+		end
+	end)
 end
 
 -- Removes an enemy without rewards (e.g. when an arena run ends).

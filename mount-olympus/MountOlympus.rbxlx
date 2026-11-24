@@ -87,6 +87,110 @@ AbilityConfig.Abilities = {
 		Kind = "Buff", Move = "Cast", Cooldown = 60, Duration = 12,
 		AttackPercent = 30, AttackPerLevel = 10, DamageTaken = 0.7, -- take 30% less damage
 	},
+
+	------------------------------------------------------------------ Poseidon (Phase 7A)
+	WaterBlast = {
+		Kind = "Line", Move = "Lunge", Cooldown = 6,
+		Damage = 2.0, PerLevel = 0.35,
+		Range = 26, Width = 4, Pierce = 3, Knockback = 14,
+	},
+	TidalDash = {
+		Kind = "DashHit", Cooldown = 4,
+		Damage = 1.2, PerLevel = 0.3,
+		Width = 7, Distance = 11, Knockback = 24,
+	},
+	Whirlpool = {
+		Kind = "Pull", Move = "Cast", Cooldown = 12,
+		Damage = 0.6, PerLevel = 0.15, -- per tick
+		Offset = 10, Radius = 11, Ticks = 5, Interval = 0.5,
+		Slow = 0.5, SlowTime = 3, -- enemies walk at 50% for 3 s
+	},
+	DivineTsunami = {
+		Kind = "Cone", Move = "Cleave", Cooldown = 28,
+		Damage = 3.2, PerLevel = 0.5,
+		Range = 22, ArcDot = 0.35, Knockback = 35,
+	},
+	OceanicAscension = {
+		Kind = "Buff", Move = "Cast", Cooldown = 60, Duration = 12,
+		AttackPercent = 15, AttackPerLevel = 5, DamageTaken = 0.7, RegenPercent = 2,
+	},
+
+	------------------------------------------------------------------ Hades (Phase 7A)
+	ShadowStrike = {
+		Kind = "Strike", Move = "Lunge", Cooldown = 6,
+		Damage = 2.0, PerLevel = 0.35,
+		Range = 20, Radius = 4, LifeSteal = 0.3, -- heals 30% of the damage dealt
+	},
+	SoulDrain = {
+		Kind = "DashHit", Cooldown = 4,
+		Damage = 1.1, PerLevel = 0.3,
+		Width = 6, Distance = 11, Knockback = 8, LifeSteal = 0.5,
+	},
+	SummonUndead = {
+		Kind = "Summon", Move = "Cast", Cooldown = 20,
+		Damage = 0.6, PerLevel = 0.15, -- per spirit, per second
+		Count = 2, CountPerLevel = 0.5, Duration = 15, Interval = 1, Range = 16,
+	},
+	ArmyOfTheDead = {
+		Kind = "Storm", Move = "Slam", Cooldown = 30,
+		Damage = 0.9, PerLevel = 0.2,
+		Radius = 18, Pulses = 6, Interval = 0.5, LifeSteal = 0.25,
+	},
+	UnderworldAscension = {
+		Kind = "Buff", Move = "Cast", Cooldown = 60, Duration = 12,
+		AttackPercent = 30, AttackPerLevel = 10, LifeSteal = 0.2,
+	},
+
+	------------------------------------------------------------------ Athena (Phase 7A)
+	SpearStrike = {
+		Kind = "Line", Move = "Lunge", Cooldown = 5,
+		Damage = 2.6, PerLevel = 0.45,
+		Range = 16, Width = 3, Pierce = 2, Knockback = 10,
+	},
+	DivineShield = {
+		Kind = "DashHit", Cooldown = 5,
+		Damage = 0.8, PerLevel = 0.2,
+		Width = 6, Distance = 11, Knockback = 14,
+		ShieldTime = 3, ShieldDamageTaken = 0.5, -- take 50% damage for 3 s
+	},
+	Counterattack = {
+		Kind = "Counter", Move = "Cast", Cooldown = 10,
+		Duration = 2.5, Damage = 2.5, PerLevel = 0.5, -- each parried hit strikes back for this x attack
+	},
+	AegisOfOlympus = {
+		Kind = "Aegis", Move = "Slam", Cooldown = 30,
+		Damage = 2.0, PerLevel = 0.4,
+		Radius = 14, Duration = 6, DamageTaken = 0.4, Knockback = 30,
+	},
+	DivineGuardianForm = {
+		Kind = "Buff", Move = "Cast", Cooldown = 60, Duration = 12,
+		AttackPercent = 25, AttackPerLevel = 5, DamageTaken = 0.6,
+	},
+
+	------------------------------------------------------------------ Apollo (Phase 7A)
+	SolarArrow = {
+		Kind = "Line", Move = "Lunge", Cooldown = 5,
+		Damage = 2.0, PerLevel = 0.35,
+		Range = 40, Width = 3, Pierce = 3, Knockback = 6,
+	},
+	RadiantDash = {
+		Kind = "DashHit", Cooldown = 4,
+		Damage = 1.0, PerLevel = 0.25,
+		Width = 6, Distance = 11, Knockback = 8, HealPercent = 8, -- heals 8% of max health
+	},
+	HealingLight = {
+		Kind = "Heal", Move = "Cast", Cooldown = 15,
+		Radius = 20, HealPercent = 25, HealPerLevel = 5,
+	},
+	SolarJudgment = {
+		Kind = "Storm", Move = "Cast", Cooldown = 30,
+		Damage = 1.2, PerLevel = 0.25,
+		Radius = 24, Pulses = 6, Interval = 0.4, Straight = true, -- straight sunbeams
+	},
+	SunGodForm = {
+		Kind = "Buff", Move = "Cast", Cooldown = 60, Duration = 12,
+		AttackPercent = 25, AttackPerLevel = 5, SpeedPercent = 20, RegenPercent = 2,
+	},
 }
 
 for id, ability in AbilityConfig.Abilities do
@@ -554,7 +658,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v30"
+GameConfig.BuildLabel = "v33"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -704,23 +808,34 @@ return GodConfig
             <string name="Name">Apollo</string>
             <string name="Source"><![CDATA[-- Apollo (ModuleScript)
 -- Location: ReplicatedStorage > Shared > Gods > Apollo
--- Not playable yet: Apollo arrives in Phase 7. Blessings are listed by name only.
+-- See Zeus for what each field means. Phase 7A: playable.
 
 return {
 	Id = "Apollo",
 	DisplayName = "Apollo",
 	Title = "God of the Sun",
 	Specialty = "Ranged damage and healing.",
-	Available = false,
+	Available = true,
 
 	Colors = {
 		Primary = Color3.fromRGB(245, 190, 40),
 		Accent = Color3.fromRGB(240, 190, 40),
 		Glow = Color3.fromRGB(255, 220, 90),
+		Fire = Color3.fromRGB(255, 200, 80),
 	},
 
-	-- Filled in during Phase 7: Solar Arrow, Radiant Dash, Healing Light, Solar Judgment, Sun God Form.
-	Blessings = {},
+	Blessings = {
+		{ Id = "SolarArrow", Name = "Solar Arrow", Tier = 1, Ability = "Q",
+			Description = "A long-range arrow of sunlight that pierces enemies.", Passive = { Stat = "AttackPercent", PerLevel = 3 } },
+		{ Id = "RadiantDash", Name = "Radiant Dash", Tier = 2, Ability = "Dash",
+			Description = "Dash as light, healing yourself.", Passive = { Stat = "SpeedPercent", PerLevel = 4 } },
+		{ Id = "HealingLight", Name = "Healing Light", Tier = 3, Ability = "E",
+			Description = "Heal yourself and nearby allies.", Passive = { Stat = "HealthPercent", PerLevel = 5 } },
+		{ Id = "SolarJudgment", Name = "Solar Judgment", Tier = 4, Ability = "R",
+			Description = "Sunbeams strike the enemies around you (ultimate).", Passive = { Stat = "AttackPercent", PerLevel = 6 } },
+		{ Id = "SunGodForm", Name = "Sun God Form", Tier = 5, Ability = "Form",
+			Description = "Shine like the sun: attack, speed and healing.", Passive = { Stat = "SpeedPercent", PerLevel = 5 } },
+	},
 }
 ]]></string>
           </Properties>
@@ -767,23 +882,34 @@ return {
             <string name="Name">Athena</string>
             <string name="Source"><![CDATA[-- Athena (ModuleScript)
 -- Location: ReplicatedStorage > Shared > Gods > Athena
--- Not playable yet: Athena arrives in Phase 7. Blessings are listed by name only.
+-- See Zeus for what each field means. Phase 7A: playable.
 
 return {
 	Id = "Athena",
 	DisplayName = "Athena",
 	Title = "Goddess of Wisdom",
 	Specialty = "Defense, precision, and counterattacks.",
-	Available = false,
+	Available = true,
 
 	Colors = {
-		Primary = Color3.fromRGB(200, 200, 215),
+		Primary = Color3.fromRGB(190, 195, 215),
 		Accent = Color3.fromRGB(200, 200, 210),
 		Glow = Color3.fromRGB(255, 240, 200),
+		Fire = Color3.fromRGB(255, 240, 200),
 	},
 
-	-- Filled in during Phase 7: Spear Strike, Divine Shield, Counterattack, Aegis of Olympus, Divine Guardian Form.
-	Blessings = {},
+	Blessings = {
+		{ Id = "SpearStrike", Name = "Spear Strike", Tier = 1, Ability = "Q",
+			Description = "A long, precise spear thrust.", Passive = { Stat = "AttackPercent", PerLevel = 3 } },
+		{ Id = "DivineShield", Name = "Divine Shield", Tier = 2, Ability = "Dash",
+			Description = "Dash behind your shield and take less damage.", Passive = { Stat = "HealthPercent", PerLevel = 5 } },
+		{ Id = "Counterattack", Name = "Counterattack", Tier = 3, Ability = "E",
+			Description = "Parry the next attacks and strike back hard.", Passive = { Stat = "AttackPercent", PerLevel = 4 } },
+		{ Id = "AegisOfOlympus", Name = "Aegis of Olympus", Tier = 4, Ability = "R",
+			Description = "A great shield protects you and your allies and blasts enemies away (ultimate).", Passive = { Stat = "HealthPercent", PerLevel = 8 } },
+		{ Id = "DivineGuardianForm", Name = "Divine Guardian Form", Tier = 5, Ability = "Form",
+			Description = "Become an unbreakable guardian.", Passive = { Stat = "AttackPercent", PerLevel = 5 } },
+	},
 }
 ]]></string>
           </Properties>
@@ -793,23 +919,34 @@ return {
             <string name="Name">Hades</string>
             <string name="Source"><![CDATA[-- Hades (ModuleScript)
 -- Location: ReplicatedStorage > Shared > Gods > Hades
--- Not playable yet: Hades arrives in Phase 7. Blessings are listed by name only.
+-- See Zeus for what each field means. Phase 7A: playable.
 
 return {
 	Id = "Hades",
 	DisplayName = "Hades",
 	Title = "God of the Underworld",
 	Specialty = "Shadow damage, life stealing, and summoning.",
-	Available = false,
+	Available = true,
 
 	Colors = {
-		Primary = Color3.fromRGB(130, 70, 200),
+		Primary = Color3.fromRGB(150, 80, 230),
 		Accent = Color3.fromRGB(90, 60, 120),
 		Glow = Color3.fromRGB(160, 80, 255),
+		Fire = Color3.fromRGB(150, 60, 255),
 	},
 
-	-- Filled in during Phase 7: Shadow Strike, Soul Drain, Summon Undead, Army of the Dead, Underworld Ascension.
-	Blessings = {},
+	Blessings = {
+		{ Id = "ShadowStrike", Name = "Shadow Strike", Tier = 1, Ability = "Q",
+			Description = "Strike from the shadows and steal life.", Passive = { Stat = "AttackPercent", PerLevel = 3 } },
+		{ Id = "SoulDrain", Name = "Soul Drain", Tier = 2, Ability = "Dash",
+			Description = "Pass through enemies, draining their souls.", Passive = { Stat = "HealthPercent", PerLevel = 5 } },
+		{ Id = "SummonUndead", Name = "Summon Undead", Tier = 3, Ability = "E",
+			Description = "Spectral skulls fight beside you.", Passive = { Stat = "AttackPercent", PerLevel = 4 } },
+		{ Id = "ArmyOfTheDead", Name = "Army of the Dead", Tier = 4, Ability = "R",
+			Description = "The dead rise around you, draining everything nearby (ultimate).", Passive = { Stat = "AttackPercent", PerLevel = 5 } },
+		{ Id = "UnderworldAscension", Name = "Underworld Ascension", Tier = 5, Ability = "Form",
+			Description = "Become death itself: more attack and life steal.", Passive = { Stat = "HealthPercent", PerLevel = 7 } },
+	},
 }
 ]]></string>
           </Properties>
@@ -819,23 +956,34 @@ return {
             <string name="Name">Poseidon</string>
             <string name="Source"><![CDATA[-- Poseidon (ModuleScript)
 -- Location: ReplicatedStorage > Shared > Gods > Poseidon
--- Not playable yet: Poseidon arrives in Phase 7. Blessings are listed by name only.
+-- See Zeus for what each field means. Phase 7A: playable.
 
 return {
 	Id = "Poseidon",
 	DisplayName = "Poseidon",
 	Title = "God of the Sea",
 	Specialty = "Water damage and crowd control.",
-	Available = false,
+	Available = true,
 
 	Colors = {
 		Primary = Color3.fromRGB(40, 170, 210),
 		Accent = Color3.fromRGB(60, 160, 190),
 		Glow = Color3.fromRGB(60, 220, 230),
+		Fire = Color3.fromRGB(80, 200, 255),
 	},
 
-	-- Filled in during Phase 7: Water Blast, Tidal Dash, Whirlpool, Divine Tsunami, Oceanic Ascension.
-	Blessings = {},
+	Blessings = {
+		{ Id = "WaterBlast", Name = "Water Blast", Tier = 1, Ability = "Q",
+			Description = "A blast of water that pierces a line of enemies.", Passive = { Stat = "AttackPercent", PerLevel = 3 } },
+		{ Id = "TidalDash", Name = "Tidal Dash", Tier = 2, Ability = "Dash",
+			Description = "Ride a wave forward, sweeping enemies aside.", Passive = { Stat = "HealthPercent", PerLevel = 4 } },
+		{ Id = "Whirlpool", Name = "Whirlpool", Tier = 3, Ability = "E",
+			Description = "Drag enemies into a whirlpool and slow them.", Passive = { Stat = "AttackPercent", PerLevel = 4 } },
+		{ Id = "DivineTsunami", Name = "Divine Tsunami", Tier = 4, Ability = "R",
+			Description = "A huge wave crashes forward (ultimate).", Passive = { Stat = "HealthPercent", PerLevel = 6 } },
+		{ Id = "OceanicAscension", Name = "Oceanic Ascension", Tier = 5, Ability = "Form",
+			Description = "Become the tide: take less damage and heal.", Passive = { Stat = "AttackPercent", PerLevel = 5 } },
+	},
 }
 ]]></string>
           </Properties>
@@ -2042,6 +2190,7 @@ EnemyService.SpawnPracticeField()
 AbilityService.Init(DataService, ProgressionService, TempleService, EnemyService, GodService, fxRemote, abilityRemote)
 CombatService.SetModifierProvider(AbilityService.GetModifiers)
 CombatService.SetDashHandler(AbilityService.OnDash)
+CombatService.SetCounterHandler(AbilityService.TryCounter)
 ArenaService.Init(DataService, ProgressionService, PlotService, EnemyService, notifyRemote, arenaActionRemote, arenaEventRemote)
 ArenaService.BuildGate()
 AscensionService.Init(DataService, ProgressionService, ArenaService, notifyRemote, fxRemote, ascensionRemote, if GameConfig.Debug.Diagnostics then DiagnosticsService else nil)
@@ -2306,7 +2455,7 @@ end
 
 local function activeBuffs(player)
 	local st = state[player]
-	local mods = { AttackPercent = 0, SpeedPercent = 0, DamageTaken = 1 }
+	local mods = { AttackPercent = 0, SpeedPercent = 0, DamageTaken = 1, LifeSteal = 0, RegenPercent = 0 }
 	if not st then
 		return mods
 	end
@@ -2316,6 +2465,8 @@ local function activeBuffs(player)
 			mods.AttackPercent += buff.AttackPercent
 			mods.SpeedPercent += buff.SpeedPercent
 			mods.DamageTaken *= buff.DamageTaken
+			mods.LifeSteal += buff.LifeSteal or 0
+			mods.RegenPercent += buff.RegenPercent or 0
 		else
 			st.Buffs[id] = nil
 		end
@@ -2331,9 +2482,35 @@ local function baseDamage(player)
 	return baseAttack * (1 + combatBonus) * (1 + buff)
 end
 
-local function hit(player, record, amount, knockback)
+-- Everyone in the server, always including the caster.
+local function everyone(player)
+	local list = Players:GetPlayers()
+	if not table.find(list, player) then
+		table.insert(list, player)
+	end
+	return list
+end
+
+local function healPlayer(player, amount)
+	local _, humanoid, root = getParts(player)
+	if humanoid and amount >= 1 and humanoid.Health < humanoid.MaxHealth then
+		local before = humanoid.Health
+		humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + amount)
+		local healed = math.floor(humanoid.Health - before)
+		if healed >= 1 then
+			fxRemote:FireAllClients("Damage", root.Position + Vector3.new(0, 3, 0), healed, "Heal")
+		end
+	end
+end
+
+-- Damages an enemy; `cfg.LifeSteal` (and life-steal buffs) heal the player.
+local function hit(player, record, amount, knockback, cfg)
 	if EnemyService.DamageEnemy(record.Model, amount, player, { Knockback = knockback }) then
 		fxRemote:FireAllClients("Hit", record.Root.Position, record.Model, nil)
+		local lifeSteal = (cfg and cfg.LifeSteal or 0) + activeBuffs(player).LifeSteal
+		if lifeSteal > 0 then
+			healPlayer(player, amount * lifeSteal)
+		end
 		return true
 	end
 	return false
@@ -2391,7 +2568,7 @@ function Kinds.Strike(player, root, cfg, level, color)
 	local point = if best then best.Record.Root.Position else root.Position + flat(root.CFrame.LookVector).Unit * 12
 	local damage = baseDamage(player) * AbilityConfig.DamageMultiplier(cfg.Id, level)
 	for _, record in EnemyService.GetEnemiesInRange(point, cfg.Radius) do
-		hit(player, record, damage)
+		hit(player, record, damage, nil, cfg)
 	end
 	fxRemote:FireAllClients("Lightning", point, color, cfg.Radius)
 end
@@ -2439,9 +2616,9 @@ function Kinds.Storm(player, _root, cfg, level, color)
 			local damage = baseDamage(player) * AbilityConfig.DamageMultiplier(cfg.Id, level)
 			local struck = 0
 			for _, record in EnemyService.GetEnemiesInRange(root.Position, cfg.Radius) do
-				if hit(player, record, damage) and struck < 6 then
+				if hit(player, record, damage, nil, cfg) and struck < 6 then
 					struck += 1
-					fxRemote:FireAllClients("Lightning", record.Root.Position, color, 3)
+					fxRemote:FireAllClients("Lightning", record.Root.Position, color, 3, cfg.Straight == true)
 				end
 			end
 			fxRemote:FireAllClients("Shockwave", root.Position, color, cfg.Radius)
@@ -2485,6 +2662,8 @@ function Kinds.Buff(player, _root, cfg, level, color)
 		AttackPercent = (cfg.AttackPercent or 0) + (cfg.AttackPerLevel or 0) * (level - 1),
 		SpeedPercent = cfg.SpeedPercent or 0,
 		DamageTaken = cfg.DamageTaken or 1,
+		LifeSteal = cfg.LifeSteal or 0,
+		RegenPercent = cfg.RegenPercent or 0,
 	}
 	ProgressionService.RefreshStats(player) -- applies the speed bonus now
 	task.delay(cfg.Duration + 0.05, function()
@@ -2503,10 +2682,183 @@ function Kinds.DashHit(player, root, cfg, level, color, direction)
 	local damage = baseDamage(player) * AbilityConfig.DamageMultiplier(cfg.Id, level)
 	for _, record in EnemyService.GetEnemiesInRange(start, cfg.Distance + cfg.Width) do
 		if distanceToSegment(record.Root.Position, start, finish) <= cfg.Width / 2 + record.Root.Size.X / 2 then
-			hit(player, record, damage, cfg.Knockback)
+			hit(player, record, damage, cfg.Knockback, cfg)
 		end
 	end
 	fxRemote:FireAllClients("DashTrail", start, color, finish)
+	if cfg.HealPercent then
+		local _, humanoid = getParts(player)
+		if humanoid then
+			healPlayer(player, humanoid.MaxHealth * cfg.HealPercent / 100)
+		end
+	end
+	if cfg.ShieldTime then
+		state[player].Buffs[cfg.Id] = {
+			Until = os.clock() + cfg.ShieldTime,
+			AttackPercent = 0, SpeedPercent = 0, DamageTaken = cfg.ShieldDamageTaken or 0.5,
+		}
+		fxRemote:FireAllClients("Aura", Vector3.zero, color, player, cfg.ShieldTime)
+	end
+end
+
+-- A piercing line (water blast, spear, arrow): hits the first few enemies in front.
+function Kinds.Line(player, root, cfg, level, color)
+	local look = flat(root.CFrame.LookVector).Unit
+	local start = root.Position
+	local finish = start + look * cfg.Range
+	local damage = baseDamage(player) * AbilityConfig.DamageMultiplier(cfg.Id, level)
+	local inLine = {}
+	for _, record in EnemyService.GetEnemiesInRange(start, cfg.Range + 3) do
+		local offset = flat(record.Root.Position - start)
+		local along = offset:Dot(look)
+		if along >= -1 and along <= cfg.Range + 1 and distanceToSegment(record.Root.Position, start, finish) <= cfg.Width / 2 + record.Root.Size.X / 2 then
+			table.insert(inLine, { Record = record, Along = along })
+		end
+	end
+	table.sort(inLine, function(a, b)
+		return a.Along < b.Along
+	end)
+	for i = 1, math.min(#inLine, cfg.Pierce or 1) do
+		hit(player, inLine[i].Record, damage, cfg.Knockback, cfg)
+	end
+	fxRemote:FireAllClients("Beam", start + Vector3.new(0, 1, 0), color, finish + Vector3.new(0, 1, 0), cfg.Width)
+end
+
+-- A whirlpool in front: pulls enemies in, slows them, and damages them over time.
+function Kinds.Pull(player, root, cfg, level, color)
+	local center = root.Position + flat(root.CFrame.LookVector).Unit * cfg.Offset
+	for _, record in EnemyService.GetEnemiesInRange(center, cfg.Radius) do
+		local toward = flat(center - record.Root.Position)
+		if toward.Magnitude > 1 then
+			EnemyService.Push(record.Model, toward.Unit * 14, 0.5)
+		end
+		EnemyService.Slow(record.Model, cfg.Slow, cfg.SlowTime)
+	end
+	for tick = 1, cfg.Ticks do
+		task.delay((tick - 1) * cfg.Interval + 0.2, function()
+			local damage = baseDamage(player) * AbilityConfig.DamageMultiplier(cfg.Id, level)
+			for _, record in EnemyService.GetEnemiesInRange(center, cfg.Radius) do
+				hit(player, record, damage, 0, cfg)
+			end
+		end)
+	end
+	fxRemote:FireAllClients("Vortex", center, color, cfg.Radius, cfg.Ticks * cfg.Interval + 0.3)
+end
+
+-- A wave crashing forward in a cone.
+function Kinds.Cone(player, root, cfg, level, color)
+	local damage = baseDamage(player) * AbilityConfig.DamageMultiplier(cfg.Id, level)
+	local look = flat(root.CFrame.LookVector).Unit
+	for _, record in EnemyService.GetEnemiesInRange(root.Position, cfg.Range + 3) do
+		local offset = flat(record.Root.Position - root.Position)
+		if offset.Magnitude <= cfg.Range + 1.5 and (offset.Magnitude < 1.5 or look:Dot(offset.Unit) >= cfg.ArcDot) then
+			hit(player, record, damage, cfg.Knockback, cfg)
+		end
+	end
+	fxRemote:FireAllClients("Wave", root.Position, color, root.CFrame.LookVector, cfg.Range)
+end
+
+-- Spectral spirits circle the player and attack nearby enemies.
+function Kinds.Summon(player, root, cfg, level, color)
+	local character = root.Parent
+	local count = math.floor(cfg.Count + (cfg.CountPerLevel or 0) * (level - 1))
+	local spirits = {}
+	for i = 1, count do
+		local angle = (i / count) * math.pi * 2
+		local orb = Instance.new("Part")
+		orb.Name = "Spirit"
+		orb.Shape = Enum.PartType.Ball
+		orb.Size = Vector3.new(1.3, 1.3, 1.3)
+		orb.Material = Enum.Material.Neon
+		orb.Color = color
+		orb.Transparency = 0.2
+		orb.CanCollide = false
+		orb.CanQuery = false
+		orb.CanTouch = false
+		orb.Massless = true
+		orb.CFrame = root.CFrame * CFrame.new(math.cos(angle) * 3, 2.5, math.sin(angle) * 3)
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = root
+		weld.Part1 = orb
+		weld.Parent = orb
+		local light = Instance.new("PointLight")
+		light.Color = color
+		light.Range = 8
+		light.Parent = orb
+		orb.Parent = character
+		table.insert(spirits, orb)
+	end
+	local ticks = math.floor(cfg.Duration / cfg.Interval)
+	for tick = 1, ticks do
+		task.delay(tick * cfg.Interval, function()
+			local damage = baseDamage(player) * AbilityConfig.DamageMultiplier(cfg.Id, level)
+			for _, orb in spirits do
+				if orb.Parent then
+					local best, bestDistance = nil, math.huge
+					for _, record in EnemyService.GetEnemiesInRange(orb.Position, cfg.Range) do
+						local d = (record.Root.Position - orb.Position).Magnitude
+						if d < bestDistance then
+							best, bestDistance = record, d
+						end
+					end
+					if best and hit(player, best, damage, 0, cfg) then
+						fxRemote:FireAllClients("Chain", orb.Position, color, { orb.Position, best.Root.Position })
+					end
+				end
+			end
+		end)
+	end
+	task.delay(cfg.Duration + 0.1, function()
+		for _, orb in spirits do
+			orb:Destroy()
+		end
+	end)
+end
+
+-- Parry: for a moment, hits against you are blocked and struck back.
+function Kinds.Counter(player, _root, cfg, level, color)
+	state[player].Counter = {
+		Until = os.clock() + cfg.Duration,
+		Multiplier = AbilityConfig.DamageMultiplier(cfg.Id, level),
+		Color = color,
+	}
+	fxRemote:FireAllClients("Aura", Vector3.zero, color, player, cfg.Duration)
+end
+
+-- A great shield: you and nearby allies take less damage; enemies are blasted away.
+function Kinds.Aegis(player, root, cfg, level, color)
+	task.delay(0.5, function()
+		local _, _, liveRoot = getParts(player)
+		local center = if liveRoot then liveRoot.Position else root.Position
+		local damage = baseDamage(player) * AbilityConfig.DamageMultiplier(cfg.Id, level)
+		for _, record in EnemyService.GetEnemiesInRange(center, cfg.Radius) do
+			hit(player, record, damage, cfg.Knockback, cfg)
+		end
+		for _, ally in everyone(player) do
+			local _, _, allyRoot = getParts(ally)
+			if allyRoot and state[ally] and (allyRoot.Position - center).Magnitude <= cfg.Radius then
+				state[ally].Buffs["Aegis"] = {
+					Until = os.clock() + cfg.Duration,
+					AttackPercent = 0, SpeedPercent = 0, DamageTaken = cfg.DamageTaken,
+				}
+				fxRemote:FireAllClients("Aura", Vector3.zero, color, ally, cfg.Duration)
+			end
+		end
+		fxRemote:FireAllClients("Dome", center, color, cfg.Radius, cfg.Duration)
+		fxRemote:FireAllClients("Shockwave", center, color, cfg.Radius)
+	end)
+end
+
+-- Heals you and nearby allies.
+function Kinds.Heal(player, root, cfg, level, color)
+	local percent = cfg.HealPercent + (cfg.HealPerLevel or 0) * (level - 1)
+	for _, ally in everyone(player) do
+		local _, humanoid, allyRoot = getParts(ally)
+		if humanoid and (allyRoot.Position - root.Position).Magnitude <= cfg.Radius then
+			healPlayer(ally, humanoid.MaxHealth * percent / 100)
+		end
+	end
+	fxRemote:FireAllClients("HealBurst", root.Position, color, cfg.Radius)
 end
 
 --------------------------------------------------------------------------
@@ -2556,7 +2908,26 @@ function AbilityService.OnDash(player, direction)
 	AbilityService.UseAbility(player, "Dash", direction.Unit)
 end
 
--- { AttackPercent, SpeedPercent, DamageTaken } from active buffs.
+-- Athena's Counterattack: called by CombatService when an enemy hits the
+-- player. Returns true if the hit was parried (and strikes back).
+function AbilityService.TryCounter(player, attackerModel)
+	local st = state[player]
+	local counter = st and st.Counter
+	if not counter or os.clock() > counter.Until then
+		return false
+	end
+	if typeof(attackerModel) == "Instance" then
+		local root = attackerModel:FindFirstChild("HumanoidRootPart")
+		local damage = baseDamage(player) * counter.Multiplier
+		if EnemyService.DamageEnemy(attackerModel, damage, player, { Knockback = 20 }) and root then
+			fxRemote:FireAllClients("Hit", root.Position, attackerModel, nil)
+			fxRemote:FireAllClients("Lightning", root.Position, counter.Color, 3, true)
+		end
+	end
+	return true
+end
+
+-- { AttackPercent, SpeedPercent, DamageTaken, LifeSteal, RegenPercent } from active buffs.
 function AbilityService.GetModifiers(player)
 	return activeBuffs(player)
 end
@@ -2574,6 +2945,22 @@ function AbilityService.Init(dataService, progressionService, templeService, ene
 		local bonuses = GodService.GetBonuses(player)
 		bonuses.SpeedPercent += activeBuffs(player).SpeedPercent
 		return bonuses
+	end)
+
+	-- Healing-over-time buffs (Oceanic Ascension, Sun God Form).
+	task.spawn(function()
+		while true do
+			task.wait(1)
+			for player in state do
+				local regen = activeBuffs(player).RegenPercent
+				if regen > 0 then
+					local _, humanoid = getParts(player)
+					if humanoid then
+						healPlayer(player, humanoid.MaxHealth * regen / 100)
+					end
+				end
+			end
+		end
 	end)
 
 	if abilityRemote then
@@ -3653,6 +4040,7 @@ local EnemyService = nil
 local fxRemote = nil
 local modifierProvider = nil -- Phase 4B: function(player) -> { AttackPercent, DamageTaken }
 local dashHandler = nil      -- Phase 4B: function(player, direction) for god dash abilities
+local counterHandler = nil   -- Phase 7A: function(player, attackerModel) -> true if the hit was parried
 
 local function modifiers(player)
 	return if modifierProvider then modifierProvider(player) else { AttackPercent = 0, DamageTaken = 1 }
@@ -3828,6 +4216,11 @@ function CombatService.BasicAttack(player, combo)
 		local damage = baseAttack * attack.DamageMultiplier * (1 + combatBonus) * (1 + buffBonus) * spread
 		if EnemyService.DamageEnemy(record.Model, damage, player) then
 			hits += 1
+			local lifeSteal = modifiers(player).LifeSteal or 0
+			local _, humanoid = getParts(player)
+			if lifeSteal > 0 and humanoid then
+				humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + damage * lifeSteal)
+			end
 			fxRemote:FireAllClients("Hit", record.Root.Position, record.Model, player)
 		end
 	end
@@ -3854,7 +4247,7 @@ end
 --------------------------------------------------------------------------
 -- Damage to players
 --------------------------------------------------------------------------
-function CombatService.DamagePlayer(player, amount, _sourcePosition)
+function CombatService.DamagePlayer(player, amount, _sourcePosition, attackerModel)
 	local st = state[player]
 	local _, humanoid, root = getParts(player)
 	if not st or not humanoid then
@@ -3863,6 +4256,10 @@ function CombatService.DamagePlayer(player, amount, _sourcePosition)
 	local now = os.clock()
 	if now < st.InvulnerableUntil then
 		fxRemote:FireAllClients("Damage", root.Position + Vector3.new(0, 3, 0), 0, "Dodged")
+		return 0
+	end
+	if counterHandler and counterHandler(player, attackerModel) then
+		fxRemote:FireAllClients("Damage", root.Position + Vector3.new(0, 3, 0), 0, "Countered")
 		return 0
 	end
 	local style = "Player"
@@ -3931,6 +4328,10 @@ end
 
 function CombatService.SetDashHandler(handler)
 	dashHandler = handler
+end
+
+function CombatService.SetCounterHandler(handler)
+	counterHandler = handler
 end
 
 function CombatService.SetupPlayer(player)
@@ -4866,7 +5267,7 @@ local function startAttack(record, target)
 				local inRange = offset.Magnitude <= cfg.AttackRange + 1.5
 				local inFront = offset.Magnitude < 1 or root.CFrame.LookVector:Dot(offset.Unit) > 0.1
 				if inRange and inFront then
-					CombatService.DamagePlayer(player, cfg.Damage * record.DamageMultiplier, root.Position)
+					CombatService.DamagePlayer(player, cfg.Damage * record.DamageMultiplier, root.Position, record.Model)
 				end
 			end
 		end
@@ -4943,7 +5344,7 @@ local function startSpecial(record, target, attack)
 			for _, player in getPlayers() do
 				local playerRoot = aliveCharacterRoot(player)
 				if playerRoot and flat(playerRoot.Position - origin).Magnitude <= attack.Radius then
-					CombatService.DamagePlayer(player, damage, origin)
+					CombatService.DamagePlayer(player, damage, origin, record.Model)
 				end
 			end
 			fxRemote:FireAllClients("Shockwave", root.Position, WARNING_RED, attack.Radius)
@@ -4969,7 +5370,7 @@ local function startSpecial(record, target, attack)
 					local along = offset:Dot(look)
 					local side = (offset - look * along).Magnitude
 					if along >= -1 and along <= attack.Length + 1 and side <= attack.Width / 2 + 1 then
-						CombatService.DamagePlayer(player, damage, origin)
+						CombatService.DamagePlayer(player, damage, origin, record.Model)
 					end
 				end
 			end
@@ -5322,6 +5723,41 @@ function EnemyService.DamageEnemy(model, amount, player, options)
 		record.StaggerUntil = now + STAGGER_TIME
 	end
 	return true
+end
+
+-- Pushes an enemy (e.g. into a whirlpool) for a moment. Bosses resist.
+function EnemyService.Push(model, velocity, duration)
+	local record = enemies[model]
+	if not record or record.Dead or record.Root.Anchored or record.Config.Boss then
+		return
+	end
+	local attachment = Instance.new("Attachment")
+	attachment.Parent = record.Root
+	local push = Instance.new("LinearVelocity")
+	push.Attachment0 = attachment
+	push.RelativeTo = Enum.ActuatorRelativeTo.World
+	push.VectorVelocity = velocity
+	push.MaxForce = 40000
+	push.Parent = record.Root
+	Debris:AddItem(push, duration)
+	Debris:AddItem(attachment, duration)
+end
+
+-- Slows an enemy's walking (multiplier 0.5 = half speed) for a while.
+function EnemyService.Slow(model, multiplier, duration)
+	local record = enemies[model]
+	if not record or record.Dead or record.Slowed then
+		return
+	end
+	record.Slowed = true
+	local humanoid = record.Humanoid
+	humanoid.WalkSpeed *= multiplier
+	task.delay(duration, function()
+		record.Slowed = false
+		if humanoid.Parent then
+			humanoid.WalkSpeed /= multiplier
+		end
+	end)
 end
 
 -- Removes an enemy without rewards (e.g. when an arena run ends).
@@ -7822,7 +8258,15 @@ fxRemote.OnClientEvent:Connect(function(kind, position, color, extra, extra2)
 	end
 	if kind == "Lightning" then
 		local radius = if typeof(extra) == "number" then extra else 4
-		bolt(position + Vector3.new(math.random(-4, 4), 45, math.random(-4, 4)), position, color, 0.6, 0.3)
+		if extra2 == true then
+			-- A straight beam from the sky (sunbeams).
+			local top = position + Vector3.new(0, 45, 0)
+			local beam = effectPart({ Size = Vector3.new(1.6, 1.6, 45), CFrame = CFrame.lookAt((top + position) / 2, position), Color = color, Transparency = 0.2 })
+			TweenService:Create(beam, TweenInfo.new(0.4), { Transparency = 1, Size = Vector3.new(0.3, 0.3, 45) }):Play()
+			Debris:AddItem(beam, 0.45)
+		else
+			bolt(position + Vector3.new(math.random(-4, 4), 45, math.random(-4, 4)), position, color, 0.6, 0.3)
+		end
 		lightFlash(position, color, 24)
 		sparks(position, color, 20)
 		shockwave(position, color, radius)
@@ -7859,6 +8303,77 @@ fxRemote.OnClientEvent:Connect(function(kind, position, color, extra, extra2)
 		bolt(position, extra, color, 0.5, 0.4)
 		bolt(position + Vector3.new(0, 1, 0), extra + Vector3.new(0, 1, 0), color, 0.3, 0.3)
 		sparks(extra, color, 14)
+	elseif kind == "Beam" and typeof(extra) == "Vector3" then
+		-- A straight blast (water, spear, sunlight arrow).
+		local width = if typeof(extra2) == "number" then extra2 else 2
+		local length = (extra - position).Magnitude
+		local beam = effectPart({ Size = Vector3.new(width * 0.6, width * 0.6, length), CFrame = CFrame.lookAt((position + extra) / 2, extra), Color = color, Transparency = 0.15 })
+		TweenService:Create(beam, TweenInfo.new(0.35), { Transparency = 1, Size = Vector3.new(0.2, 0.2, length) }):Play()
+		Debris:AddItem(beam, 0.4)
+		sparks(extra, color, 12)
+	elseif kind == "Vortex" then
+		-- A spinning ring for the whirlpool's duration.
+		local radius = if typeof(extra) == "number" then extra else 10
+		local life = if typeof(extra2) == "number" then extra2 else 2.5
+		local ring = effectPart({
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.4, radius * 2, radius * 2),
+			CFrame = CFrame.new(position.X, groundY(position) + 0.2, position.Z) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = color,
+			Transparency = 0.45,
+		})
+		local inner = effectPart({
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.5, radius, radius),
+			CFrame = ring.CFrame,
+			Color = Color3.new(1, 1, 1),
+			Transparency = 0.6,
+		})
+		local spin = Instance.new("NumberValue")
+		spin.Changed:Connect(function(angle)
+			inner.CFrame = CFrame.new(position.X, groundY(position) + 0.25, position.Z) * CFrame.Angles(math.rad(angle), 0, math.rad(90))
+		end)
+		TweenService:Create(spin, TweenInfo.new(life), { Value = 720 }):Play()
+		TweenService:Create(inner, TweenInfo.new(life, Enum.EasingStyle.Linear), { Size = Vector3.new(0.5, 1, 1) }):Play()
+		task.delay(life - 0.3, function()
+			fadeOut(ring, 0.3)
+			fadeOut(inner, 0.3)
+		end)
+		Debris:AddItem(spin, life + 0.1)
+	elseif kind == "Wave" and typeof(extra) == "Vector3" then
+		-- A wall of water rushing forward.
+		local look = Vector3.new(extra.X, 0, extra.Z).Unit
+		local range = if typeof(extra2) == "number" then extra2 else 20
+		local base = CFrame.lookAt(position, position + look)
+		local wall = effectPart({ Size = Vector3.new(6, 5, 1.5), CFrame = base * CFrame.new(0, 0, -2), Color = color, Transparency = 0.25 })
+		TweenService:Create(wall, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			CFrame = base * CFrame.new(0, 0, -range),
+			Size = Vector3.new(range * 1.1, 7, 1.5),
+			Transparency = 0.9,
+		}):Play()
+		Debris:AddItem(wall, 0.55)
+		sparks(position + look * range * 0.6, color, 25)
+	elseif kind == "Dome" then
+		-- A see-through shield dome.
+		local radius = if typeof(extra) == "number" then extra else 12
+		local life = if typeof(extra2) == "number" then extra2 else 5
+		local dome = effectPart({
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.new(2, 2, 2),
+			Position = position,
+			Material = Enum.Material.ForceField,
+			Color = color,
+			Transparency = 0,
+		})
+		TweenService:Create(dome, TweenInfo.new(0.3), { Size = Vector3.new(radius * 2, radius * 2, radius * 2) }):Play()
+		task.delay(life - 0.4, function()
+			fadeOut(dome, 0.4)
+		end)
+	elseif kind == "HealBurst" then
+		local radius = if typeof(extra) == "number" then extra else 15
+		shockwave(position, Color3.fromRGB(120, 255, 140), radius)
+		sparks(position + Vector3.new(0, 2, 0), color, 30)
+		lightFlash(position, color, 20)
 	elseif kind == "Aura" and typeof(extra) == "Instance" and extra:IsA("Player") then
 		aura(extra.Character, color, if typeof(extra2) == "number" then extra2 else 10)
 	end
@@ -8653,6 +9168,8 @@ local DAMAGE_COLORS = {
 	Blocked = Color3.fromRGB(120, 190, 255),
 	Dodged = Color3.fromRGB(200, 255, 200),
 	KnockedOut = Color3.fromRGB(255, 255, 255),
+	Heal = Color3.fromRGB(110, 255, 130),
+	Countered = Color3.fromRGB(255, 240, 200),
 }
 
 local function floatingText(position, textValue, color, size, rise)
@@ -8800,6 +9317,8 @@ fxRemote.OnClientEvent:Connect(function(kind, position, value, style)
 		local label = if style == "Dodged"
 			then "Dodged!"
 			elseif style == "KnockedOut" then "Knocked out!"
+			elseif style == "Heal" then "+" .. tostring(value)
+			elseif style == "Countered" then "Countered!"
 			elseif style == "Blocked" then ("%d (blocked)"):format(value)
 			else tostring(value)
 		floatingText(position + jitter, label, DAMAGE_COLORS[style] or DAMAGE_COLORS.Enemy, if style == "Enemy" then 26 else 22, 3)

@@ -418,7 +418,15 @@ fxRemote.OnClientEvent:Connect(function(kind, position, color, extra, extra2)
 	end
 	if kind == "Lightning" then
 		local radius = if typeof(extra) == "number" then extra else 4
-		bolt(position + Vector3.new(math.random(-4, 4), 45, math.random(-4, 4)), position, color, 0.6, 0.3)
+		if extra2 == true then
+			-- A straight beam from the sky (sunbeams).
+			local top = position + Vector3.new(0, 45, 0)
+			local beam = effectPart({ Size = Vector3.new(1.6, 1.6, 45), CFrame = CFrame.lookAt((top + position) / 2, position), Color = color, Transparency = 0.2 })
+			TweenService:Create(beam, TweenInfo.new(0.4), { Transparency = 1, Size = Vector3.new(0.3, 0.3, 45) }):Play()
+			Debris:AddItem(beam, 0.45)
+		else
+			bolt(position + Vector3.new(math.random(-4, 4), 45, math.random(-4, 4)), position, color, 0.6, 0.3)
+		end
 		lightFlash(position, color, 24)
 		sparks(position, color, 20)
 		shockwave(position, color, radius)
@@ -455,6 +463,77 @@ fxRemote.OnClientEvent:Connect(function(kind, position, color, extra, extra2)
 		bolt(position, extra, color, 0.5, 0.4)
 		bolt(position + Vector3.new(0, 1, 0), extra + Vector3.new(0, 1, 0), color, 0.3, 0.3)
 		sparks(extra, color, 14)
+	elseif kind == "Beam" and typeof(extra) == "Vector3" then
+		-- A straight blast (water, spear, sunlight arrow).
+		local width = if typeof(extra2) == "number" then extra2 else 2
+		local length = (extra - position).Magnitude
+		local beam = effectPart({ Size = Vector3.new(width * 0.6, width * 0.6, length), CFrame = CFrame.lookAt((position + extra) / 2, extra), Color = color, Transparency = 0.15 })
+		TweenService:Create(beam, TweenInfo.new(0.35), { Transparency = 1, Size = Vector3.new(0.2, 0.2, length) }):Play()
+		Debris:AddItem(beam, 0.4)
+		sparks(extra, color, 12)
+	elseif kind == "Vortex" then
+		-- A spinning ring for the whirlpool's duration.
+		local radius = if typeof(extra) == "number" then extra else 10
+		local life = if typeof(extra2) == "number" then extra2 else 2.5
+		local ring = effectPart({
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.4, radius * 2, radius * 2),
+			CFrame = CFrame.new(position.X, groundY(position) + 0.2, position.Z) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = color,
+			Transparency = 0.45,
+		})
+		local inner = effectPart({
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.5, radius, radius),
+			CFrame = ring.CFrame,
+			Color = Color3.new(1, 1, 1),
+			Transparency = 0.6,
+		})
+		local spin = Instance.new("NumberValue")
+		spin.Changed:Connect(function(angle)
+			inner.CFrame = CFrame.new(position.X, groundY(position) + 0.25, position.Z) * CFrame.Angles(math.rad(angle), 0, math.rad(90))
+		end)
+		TweenService:Create(spin, TweenInfo.new(life), { Value = 720 }):Play()
+		TweenService:Create(inner, TweenInfo.new(life, Enum.EasingStyle.Linear), { Size = Vector3.new(0.5, 1, 1) }):Play()
+		task.delay(life - 0.3, function()
+			fadeOut(ring, 0.3)
+			fadeOut(inner, 0.3)
+		end)
+		Debris:AddItem(spin, life + 0.1)
+	elseif kind == "Wave" and typeof(extra) == "Vector3" then
+		-- A wall of water rushing forward.
+		local look = Vector3.new(extra.X, 0, extra.Z).Unit
+		local range = if typeof(extra2) == "number" then extra2 else 20
+		local base = CFrame.lookAt(position, position + look)
+		local wall = effectPart({ Size = Vector3.new(6, 5, 1.5), CFrame = base * CFrame.new(0, 0, -2), Color = color, Transparency = 0.25 })
+		TweenService:Create(wall, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			CFrame = base * CFrame.new(0, 0, -range),
+			Size = Vector3.new(range * 1.1, 7, 1.5),
+			Transparency = 0.9,
+		}):Play()
+		Debris:AddItem(wall, 0.55)
+		sparks(position + look * range * 0.6, color, 25)
+	elseif kind == "Dome" then
+		-- A see-through shield dome.
+		local radius = if typeof(extra) == "number" then extra else 12
+		local life = if typeof(extra2) == "number" then extra2 else 5
+		local dome = effectPart({
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.new(2, 2, 2),
+			Position = position,
+			Material = Enum.Material.ForceField,
+			Color = color,
+			Transparency = 0,
+		})
+		TweenService:Create(dome, TweenInfo.new(0.3), { Size = Vector3.new(radius * 2, radius * 2, radius * 2) }):Play()
+		task.delay(life - 0.4, function()
+			fadeOut(dome, 0.4)
+		end)
+	elseif kind == "HealBurst" then
+		local radius = if typeof(extra) == "number" then extra else 15
+		shockwave(position, Color3.fromRGB(120, 255, 140), radius)
+		sparks(position + Vector3.new(0, 2, 0), color, 30)
+		lightFlash(position, color, 20)
 	elseif kind == "Aura" and typeof(extra) == "Instance" and extra:IsA("Player") then
 		aura(extra.Character, color, if typeof(extra2) == "number" then extra2 else 10)
 	end

@@ -75,6 +75,110 @@ AbilityConfig.Abilities = {
 		Kind = "Buff", Move = "Cast", Cooldown = 60, Duration = 12,
 		AttackPercent = 30, AttackPerLevel = 10, DamageTaken = 0.7, -- take 30% less damage
 	},
+
+	------------------------------------------------------------------ Poseidon (Phase 7A)
+	WaterBlast = {
+		Kind = "Line", Move = "Lunge", Cooldown = 6,
+		Damage = 2.0, PerLevel = 0.35,
+		Range = 26, Width = 4, Pierce = 3, Knockback = 14,
+	},
+	TidalDash = {
+		Kind = "DashHit", Cooldown = 4,
+		Damage = 1.2, PerLevel = 0.3,
+		Width = 7, Distance = 11, Knockback = 24,
+	},
+	Whirlpool = {
+		Kind = "Pull", Move = "Cast", Cooldown = 12,
+		Damage = 0.6, PerLevel = 0.15, -- per tick
+		Offset = 10, Radius = 11, Ticks = 5, Interval = 0.5,
+		Slow = 0.5, SlowTime = 3, -- enemies walk at 50% for 3 s
+	},
+	DivineTsunami = {
+		Kind = "Cone", Move = "Cleave", Cooldown = 28,
+		Damage = 3.2, PerLevel = 0.5,
+		Range = 22, ArcDot = 0.35, Knockback = 35,
+	},
+	OceanicAscension = {
+		Kind = "Buff", Move = "Cast", Cooldown = 60, Duration = 12,
+		AttackPercent = 15, AttackPerLevel = 5, DamageTaken = 0.7, RegenPercent = 2,
+	},
+
+	------------------------------------------------------------------ Hades (Phase 7A)
+	ShadowStrike = {
+		Kind = "Strike", Move = "Lunge", Cooldown = 6,
+		Damage = 2.0, PerLevel = 0.35,
+		Range = 20, Radius = 4, LifeSteal = 0.3, -- heals 30% of the damage dealt
+	},
+	SoulDrain = {
+		Kind = "DashHit", Cooldown = 4,
+		Damage = 1.1, PerLevel = 0.3,
+		Width = 6, Distance = 11, Knockback = 8, LifeSteal = 0.5,
+	},
+	SummonUndead = {
+		Kind = "Summon", Move = "Cast", Cooldown = 20,
+		Damage = 0.6, PerLevel = 0.15, -- per spirit, per second
+		Count = 2, CountPerLevel = 0.5, Duration = 15, Interval = 1, Range = 16,
+	},
+	ArmyOfTheDead = {
+		Kind = "Storm", Move = "Slam", Cooldown = 30,
+		Damage = 0.9, PerLevel = 0.2,
+		Radius = 18, Pulses = 6, Interval = 0.5, LifeSteal = 0.25,
+	},
+	UnderworldAscension = {
+		Kind = "Buff", Move = "Cast", Cooldown = 60, Duration = 12,
+		AttackPercent = 30, AttackPerLevel = 10, LifeSteal = 0.2,
+	},
+
+	------------------------------------------------------------------ Athena (Phase 7A)
+	SpearStrike = {
+		Kind = "Line", Move = "Lunge", Cooldown = 5,
+		Damage = 2.6, PerLevel = 0.45,
+		Range = 16, Width = 3, Pierce = 2, Knockback = 10,
+	},
+	DivineShield = {
+		Kind = "DashHit", Cooldown = 5,
+		Damage = 0.8, PerLevel = 0.2,
+		Width = 6, Distance = 11, Knockback = 14,
+		ShieldTime = 3, ShieldDamageTaken = 0.5, -- take 50% damage for 3 s
+	},
+	Counterattack = {
+		Kind = "Counter", Move = "Cast", Cooldown = 10,
+		Duration = 2.5, Damage = 2.5, PerLevel = 0.5, -- each parried hit strikes back for this x attack
+	},
+	AegisOfOlympus = {
+		Kind = "Aegis", Move = "Slam", Cooldown = 30,
+		Damage = 2.0, PerLevel = 0.4,
+		Radius = 14, Duration = 6, DamageTaken = 0.4, Knockback = 30,
+	},
+	DivineGuardianForm = {
+		Kind = "Buff", Move = "Cast", Cooldown = 60, Duration = 12,
+		AttackPercent = 25, AttackPerLevel = 5, DamageTaken = 0.6,
+	},
+
+	------------------------------------------------------------------ Apollo (Phase 7A)
+	SolarArrow = {
+		Kind = "Line", Move = "Lunge", Cooldown = 5,
+		Damage = 2.0, PerLevel = 0.35,
+		Range = 40, Width = 3, Pierce = 3, Knockback = 6,
+	},
+	RadiantDash = {
+		Kind = "DashHit", Cooldown = 4,
+		Damage = 1.0, PerLevel = 0.25,
+		Width = 6, Distance = 11, Knockback = 8, HealPercent = 8, -- heals 8% of max health
+	},
+	HealingLight = {
+		Kind = "Heal", Move = "Cast", Cooldown = 15,
+		Radius = 20, HealPercent = 25, HealPerLevel = 5,
+	},
+	SolarJudgment = {
+		Kind = "Storm", Move = "Cast", Cooldown = 30,
+		Damage = 1.2, PerLevel = 0.25,
+		Radius = 24, Pulses = 6, Interval = 0.4, Straight = true, -- straight sunbeams
+	},
+	SunGodForm = {
+		Kind = "Buff", Move = "Cast", Cooldown = 60, Duration = 12,
+		AttackPercent = 25, AttackPerLevel = 5, SpeedPercent = 20, RegenPercent = 2,
+	},
 }
 
 for id, ability in AbilityConfig.Abilities do
