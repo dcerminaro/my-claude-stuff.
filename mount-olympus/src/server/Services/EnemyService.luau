@@ -24,6 +24,7 @@
 --   EnemyService.DamageEnemy(model, amount, player) -> true/false
 --   EnemyService.GetEnemiesInRange(position, range) -> { record, ... }
 
+local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -834,6 +835,10 @@ local function die(record)
 			local data = DataService.GetData(player)
 			if data then
 				data.Stats.EnemiesDefeated += 1
+				GameEvents.Fire("KillEnemy", player, record.Type)
+				if cfg.Boss then
+					GameEvents.Fire("KillBoss", player, record.Type)
+				end
 				if xp > 0 then
 					ProgressionService.AddXP(player, xp, "Combat")
 				end

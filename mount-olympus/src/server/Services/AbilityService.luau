@@ -13,6 +13,7 @@
 --     reduction for a few seconds.
 -- Visuals are drawn on every device from CombatFX events.
 
+local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -513,6 +514,7 @@ function AbilityService.UseAbility(player, slot, direction)
 
 	broadcastMove(player, cfg.Move)
 	Kinds[cfg.Kind](player, root, cfg, level, godColor(player), direction)
+	GameEvents.Fire("UseAbility", player, data.SelectedGod)
 	return true
 end
 

@@ -13,6 +13,7 @@
 -- Gold, ...). Attributes set by the server replicate to the client, and a
 -- client changing its own copy does NOT affect the server.
 
+local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -212,6 +213,9 @@ function ProgressionService.AddCurrency(player, currency, amount, source)
 	end
 	data.Currencies[currency] = (data.Currencies[currency] or 0) + amount
 	ProgressionService.Refresh(player)
+	if currency == "Gold" and source ~= "Debug" and source ~= "Quest" then
+		GameEvents.Fire("EarnGold", player, nil, amount)
+	end
 	return true
 end
 

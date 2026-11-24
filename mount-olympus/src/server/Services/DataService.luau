@@ -88,6 +88,7 @@ local function makeDefaultData()
 			Active = {},
 			Completed = {},
 			LastDailyReset = 0,
+			Daily = { Day = 0, Ids = {}, Progress = {}, Claimed = {} }, -- Phase 7D
 		},
 
 		CompletedTrials = {}, -- [TrialId] = true

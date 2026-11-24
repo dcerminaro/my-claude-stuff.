@@ -948,7 +948,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v36"
+GameConfig.BuildLabel = "v39"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -1387,6 +1387,160 @@ return Progression
       </Item>
       <Item class="ModuleScript" referent="16">
         <Properties>
+          <string name="Name">QuestConfig</string>
+          <string name="Source"><![CDATA[-- QuestConfig (ModuleScript)
+-- Location: ReplicatedStorage > Shared > QuestConfig
+--
+-- Phase 7D: quests. Quests are grouped in CHAINS: only the first unfinished
+-- quest of each chain is active, and claiming it unlocks the next one.
+-- Daily quests: 3 picked from the Daily pool each day (UTC), reset at midnight.
+--
+-- Objective types (counted by the server as things happen):
+--   KillEnemy / KillBoss (Target = enemy type or "Any"), WinArena (Target =
+--   arena id or "Any"), UpgradeBuilding (building id or "Any"), Worship
+--   (god or "Any"), UpgradeBlessing, UseAbility (god or "Any"), CraftWeapon,
+--   UpgradeWeapon, EarnGold (amount).
+-- State objectives (checked from your save): ChooseGod, ReachLevel,
+--   ReachRank, TempleTier.
+-- Rewards: XP, Gold, DivineFavor, Ambrosia. Daily rewards grow with level.
+-- All numbers are PLACEHOLDERS, balanced in Phase 8.
+
+local QuestConfig = {}
+
+local function q(id, name, description, objective, rewards, requires)
+	return { Id = id, Name = name, Description = description, Objective = objective, Rewards = rewards, Requires = requires }
+end
+
+QuestConfig.Chains = {
+	-- The main journey (story + ascension)
+	{
+		Id = "Main", Name = "The Path to Godhood", Category = "Story",
+		Quests = {
+			q("M01", "Arrival at Olympus", "Choose a god to worship in the Hall of the Gods.", { Type = "ChooseGod", Count = 1 }, { Gold = 100 }),
+			q("M02", "A Humble Shrine", "Build the Gold Treasury at your temple.", { Type = "BuildingLevel", Target = "GoldTreasury", Count = 1 }, { Gold = 150, XP = 50 }),
+			q("M03", "First Blood", "Defeat 5 enemies (the Practice Field is behind the plaza).", { Type = "KillEnemy", Target = "Any", Count = 5 }, { XP = 100, Gold = 100 }),
+			q("M04", "Into the Pit", "Win the Mortal Training Pit at the Arena Gate.", { Type = "WinArena", Target = "MortalTrainingPit", Count = 1 }, { XP = 300, Gold = 250, DivineFavor = 20 }),
+			q("M05", "Mortal No More", "Ascend to Warrior at the Ascension Chamber.", { Type = "ReachRank", Count = 2 }, { Gold = 500, Ambrosia = 1 }),
+			q("M06", "Spartan Glory", "Win the Spartan Battleground.", { Type = "WinArena", Target = "SpartanBattleground", Count = 1 }, { XP = 1500, Gold = 1500, Ambrosia = 1 }),
+			q("M07", "Champion of Olympus", "Ascend to Champion.", { Type = "ReachRank", Count = 3 }, { Gold = 3000, Ambrosia = 2 }),
+			q("M08", "Into the Labyrinth", "Win the Labyrinth of Crete.", { Type = "WinArena", Target = "LabyrinthOfCrete", Count = 1 }, { XP = 6000, Gold = 6000, Ambrosia = 2 }),
+			q("M09", "A Hero's Name", "Ascend to Hero.", { Type = "ReachRank", Count = 4 }, { Gold = 10000, Ambrosia = 3 }),
+			q("M10", "Lifting the Curse", "Win the Cursed Temple.", { Type = "WinArena", Target = "CursedTemple", Count = 1 }, { XP = 20000, Gold = 20000, Ambrosia = 3 }),
+			q("M11", "Divine Blood", "Ascend to Demigod.", { Type = "ReachRank", Count = 5 }, { Gold = 30000, Ambrosia = 5 }),
+			q("M12", "Gates of the Dead", "Win the Gates of the Underworld.", { Type = "WinArena", Target = "GatesOfTheUnderworld", Count = 1 }, { XP = 60000, Gold = 50000, Ambrosia = 5 }),
+			q("M13", "Among the Gods", "Ascend to Lesser God.", { Type = "ReachRank", Count = 6 }, { Gold = 80000, Ambrosia = 8 }),
+			q("M14", "The Fall of Titans", "Win Titan's Colosseum.", { Type = "WinArena", Target = "TitansColosseum", Count = 1 }, { XP = 150000, Gold = 120000, Ambrosia = 10 }),
+			q("M15", "Seat on Olympus", "Ascend to Olympian.", { Type = "ReachRank", Count = 7 }, { Gold = 200000, Ambrosia = 15 }),
+			q("M16", "Elder God", "Ascend to Elder God.", { Type = "ReachRank", Count = 8 }, { Gold = 500000, Ambrosia = 30 }),
+		},
+	},
+	{
+		Id = "Combat", Name = "Warpath", Category = "Combat",
+		Quests = {
+			q("C1", "Blooded", "Defeat 25 enemies.", { Type = "KillEnemy", Target = "Any", Count = 25 }, { XP = 200, Gold = 200 }),
+			q("C2", "Veteran", "Defeat 100 enemies.", { Type = "KillEnemy", Target = "Any", Count = 100 }, { XP = 2000, Gold = 1500 }),
+			q("C3", "Slayer", "Defeat 500 enemies.", { Type = "KillEnemy", Target = "Any", Count = 500 }, { XP = 20000, Gold = 10000, Ambrosia = 2 }),
+			q("C4", "Legend of War", "Defeat 2,000 enemies.", { Type = "KillEnemy", Target = "Any", Count = 2000 }, { XP = 100000, Gold = 60000, Ambrosia = 6 }),
+		},
+	},
+	{
+		Id = "Bosses", Name = "Monster Hunter", Category = "Boss",
+		Quests = {
+			q("B1", "The Champion Falls", "Defeat the Training Champion.", { Type = "KillBoss", Target = "TrainingChampion", Count = 1 }, { Gold = 400, Ambrosia = 1 }),
+			q("B2", "Warlord of Sparta", "Defeat the Spartan Warlord.", { Type = "KillBoss", Target = "SpartanWarlord", Count = 1 }, { Gold = 2500, Ambrosia = 1 }),
+			q("B3", "The Bull of Crete", "Defeat the Minotaur.", { Type = "KillBoss", Target = "Minotaur", Count = 1 }, { Gold = 8000, Ambrosia = 2 }),
+			q("B4", "Stone Gaze", "Defeat Medusa.", { Type = "KillBoss", Target = "Medusa", Count = 1 }, { Gold = 20000, Ambrosia = 3 }),
+			q("B5", "Hound of Hades", "Defeat Cerberus.", { Type = "KillBoss", Target = "Cerberus", Count = 1 }, { Gold = 50000, Ambrosia = 5 }),
+			q("B6", "Kingslayer", "Defeat the Titan King.", { Type = "KillBoss", Target = "TitanKing", Count = 1 }, { Gold = 120000, Ambrosia = 10 }),
+		},
+	},
+	{
+		Id = "Temple", Name = "House of the Gods", Category = "Temple",
+		Quests = {
+			q("T1", "Builder", "Reach 5 total building levels at your temple.", { Type = "TotalBuildingLevels", Count = 5 }, { Gold = 500, DivineFavor = 10 }),
+			q("T2", "Sacred Sanctuary", "Raise your temple to tier 2 with the Temple Core.", { Type = "TempleTier", Count = 2 }, { Gold = 1500, DivineFavor = 20 }),
+			q("T3", "Temple of Devotion", "Raise your temple to tier 3.", { Type = "TempleTier", Count = 3 }, { Gold = 8000, DivineFavor = 50, Ambrosia = 1 }),
+			q("T4", "Master Builder", "Reach 15 total building levels at your temple.", { Type = "TotalBuildingLevels", Count = 15 }, { Gold = 20000, DivineFavor = 80 }),
+			q("T5", "Blessed Temple", "Raise your temple to tier 4.", { Type = "TempleTier", Count = 4 }, { Gold = 40000, DivineFavor = 150, Ambrosia = 2 }),
+			q("T6", "Grand Pantheon", "Raise your temple to tier 5.", { Type = "TempleTier", Count = 5 }, { Gold = 150000, DivineFavor = 300, Ambrosia = 4 }),
+			q("T7", "Celestial Palace", "Raise your temple to tier 6.", { Type = "TempleTier", Count = 6 }, { Gold = 500000, DivineFavor = 600, Ambrosia = 8 }),
+		},
+	},
+	{
+		Id = "Worship", Name = "Devotion", Category = "Worship",
+		Quests = {
+			q("W1", "First Prayer", "Worship your god 5 times in the Hall of the Gods.", { Type = "Worship", Target = "Any", Count = 5 }, { DivineFavor = 30, Gold = 100 }),
+			q("W2", "Blessed", "Upgrade a blessing in the Hall of the Gods.", { Type = "BlessingLevels", Count = 1 }, { DivineFavor = 40 }),
+			q("W3", "Faithful", "Worship 25 times.", { Type = "Worship", Target = "Any", Count = 25 }, { DivineFavor = 150, Gold = 1000 }),
+			q("W4", "Chosen", "Reach 5 total blessing levels.", { Type = "BlessingLevels", Count = 5 }, { DivineFavor = 300, Ambrosia = 1 }),
+			q("W5", "Devoted for Life", "Worship 100 times.", { Type = "Worship", Target = "Any", Count = 100 }, { DivineFavor = 800, Ambrosia = 3 }),
+		},
+	},
+	{
+		Id = "Forge", Name = "Smith of the Gods", Category = "Forge",
+		Quests = {
+			q("F1", "Fresh Steel", "Own 2 weapons (craft one at the Divine Forge).", { Type = "OwnWeapons", Count = 2 }, { Gold = 300 }),
+			q("F2", "Sharpened", "Upgrade weapons 5 times.", { Type = "UpgradeWeapon", Target = "Any", Count = 5 }, { Gold = 3000 }),
+			q("F3", "Armory", "Own 5 weapons (craft them or win them from bosses).", { Type = "OwnWeapons", Count = 5 }, { Gold = 15000, Ambrosia = 2 }),
+			q("F4", "Master Smith", "Upgrade weapons 25 times.", { Type = "UpgradeWeapon", Target = "Any", Count = 25 }, { Gold = 80000, Ambrosia = 5 }),
+		},
+	},
+}
+
+-- God quests: one small chain per god, only while you worship that god.
+local GOD_IDS = { "Zeus", "Poseidon", "Hades", "Ares", "Athena", "Apollo" }
+for _, god in GOD_IDS do
+	table.insert(QuestConfig.Chains, {
+		Id = "God_" .. god, Name = "Divine Tasks of " .. god, Category = "God", God = god,
+		Quests = {
+			q("G_" .. god .. "_1", "Devotion to " .. god, "Worship " .. god .. " 10 times.", { Type = "Worship", Target = god, Count = 10 }, { DivineFavor = 100, Gold = 500 }),
+			q("G_" .. god .. "_2", "Power of " .. god, "Use " .. god .. "'s abilities 30 times.", { Type = "UseAbility", Target = god, Count = 30 }, { DivineFavor = 250, Gold = 2000, Ambrosia = 1 }),
+			q("G_" .. god .. "_3", "Champion of " .. god, "Use " .. god .. "'s abilities 200 times.", { Type = "UseAbility", Target = god, Count = 200 }, { DivineFavor = 1000, Gold = 20000, Ambrosia = 4 }),
+		},
+	})
+end
+
+-- Daily pool: 3 are picked each day. Rewards are multiplied by (1 + level / 20).
+QuestConfig.DailyCount = 3
+QuestConfig.Daily = {
+	q("D_Kill", "Daily: Cull the Monsters", "Defeat 30 enemies.", { Type = "KillEnemy", Target = "Any", Count = 30 }, { XP = 300, Gold = 300 }),
+	q("D_Arena", "Daily: Arena Victory", "Win any arena.", { Type = "WinArena", Target = "Any", Count = 1 }, { XP = 500, Gold = 400, Ambrosia = 1 }),
+	q("D_Worship", "Daily: Prayers", "Worship 5 times.", { Type = "Worship", Target = "Any", Count = 5 }, { DivineFavor = 60, Gold = 150 }),
+	q("D_Build", "Daily: Builder", "Make a temple upgrade.", { Type = "UpgradeBuilding", Target = "Any", Count = 1 }, { Gold = 400, DivineFavor = 20 }),
+	q("D_Ability", "Daily: Divine Power", "Use god abilities 20 times.", { Type = "UseAbility", Target = "Any", Count = 20 }, { XP = 300, DivineFavor = 40 }),
+	q("D_Gold", "Daily: Treasury", "Earn 5,000 Gold.", { Type = "EarnGold", Count = 5000 }, { XP = 250, DivineFavor = 30 }),
+	q("D_Boss", "Daily: Giant Slayer", "Defeat any boss.", { Type = "KillBoss", Target = "Any", Count = 1 }, { XP = 600, Gold = 500, Ambrosia = 1 }),
+	q("D_Forge", "Daily: At the Anvil", "Upgrade a weapon.", { Type = "UpgradeWeapon", Target = "Any", Count = 1 }, { Gold = 500 }),
+}
+
+-- Lookups
+QuestConfig.ById = {}
+for _, chain in QuestConfig.Chains do
+	for index, quest in chain.Quests do
+		quest.Chain = chain
+		quest.Index = index
+		quest.Category = chain.Category
+		QuestConfig.ById[quest.Id] = quest
+	end
+end
+for _, quest in QuestConfig.Daily do
+	quest.Category = "Daily"
+	quest.IsDaily = true
+	QuestConfig.ById[quest.Id] = quest
+end
+
+-- Objectives that are checked from the save instead of counted.
+QuestConfig.StateObjectives = {
+	ChooseGod = true, ReachLevel = true, ReachRank = true, TempleTier = true,
+	BuildingLevel = true, TotalBuildingLevels = true, BlessingLevels = true, OwnWeapons = true,
+}
+
+return QuestConfig
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="17">
+        <Properties>
           <string name="Name">RankOutfits</string>
           <string name="Source"><![CDATA[-- RankOutfits (ModuleScript)
 -- Location: ReplicatedStorage > Shared > RankOutfits
@@ -1592,7 +1746,7 @@ return RankOutfits
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="17">
+      <Item class="ModuleScript" referent="18">
         <Properties>
           <string name="Name">SwordAnimator</string>
           <string name="Source"><![CDATA[-- SwordAnimator (ModuleScript, used by the client only)
@@ -1909,7 +2063,7 @@ return SwordAnimator
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="18">
+      <Item class="ModuleScript" referent="19">
         <Properties>
           <string name="Name">SwordBuilder</string>
           <string name="Source"><![CDATA[-- SwordBuilder (ModuleScript)
@@ -2121,7 +2275,7 @@ return SwordBuilder
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="19">
+      <Item class="ModuleScript" referent="20">
         <Properties>
           <string name="Name">SwordPoses</string>
           <string name="Source"><![CDATA[-- SwordPoses (ModuleScript)
@@ -2276,7 +2430,7 @@ return Poses
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="20">
+      <Item class="ModuleScript" referent="21">
         <Properties>
           <string name="Name">TempleConfig</string>
           <string name="Source"><![CDATA[-- TempleConfig (ModuleScript)
@@ -2446,7 +2600,7 @@ return TempleConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="21">
+      <Item class="ModuleScript" referent="22">
         <Properties>
           <string name="Name">WeaponConfig</string>
           <string name="Source"><![CDATA[-- WeaponConfig (ModuleScript)
@@ -2587,11 +2741,11 @@ return WeaponConfig
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="22">
+  <Item class="ServerScriptService" referent="23">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Script" referent="23">
+    <Item class="Script" referent="24">
       <Properties>
         <string name="Name">Main</string>
         <token name="RunContext">0</token>
@@ -2625,6 +2779,8 @@ local AbilityService = require(Services:WaitForChild("AbilityService"))
 local ArenaService = require(Services:WaitForChild("ArenaService"))
 local AscensionService = require(Services:WaitForChild("AscensionService"))
 local InventoryService = require(Services:WaitForChild("InventoryService"))
+local GameEvents = require(Services:WaitForChild("GameEvents"))
+local QuestService = require(Services:WaitForChild("QuestService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -2666,6 +2822,7 @@ local arenaActionRemote = newRemote("ArenaAction") -- client -> server arena men
 local arenaEventRemote = newRemote("ArenaEvent") -- server -> client party queue and results
 local ascensionRemote = newRemote("AscensionAction") -- client -> server "start my ascension trial"
 local weaponRemote = newRemote("WeaponAction") -- client -> server equip / craft / upgrade a weapon
+local questRemote = newRemote("QuestAction") -- client -> server "claim this quest"
 
 remotes.Parent = ReplicatedStorage
 
@@ -2692,6 +2849,7 @@ AscensionService.Init(DataService, ProgressionService, ArenaService, notifyRemot
 AscensionService.BuildChamber()
 InventoryService.Init(DataService, ProgressionService, notifyRemote, weaponRemote)
 InventoryService.BuildForge()
+QuestService.Init(DataService, ProgressionService, GameEvents, notifyRemote, questRemote)
 CombatService.SetWeaponProvider(InventoryService.GetEquipped)
 AbilityService.SetPowerProvider(function(player)
 	return InventoryService.GetEquipped(player).Power
@@ -2809,6 +2967,7 @@ local function onPlayerAdded(player)
 	CombatService.SetupPlayer(player)
 	AbilityService.SetupPlayer(player)
 	AscensionService.SetupPlayer(player)
+	QuestService.SetupPlayer(player)
 	player:SetAttribute("DataLoaded", true)
 	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
 end
@@ -2828,6 +2987,7 @@ Players.PlayerRemoving:Connect(function(player)
 	AbilityService.ReleasePlayer(player)
 	ArenaService.ReleasePlayer(player)
 	AscensionService.ReleasePlayer(player)
+	QuestService.ReleasePlayer(player)
 	PlotService.ReleasePlot(player)
 	DataService.ReleasePlayer(player) -- yields while saving
 end)
@@ -2878,11 +3038,11 @@ end)
 ]]></string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="24">
+    <Item class="Folder" referent="25">
       <Properties>
         <string name="Name">Services</string>
       </Properties>
-      <Item class="ModuleScript" referent="25">
+      <Item class="ModuleScript" referent="26">
         <Properties>
           <string name="Name">AbilityService</string>
           <string name="Source"><![CDATA[-- AbilityService (ModuleScript)
@@ -2900,6 +3060,7 @@ end)
 --     reduction for a few seconds.
 -- Visuals are drawn on every device from CombatFX events.
 
+local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -3400,6 +3561,7 @@ function AbilityService.UseAbility(player, slot, direction)
 
 	broadcastMove(player, cfg.Move)
 	Kinds[cfg.Kind](player, root, cfg, level, godColor(player), direction)
+	GameEvents.Fire("UseAbility", player, data.SelectedGod)
 	return true
 end
 
@@ -3498,7 +3660,7 @@ return AbilityService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="26">
+      <Item class="ModuleScript" referent="27">
         <Properties>
           <string name="Name">ArenaService</string>
           <string name="Source"><![CDATA[-- ArenaService (ModuleScript)
@@ -3516,6 +3678,7 @@ return AbilityService
 --   ArenaRunId, ArenaName, ArenaState, ArenaWave, ArenaWaves,
 --   ArenaEnemiesLeft, ArenaTimerEnd (server time).
 
+local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local Workspace = game:GetService("Workspace")
@@ -3844,6 +4007,11 @@ finish = function(run, victory)
 	run.Enemies = {}
 	run.Remaining = 0
 	publish(run)
+	if victory then
+		for player in run.Players do
+			GameEvents.Fire("WinArena", player, run.Arena.Id)
+		end
+	end
 	if victory and run.OnVictory then
 		task.spawn(run.OnVictory, run) -- e.g. an ascension trial ranks the player up
 	end
@@ -4187,7 +4355,7 @@ return ArenaService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="27">
+      <Item class="ModuleScript" referent="28">
         <Properties>
           <string name="Name">AscensionService</string>
           <string name="Source"><![CDATA[-- AscensionService (ModuleScript)
@@ -4537,7 +4705,7 @@ return AscensionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="28">
+      <Item class="ModuleScript" referent="29">
         <Properties>
           <string name="Name">CombatService</string>
           <string name="Source"><![CDATA[-- CombatService (ModuleScript)
@@ -4983,7 +5151,7 @@ return CombatService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="29">
+      <Item class="ModuleScript" referent="30">
         <Properties>
           <string name="Name">DataService</string>
           <string name="Source"><![CDATA[-- DataService (ModuleScript)
@@ -5076,6 +5244,7 @@ local function makeDefaultData()
 			Active = {},
 			Completed = {},
 			LastDailyReset = 0,
+			Daily = { Day = 0, Ids = {}, Progress = {}, Claimed = {} }, -- Phase 7D
 		},
 
 		CompletedTrials = {}, -- [TrialId] = true
@@ -5363,7 +5532,7 @@ return DataService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="30">
+      <Item class="ModuleScript" referent="31">
         <Properties>
           <string name="Name">DiagnosticsService</string>
           <string name="Source"><![CDATA[-- DiagnosticsService (ModuleScript)
@@ -5471,7 +5640,7 @@ return DiagnosticsService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="31">
+      <Item class="ModuleScript" referent="32">
         <Properties>
           <string name="Name">EnemyService</string>
           <string name="Source"><![CDATA[-- EnemyService (ModuleScript)
@@ -5500,6 +5669,7 @@ return DiagnosticsService
 --   EnemyService.DamageEnemy(model, amount, player) -> true/false
 --   EnemyService.GetEnemiesInRange(position, range) -> { record, ... }
 
+local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -6310,6 +6480,10 @@ local function die(record)
 			local data = DataService.GetData(player)
 			if data then
 				data.Stats.EnemiesDefeated += 1
+				GameEvents.Fire("KillEnemy", player, record.Type)
+				if cfg.Boss then
+					GameEvents.Fire("KillBoss", player, record.Type)
+				end
 				if xp > 0 then
 					ProgressionService.AddXP(player, xp, "Combat")
 				end
@@ -6646,7 +6820,41 @@ return EnemyService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="32">
+      <Item class="ModuleScript" referent="33">
+        <Properties>
+          <string name="Name">GameEvents</string>
+          <string name="Source"><![CDATA[-- GameEvents (ModuleScript)
+-- Location: ServerScriptService > Services > GameEvents
+--
+-- A tiny message board for "something happened" (Phase 7D). Systems report
+-- events here, and anything that cares (quests) listens, so systems don't
+-- need to know about each other.
+--   GameEvents.Fire(eventName, player, target, amount)
+--   GameEvents.Connect(function(eventName, player, target, amount) ... end)
+-- Events: KillEnemy, KillBoss (target = enemy type), WinArena (arena id),
+-- UpgradeBuilding (building id), Worship (god id), UpgradeBlessing
+-- (blessing id), UseAbility (god id), CraftWeapon, UpgradeWeapon (weapon id),
+-- EarnGold (amount).
+
+local GameEvents = {}
+
+local listeners = {}
+
+function GameEvents.Connect(listener)
+	table.insert(listeners, listener)
+end
+
+function GameEvents.Fire(eventName, player, target, amount)
+	for _, listener in listeners do
+		task.spawn(listener, eventName, player, target, amount or 1)
+	end
+end
+
+return GameEvents
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="34">
         <Properties>
           <string name="Name">GodService</string>
           <string name="Source"><![CDATA[-- GodService (ModuleScript)
@@ -6663,6 +6871,7 @@ return EnemyService
 --   * Builds the Hall of the Gods in Olympus Plaza.
 --   * Tells TempleService which colours to paint the temple.
 
+local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local Workspace = game:GetService("Workspace")
@@ -6971,6 +7180,7 @@ function GodService.UpgradeBlessing(player, blessingId)
 	data.Blessings[entry.God][blessingId] = info.NextLevel
 	refreshAll(player, data, false)
 	message(player, ("%s reached level %d!"):format(entry.Blessing.Name, info.NextLevel))
+	GameEvents.Fire("UpgradeBlessing", player, blessingId)
 	return true
 end
 
@@ -7001,6 +7211,7 @@ function GodService.Worship(player, godId)
 	ProgressionService.AddCurrency(player, "DivineFavor", favor, "Worship")
 	pushAttributes(player, data)
 	message(player, ("%s is pleased: +%d Favor, +%d Loyalty"):format(GodConfig.Gods[godId].DisplayName, favor, gainedLoyalty))
+	GameEvents.Fire("Worship", player, godId)
 	return true
 end
 
@@ -7102,7 +7313,7 @@ return GodService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="33">
+      <Item class="ModuleScript" referent="35">
         <Properties>
           <string name="Name">InventoryService</string>
           <string name="Source"><![CDATA[-- InventoryService (ModuleScript)
@@ -7120,6 +7331,7 @@ return GodService
 -- "EquippedWeaponId", "EquippedWeaponLevel", "WeaponType", "WeaponCooldown",
 -- "WeaponRange" (for the attack buttons and the forge screen).
 
+local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -7295,7 +7507,11 @@ function InventoryService.Craft(player, weaponId)
 	if ambrosia > 0 then
 		ProgressionService.SpendCurrency(player, "Ambrosia", ambrosia)
 	end
-	return InventoryService.GiveWeapon(player, weaponId) == "New"
+	local crafted = InventoryService.GiveWeapon(player, weaponId) == "New"
+	if crafted then
+		GameEvents.Fire("CraftWeapon", player, weaponId)
+	end
+	return crafted
 end
 
 function InventoryService.Upgrade(player, uid)
@@ -7326,6 +7542,7 @@ function InventoryService.Upgrade(player, uid)
 	item.Level += 1
 	push(player, data)
 	message(player, ("%s upgraded to +%d!"):format(weapon.Name, item.Level))
+	GameEvents.Fire("UpgradeWeapon", player, item.Id)
 	return true
 end
 
@@ -7445,7 +7662,7 @@ return InventoryService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="34">
+      <Item class="ModuleScript" referent="36">
         <Properties>
           <string name="Name">PlotService</string>
           <string name="Source"><![CDATA[-- PlotService (ModuleScript)
@@ -7573,7 +7790,7 @@ return PlotService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="35">
+      <Item class="ModuleScript" referent="37">
         <Properties>
           <string name="Name">ProgressionService</string>
           <string name="Source"><![CDATA[-- ProgressionService (ModuleScript)
@@ -7591,6 +7808,7 @@ return PlotService
 -- Gold, ...). Attributes set by the server replicate to the client, and a
 -- client changing its own copy does NOT affect the server.
 
+local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -7790,6 +8008,9 @@ function ProgressionService.AddCurrency(player, currency, amount, source)
 	end
 	data.Currencies[currency] = (data.Currencies[currency] or 0) + amount
 	ProgressionService.Refresh(player)
+	if currency == "Gold" and source ~= "Debug" and source ~= "Quest" then
+		GameEvents.Fire("EarnGold", player, nil, amount)
+	end
 	return true
 end
 
@@ -7848,7 +8069,305 @@ return ProgressionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="36">
+      <Item class="ModuleScript" referent="38">
+        <Properties>
+          <string name="Name">QuestService</string>
+          <string name="Source"><![CDATA[-- QuestService (ModuleScript)
+-- Location: ServerScriptService > Services > QuestService
+--
+-- Phase 7D: quests, all tracked on the server.
+--   * Chains (QuestConfig.Chains): the first unfinished quest of each chain
+--     whose requirements are met is active; claiming it unlocks the next.
+--   * Daily quests: 3 per day from QuestConfig.Daily, reset at midnight UTC.
+--   * Progress comes from GameEvents (kills, wins, upgrades...) or, for
+--     state objectives (god chosen, rank, temple tier, buildings, blessings,
+--     weapons owned), from the save, so things done before still count.
+--   * Rewards are paid once, when the player presses Claim.
+-- Saved in data.Quests: Active = { [questId] = progress }, Completed =
+-- { [questId] = true }, Daily = { Day, Ids, Progress, Claimed }.
+-- The client gets attribute "QuestsJson" (the active quests).
+
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local QuestConfig = require(Shared:WaitForChild("QuestConfig"))
+
+local QuestService = {}
+
+local DataService = nil
+local ProgressionService = nil
+local notifyRemote = nil
+local announced = {} -- [Player] = { [questId] = true } "ready to claim" messages already sent
+
+local function message(player, text)
+	if notifyRemote and player.Parent then
+		notifyRemote:FireClient(player, "Message", text)
+	end
+end
+
+local function today()
+	return math.floor(os.time() / 86400)
+end
+
+-- Picks today's daily quests (the same for a player all day).
+local function refreshDaily(player, data)
+	local quests = data.Quests
+	if type(quests.Daily) ~= "table" then
+		quests.Daily = {}
+	end
+	local daily = quests.Daily
+	local day = today()
+	if daily.Day == day and type(daily.Ids) == "table" then
+		return false
+	end
+	local pool = {}
+	for _, quest in QuestConfig.Daily do
+		table.insert(pool, quest.Id)
+	end
+	local rng = Random.new(day * 7919 + math.abs(player.UserId) % 100000)
+	local ids = {}
+	for _ = 1, math.min(QuestConfig.DailyCount, #pool) do
+		table.insert(ids, table.remove(pool, rng:NextInteger(1, #pool)))
+	end
+	quests.Daily = { Day = day, Ids = ids, Progress = {}, Claimed = {} }
+	if announced[player] then
+		for _, quest in QuestConfig.Daily do
+			announced[player][quest.Id] = nil -- a new day: dailies can be announced again
+		end
+	end
+	return true
+end
+
+local function requirementsMet(data, chain)
+	return chain.God == nil or chain.God == data.SelectedGod
+end
+
+-- The quests currently active for this player (chain heads + today's dailies).
+local function activeQuests(data)
+	local list = {}
+	for _, chain in QuestConfig.Chains do
+		if requirementsMet(data, chain) then
+			for _, quest in chain.Quests do
+				if not data.Quests.Completed[quest.Id] then
+					table.insert(list, quest)
+					break
+				end
+			end
+		end
+	end
+	local daily = data.Quests.Daily
+	if type(daily) == "table" and type(daily.Ids) == "table" then
+		for _, id in daily.Ids do
+			local quest = QuestConfig.ById[id]
+			if quest and not daily.Claimed[id] then
+				table.insert(list, quest)
+			end
+		end
+	end
+	return list
+end
+
+local function isActive(data, questId)
+	for _, quest in activeQuests(data) do
+		if quest.Id == questId then
+			return quest
+		end
+	end
+	return nil
+end
+
+-- Current progress (capped at the objective count).
+local function progressOf(data, quest)
+	local objective = quest.Objective
+	local value
+	if objective.Type == "ChooseGod" then
+		value = if data.SelectedGod ~= "" then 1 else 0
+	elseif objective.Type == "ReachLevel" then
+		value = data.Level
+	elseif objective.Type == "ReachRank" then
+		value = data.RankIndex
+	elseif objective.Type == "TempleTier" then
+		value = data.Temple.Tier
+	elseif objective.Type == "BuildingLevel" then
+		value = tonumber(data.Temple.Buildings[objective.Target]) or 0
+	elseif objective.Type == "TotalBuildingLevels" then
+		value = 0
+		for _, level in data.Temple.Buildings do
+			value += tonumber(level) or 0
+		end
+	elseif objective.Type == "BlessingLevels" then
+		value = 0
+		for _, blessings in data.Blessings do
+			for _, level in blessings do
+				value += tonumber(level) or 0
+			end
+		end
+	elseif objective.Type == "OwnWeapons" then
+		value = #data.Inventory.Items
+	elseif quest.IsDaily then
+		value = data.Quests.Daily.Progress[quest.Id] or 0
+	else
+		value = data.Quests.Active[quest.Id] or 0
+	end
+	return math.min(value, objective.Count)
+end
+
+local function rewardsFor(data, quest)
+	if not quest.IsDaily then
+		return quest.Rewards
+	end
+	local scale = 1 + data.Level / 20
+	local scaled = {}
+	for currency, amount in quest.Rewards do
+		scaled[currency] = if currency == "Ambrosia" then amount else math.floor(amount * scale)
+	end
+	return scaled
+end
+
+local function push(player, data)
+	local list = {}
+	for _, quest in activeQuests(data) do
+		local progress = progressOf(data, quest)
+		local ready = progress >= quest.Objective.Count
+		table.insert(list, {
+			Id = quest.Id,
+			Name = quest.Name,
+			Description = quest.Description,
+			Category = quest.Category,
+			Progress = progress,
+			Count = quest.Objective.Count,
+			Rewards = rewardsFor(data, quest),
+			Ready = ready,
+			Daily = quest.IsDaily == true,
+		})
+		announced[player] = announced[player] or {}
+		if ready and not announced[player][quest.Id] then
+			announced[player][quest.Id] = true
+			message(player, ("Quest complete: %s! Claim it in your Quests."):format(quest.Name))
+		end
+	end
+	player:SetAttribute("QuestsJson", HttpService:JSONEncode(list))
+end
+
+--------------------------------------------------------------------------
+-- Public API
+--------------------------------------------------------------------------
+
+-- Counts an event towards every matching active quest.
+function QuestService.Record(player, eventType, target, amount)
+	local data = DataService.GetData(player)
+	if not data then
+		return
+	end
+	refreshDaily(player, data)
+	local changed = false
+	for _, quest in activeQuests(data) do
+		local objective = quest.Objective
+		if objective.Type == eventType and (objective.Target == nil or objective.Target == "Any" or objective.Target == target) then
+			local store = if quest.IsDaily then data.Quests.Daily.Progress else data.Quests.Active
+			local before = store[quest.Id] or 0
+			if before < objective.Count then
+				store[quest.Id] = math.min(objective.Count, before + (amount or 1))
+				changed = true
+			end
+		end
+	end
+	if changed or eventType == "UpgradeBuilding" or eventType == "UpgradeBlessing" or eventType == "CraftWeapon" then
+		push(player, data) -- state quests (building levels, weapons owned...) may have moved too
+	end
+end
+
+-- Pays a finished quest once. Returns true if paid.
+function QuestService.Claim(player, questId)
+	local data = DataService.GetData(player)
+	if not data or type(questId) ~= "string" then
+		return false
+	end
+	refreshDaily(player, data)
+	local quest = isActive(data, questId)
+	if not quest or progressOf(data, quest) < quest.Objective.Count then
+		return false
+	end
+	-- Mark first (no yield before this), so a double click can't pay twice.
+	if quest.IsDaily then
+		data.Quests.Daily.Claimed[questId] = true
+	else
+		data.Quests.Completed[questId] = true
+		data.Quests.Active[questId] = nil
+	end
+	local paid = {}
+	for currency, amount in rewardsFor(data, quest) do
+		if currency == "XP" then
+			ProgressionService.AddXP(player, amount, "Quest")
+		else
+			ProgressionService.AddCurrency(player, currency, amount, "Quest")
+		end
+		table.insert(paid, ("+%d %s"):format(amount, if currency == "DivineFavor" then "Favor" else currency))
+	end
+	push(player, data)
+	message(player, ("%s: %s"):format(quest.Name, table.concat(paid, "  ")))
+	return true
+end
+
+-- Re-publishes quests (e.g. after state changes like a rank-up).
+function QuestService.Refresh(player)
+	local data = DataService.GetData(player)
+	if data then
+		refreshDaily(player, data)
+		push(player, data)
+	end
+end
+
+function QuestService.Init(dataService, progressionService, gameEvents, notifyRemoteEvent, questRemote)
+	DataService = dataService
+	ProgressionService = progressionService
+	notifyRemote = notifyRemoteEvent
+
+	gameEvents.Connect(function(eventType, player, target, amount)
+		QuestService.Record(player, eventType, target, amount)
+	end)
+
+	if questRemote then
+		local last = {}
+		questRemote.OnServerEvent:Connect(function(player, action, questId)
+			local t = os.clock()
+			if last[player] and t - last[player] < 0.3 then
+				return
+			end
+			last[player] = t
+			if action == "Claim" then
+				QuestService.Claim(player, questId)
+			end
+		end)
+	end
+
+	-- Every 10 s: new day's dailies, and state quests (rank, tier, god) update.
+	task.spawn(function()
+		while true do
+			task.wait(10)
+			for _, player in Players:GetPlayers() do
+				QuestService.Refresh(player)
+			end
+		end
+	end)
+end
+
+function QuestService.SetupPlayer(player)
+	announced[player] = {}
+	QuestService.Refresh(player)
+end
+
+function QuestService.ReleasePlayer(player)
+	announced[player] = nil
+end
+
+return QuestService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="39">
         <Properties>
           <string name="Name">TempleModels</string>
           <string name="Source"><![CDATA[-- TempleModels (ModuleScript)
@@ -8330,7 +8849,7 @@ return TempleModels
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="37">
+      <Item class="ModuleScript" referent="40">
         <Properties>
           <string name="Name">TempleService</string>
           <string name="Source"><![CDATA[-- TempleService (ModuleScript)
@@ -8349,6 +8868,7 @@ return TempleModels
 -- Other systems can read temple bonuses with:
 --   TempleService.GetEffect(player, "CombatBonusPercent")  -> number
 
+local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
@@ -8692,6 +9212,7 @@ function TempleService.RequestUpgrade(player, buildingId)
 
 	pushAttributes(player, data)
 	refreshPads(player)
+	GameEvents.Fire("UpgradeBuilding", player, buildingId)
 	return true
 end
 
@@ -8737,7 +9258,7 @@ return TempleService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="38">
+      <Item class="ModuleScript" referent="41">
         <Properties>
           <string name="Name">WorldBuilder</string>
           <string name="Source"><![CDATA[-- WorldBuilder (ModuleScript)
@@ -8977,16 +9498,16 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="39">
+  <Item class="StarterPlayer" referent="42">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <token name="AvatarJointUpgrade_SerializedRollout">1</token>
     </Properties>
-    <Item class="StarterCharacterScripts" referent="40">
+    <Item class="StarterCharacterScripts" referent="43">
       <Properties>
         <string name="Name">StarterCharacterScripts</string>
       </Properties>
-      <Item class="Script" referent="41">
+      <Item class="Script" referent="44">
         <Properties>
           <string name="Name">Health</string>
           <token name="RunContext">0</token>
@@ -9000,11 +9521,11 @@ return WorldBuilder
         </Properties>
       </Item>
     </Item>
-    <Item class="StarterPlayerScripts" referent="42">
+    <Item class="StarterPlayerScripts" referent="45">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="43">
+      <Item class="LocalScript" referent="46">
         <Properties>
           <string name="Name">AbilityController</string>
           <string name="Source"><![CDATA[-- AbilityController (LocalScript)
@@ -9550,7 +10071,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="44">
+      <Item class="LocalScript" referent="47">
         <Properties>
           <string name="Name">ArenaUI</string>
           <string name="Source"><![CDATA[-- ArenaUI (LocalScript)
@@ -9907,7 +10428,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="45">
+      <Item class="LocalScript" referent="48">
         <Properties>
           <string name="Name">AscensionUI</string>
           <string name="Source"><![CDATA[-- AscensionUI (LocalScript)
@@ -10219,7 +10740,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="46">
+      <Item class="LocalScript" referent="49">
         <Properties>
           <string name="Name">CombatController</string>
           <string name="Source"><![CDATA[-- CombatController (LocalScript)
@@ -10861,7 +11382,7 @@ updateEnabled()
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="47">
+      <Item class="LocalScript" referent="50">
         <Properties>
           <string name="Name">Diagnostics</string>
           <string name="Source"><![CDATA[-- Diagnostics (LocalScript)
@@ -10962,7 +11483,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="48">
+      <Item class="LocalScript" referent="51">
         <Properties>
           <string name="Name">GodUI</string>
           <string name="Source"><![CDATA[-- GodUI (LocalScript)
@@ -11541,7 +12062,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="49">
+      <Item class="LocalScript" referent="52">
         <Properties>
           <string name="Name">HUDController</string>
           <string name="Source"><![CDATA[-- HUDController (LocalScript)
@@ -12018,7 +12539,306 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="50">
+      <Item class="LocalScript" referent="53">
+        <Properties>
+          <string name="Name">QuestUI</string>
+          <string name="Source"><![CDATA[-- QuestUI (LocalScript)
+-- Location: StarterPlayer > StarterPlayerScripts > QuestUI
+--
+-- Phase 7D: quests on screen.
+--   * Tracker (right side, under the god badge): up to 3 quests with
+--     progress bars; finished ones first. Tap it to open the quest log.
+--   * "Quests" button (left, under Weapons) opens the quest log: every
+--     active quest grouped as Daily / Story / other chains, with rewards and
+--     a Claim button when done.
+-- Display only: the server tracks progress and pays rewards.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local questRemote = Remotes:WaitForChild("QuestAction")
+
+local THEME = {
+	Marble = Color3.fromRGB(246, 242, 232),
+	MarbleDark = Color3.fromRGB(228, 220, 204),
+	Gold = Color3.fromRGB(212, 175, 55),
+	Bronze = Color3.fromRGB(140, 92, 45),
+	Text = Color3.fromRGB(58, 44, 28),
+	SubText = Color3.fromRGB(110, 95, 75),
+	White = Color3.new(1, 1, 1),
+	Ready = Color3.fromRGB(70, 150, 70),
+	Bar = Color3.fromRGB(200, 190, 170),
+	Quest = Color3.fromRGB(70, 110, 170),
+	Daily = Color3.fromRGB(170, 90, 150),
+}
+
+local CATEGORY_ORDER = { "Daily", "Story", "Combat", "Boss", "Temple", "Worship", "Forge", "God" }
+local CATEGORY_NAMES = {
+	Daily = "Daily Quests (new ones every day)",
+	Story = "Story",
+	Combat = "Combat",
+	Boss = "Boss Hunts",
+	Temple = "Temple Building",
+	Worship = "Devotion",
+	Forge = "The Forge",
+	God = "Your God",
+}
+local CURRENCY_NAMES = { XP = "XP", Gold = "Gold", DivineFavor = "Favor", Ambrosia = "Ambrosia" }
+
+local function create(className, props, children)
+	local inst = Instance.new(className)
+	for key, value in props do
+		if key ~= "Parent" then
+			inst[key] = value
+		end
+	end
+	for _, child in children or {} do
+		child.Parent = inst
+	end
+	if props.Parent then
+		inst.Parent = props.Parent
+	end
+	return inst
+end
+local function corner(r)
+	return create("UICorner", { CornerRadius = UDim.new(0, r) })
+end
+local function stroke(color, t)
+	return create("UIStroke", { Color = color, Thickness = t, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+end
+local function padding(px)
+	return create("UIPadding", { PaddingTop = UDim.new(0, px), PaddingBottom = UDim.new(0, px), PaddingLeft = UDim.new(0, px), PaddingRight = UDim.new(0, px) })
+end
+local function text(props)
+	props.BackgroundTransparency = 1
+	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
+	props.TextColor3 = props.TextColor3 or THEME.Text
+	props.Font = props.Font or Enum.Font.Gotham
+	return create("TextLabel", props)
+end
+local function button(props)
+	props.AutoButtonColor = true
+	props.Font = props.Font or Enum.Font.GothamBold
+	props.TextColor3 = props.TextColor3 or THEME.White
+	props.TextSize = props.TextSize or 14
+	return create("TextButton", props, { corner(8) })
+end
+
+local function rewardText(rewards)
+	local parts = {}
+	for _, currency in { "XP", "Gold", "DivineFavor", "Ambrosia" } do
+		if rewards[currency] then
+			table.insert(parts, ("+%d %s"):format(rewards[currency], CURRENCY_NAMES[currency]))
+		end
+	end
+	return table.concat(parts, "  ")
+end
+
+local function progressBar(parent, position, size, fraction, color)
+	local back = create("Frame", { Position = position, Size = size, BackgroundColor3 = THEME.Bar, BorderSizePixel = 0, Parent = parent }, { corner(4) })
+	create("Frame", { Size = UDim2.fromScale(math.clamp(fraction, 0, 1), 1), BackgroundColor3 = color, BorderSizePixel = 0, Parent = back }, { corner(4) })
+	return back
+end
+
+local gui = create("ScreenGui", { Name = "QuestUI", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, DisplayOrder = 8, Enabled = false, Parent = playerGui })
+local uiScale = create("UIScale", { Parent = gui })
+local function updateScale()
+	local camera = Workspace.CurrentCamera
+	local viewport = if camera then camera.ViewportSize else Vector2.new(1280, 720)
+	uiScale.Scale = math.clamp(math.min(viewport.X / 1280, viewport.Y / 720), 0.7, 1.2)
+end
+updateScale()
+if Workspace.CurrentCamera then
+	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+end
+local function updateEnabled()
+	gui.Enabled = player:GetAttribute("DataLoaded") == true
+end
+player:GetAttributeChangedSignal("DataLoaded"):Connect(updateEnabled)
+updateEnabled()
+
+--------------------------------------------------------------------------
+-- Open button (left, under "Weapons") and tracker (right, under god badge)
+--------------------------------------------------------------------------
+local openButton = button({
+	Position = UDim2.fromOffset(12, 258), Size = UDim2.fromOffset(290, 40),
+	BackgroundColor3 = THEME.Quest, Text = "Quests", TextSize = 17, Parent = gui,
+})
+stroke(THEME.Bronze, 2).Parent = openButton
+
+local tracker = create("TextButton", {
+	AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 172), Size = UDim2.fromOffset(230, 0),
+	AutomaticSize = Enum.AutomaticSize.Y, BackgroundColor3 = THEME.Marble, BackgroundTransparency = 0.15,
+	AutoButtonColor = false, Text = "", Parent = gui,
+}, { corner(10), stroke(THEME.Gold, 2), padding(8), create("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }) })
+
+--------------------------------------------------------------------------
+-- Quest log panel
+--------------------------------------------------------------------------
+local panel = create("Frame", {
+	AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(700, 520),
+	BackgroundColor3 = THEME.Marble, Visible = false, Parent = gui,
+}, { corner(12), stroke(THEME.Quest, 3), padding(14) })
+text({ Size = UDim2.new(1, -50, 0, 36), Font = Enum.Font.Garamond, TextSize = 34, Text = "Quests", Parent = panel })
+local closeButton = button({ AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.fromOffset(40, 40), BackgroundColor3 = THEME.Bronze, Text = "X", TextSize = 20, Parent = panel })
+text({ Position = UDim2.fromOffset(0, 40), Size = UDim2.new(1, 0, 0, 20), TextSize = 13, TextColor3 = THEME.SubText, Text = "Finish a quest, then press Claim to collect the reward. Claiming a story quest unlocks the next one.", TextWrapped = true, Parent = panel })
+
+local list = create("ScrollingFrame", {
+	Position = UDim2.fromOffset(0, 66), Size = UDim2.new(1, 0, 1, -66), BackgroundTransparency = 1, BorderSizePixel = 0,
+	ScrollBarThickness = 6, ScrollBarImageColor3 = THEME.Bronze, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, Parent = panel,
+}, { create("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }), create("UIPadding", { PaddingRight = UDim.new(0, 10) }) })
+
+local quests = {}
+
+local function readQuests()
+	local raw = player:GetAttribute("QuestsJson")
+	if type(raw) ~= "string" then
+		return {}
+	end
+	local ok, decoded = pcall(HttpService.JSONDecode, HttpService, raw)
+	return if ok and type(decoded) == "table" then decoded else {}
+end
+
+local function questRow(quest, order)
+	local color = if quest.Daily then THEME.Daily else THEME.Quest
+	local row = create("Frame", { Size = UDim2.new(1, 0, 0, 74), BackgroundColor3 = THEME.MarbleDark, LayoutOrder = order, Parent = list }, { corner(8), padding(8) })
+	text({ Size = UDim2.new(1, -130, 0, 20), Font = Enum.Font.GothamBold, TextSize = 16, Text = quest.Name, Parent = row })
+	text({ Position = UDim2.fromOffset(0, 20), Size = UDim2.new(1, -130, 0, 18), TextSize = 13, TextColor3 = THEME.SubText, TextTruncate = Enum.TextTruncate.AtEnd, Text = quest.Description, Parent = row })
+	progressBar(row, UDim2.fromOffset(0, 42), UDim2.new(1, -260, 0, 12), quest.Progress / math.max(1, quest.Count), if quest.Ready then THEME.Ready else color)
+	text({ Position = UDim2.new(1, -255, 0, 38), Size = UDim2.fromOffset(120, 20), TextSize = 13, Text = ("%d / %d"):format(quest.Progress, quest.Count), Parent = row })
+	text({ AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -125, 0, 38), Size = UDim2.fromOffset(0, 20), AutomaticSize = Enum.AutomaticSize.X, TextSize = 12, TextColor3 = THEME.Bronze, TextXAlignment = Enum.TextXAlignment.Right, Text = rewardText(quest.Rewards), Parent = row })
+	local claim = button({
+		AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.fromOffset(110, 44),
+		BackgroundColor3 = if quest.Ready then THEME.Ready else THEME.Bar,
+		Text = if quest.Ready then "Claim" else "In progress", TextSize = if quest.Ready then 16 else 12,
+		AutoButtonColor = quest.Ready, Parent = row,
+	})
+	if quest.Ready then
+		claim.Activated:Connect(function()
+			claim.Text = "..."
+			questRemote:FireServer("Claim", quest.Id)
+		end)
+	end
+end
+
+local function renderLog()
+	for _, child in list:GetChildren() do
+		if child:IsA("GuiObject") then
+			child:Destroy()
+		end
+	end
+	local order = 0
+	for _, category in CATEGORY_ORDER do
+		local inCategory = {}
+		for _, quest in quests do
+			local questCategory = if quest.Daily then "Daily" else quest.Category
+			if questCategory == category then
+				table.insert(inCategory, quest)
+			end
+		end
+		if #inCategory > 0 then
+			order += 1
+			text({ Size = UDim2.new(1, 0, 0, 24), Font = Enum.Font.Garamond, TextSize = 22, TextColor3 = THEME.Bronze, Text = CATEGORY_NAMES[category] or category, LayoutOrder = order, Parent = list })
+			for _, quest in inCategory do
+				order += 1
+				questRow(quest, order)
+			end
+		end
+	end
+	if order == 0 then
+		text({ Size = UDim2.new(1, 0, 0, 40), TextSize = 16, Text = "No quests right now. Check back tomorrow for new daily quests!", LayoutOrder = 1, Parent = list })
+	end
+end
+
+local function renderTracker()
+	for _, child in tracker:GetChildren() do
+		if child:IsA("GuiObject") then
+			child:Destroy()
+		end
+	end
+	-- Finished first, then story, then the rest in log order.
+	local sorted = table.clone(quests)
+	local rank = {}
+	for i, category in CATEGORY_ORDER do
+		rank[category] = i
+	end
+	table.sort(sorted, function(a, b)
+		if a.Ready ~= b.Ready then
+			return a.Ready
+		end
+		local ra = if a.Daily then 0 else rank[a.Category] or 99
+		local rb = if b.Daily then 0 else rank[b.Category] or 99
+		if a.Category == "Story" then
+			ra = -1
+		end
+		if b.Category == "Story" then
+			rb = -1
+		end
+		return ra < rb
+	end)
+	local readyCount = 0
+	for _, quest in quests do
+		if quest.Ready then
+			readyCount += 1
+		end
+	end
+	text({ Size = UDim2.new(1, 0, 0, 18), Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = THEME.Bronze,
+		Text = if readyCount > 0 then ("Quests  (%d to claim!)"):format(readyCount) else "Quests", LayoutOrder = 0, Parent = tracker })
+	for i = 1, math.min(3, #sorted) do
+		local quest = sorted[i]
+		local item = create("Frame", { Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1, LayoutOrder = i, Parent = tracker })
+		text({ Size = UDim2.new(1, -50, 0, 16), Font = Enum.Font.GothamMedium, TextSize = 13, TextTruncate = Enum.TextTruncate.AtEnd, Text = quest.Name, Parent = item })
+		text({ AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.fromOffset(50, 16), TextSize = 12, TextXAlignment = Enum.TextXAlignment.Right,
+			TextColor3 = if quest.Ready then THEME.Ready else THEME.SubText, Text = if quest.Ready then "Done!" else ("%d/%d"):format(quest.Progress, quest.Count), Parent = item })
+		progressBar(item, UDim2.fromOffset(0, 20), UDim2.new(1, 0, 0, 8), quest.Progress / math.max(1, quest.Count), if quest.Ready then THEME.Ready elseif quest.Daily then THEME.Daily else THEME.Quest)
+	end
+	tracker.Visible = #sorted > 0
+end
+
+local function refresh()
+	quests = readQuests()
+	renderTracker()
+	if panel.Visible then
+		renderLog()
+	end
+	local readyCount = 0
+	for _, quest in quests do
+		if quest.Ready then
+			readyCount += 1
+		end
+	end
+	openButton.Text = if readyCount > 0 then ("Quests  (%d!)"):format(readyCount) else "Quests"
+	openButton.BackgroundColor3 = if readyCount > 0 then THEME.Ready else THEME.Quest
+end
+
+local function open()
+	panel.Visible = true
+	renderLog()
+end
+openButton.Activated:Connect(function()
+	if panel.Visible then
+		panel.Visible = false
+	else
+		open()
+	end
+end)
+tracker.Activated:Connect(open)
+closeButton.Activated:Connect(function()
+	panel.Visible = false
+end)
+
+player:GetAttributeChangedSignal("QuestsJson"):Connect(refresh)
+refresh()
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="LocalScript" referent="54">
         <Properties>
           <string name="Name">TempleUI</string>
           <string name="Source"><![CDATA[-- TempleUI (LocalScript)
@@ -12373,7 +13193,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="51">
+      <Item class="LocalScript" referent="55">
         <Properties>
           <string name="Name">WeaponUI</string>
           <string name="Source"><![CDATA[-- WeaponUI (LocalScript)

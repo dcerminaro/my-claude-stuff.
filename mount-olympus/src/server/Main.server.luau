@@ -28,6 +28,8 @@ local AbilityService = require(Services:WaitForChild("AbilityService"))
 local ArenaService = require(Services:WaitForChild("ArenaService"))
 local AscensionService = require(Services:WaitForChild("AscensionService"))
 local InventoryService = require(Services:WaitForChild("InventoryService"))
+local GameEvents = require(Services:WaitForChild("GameEvents"))
+local QuestService = require(Services:WaitForChild("QuestService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -69,6 +71,7 @@ local arenaActionRemote = newRemote("ArenaAction") -- client -> server arena men
 local arenaEventRemote = newRemote("ArenaEvent") -- server -> client party queue and results
 local ascensionRemote = newRemote("AscensionAction") -- client -> server "start my ascension trial"
 local weaponRemote = newRemote("WeaponAction") -- client -> server equip / craft / upgrade a weapon
+local questRemote = newRemote("QuestAction") -- client -> server "claim this quest"
 
 remotes.Parent = ReplicatedStorage
 
@@ -95,6 +98,7 @@ AscensionService.Init(DataService, ProgressionService, ArenaService, notifyRemot
 AscensionService.BuildChamber()
 InventoryService.Init(DataService, ProgressionService, notifyRemote, weaponRemote)
 InventoryService.BuildForge()
+QuestService.Init(DataService, ProgressionService, GameEvents, notifyRemote, questRemote)
 CombatService.SetWeaponProvider(InventoryService.GetEquipped)
 AbilityService.SetPowerProvider(function(player)
 	return InventoryService.GetEquipped(player).Power
@@ -212,6 +216,7 @@ local function onPlayerAdded(player)
 	CombatService.SetupPlayer(player)
 	AbilityService.SetupPlayer(player)
 	AscensionService.SetupPlayer(player)
+	QuestService.SetupPlayer(player)
 	player:SetAttribute("DataLoaded", true)
 	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
 end
@@ -231,6 +236,7 @@ Players.PlayerRemoving:Connect(function(player)
 	AbilityService.ReleasePlayer(player)
 	ArenaService.ReleasePlayer(player)
 	AscensionService.ReleasePlayer(player)
+	QuestService.ReleasePlayer(player)
 	PlotService.ReleasePlot(player)
 	DataService.ReleasePlayer(player) -- yields while saving
 end)

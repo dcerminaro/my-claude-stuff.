@@ -43,6 +43,9 @@
         },
         "WeaponUI": {
           "$path": "src/client/WeaponUI.client.luau"
+        },
+        "QuestUI": {
+          "$path": "src/client/QuestUI.client.luau"
         }
       },
       "StarterCharacterScripts": {

@@ -13,6 +13,7 @@
 -- "EquippedWeaponId", "EquippedWeaponLevel", "WeaponType", "WeaponCooldown",
 -- "WeaponRange" (for the attack buttons and the forge screen).
 
+local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -188,7 +189,11 @@ function InventoryService.Craft(player, weaponId)
 	if ambrosia > 0 then
 		ProgressionService.SpendCurrency(player, "Ambrosia", ambrosia)
 	end
-	return InventoryService.GiveWeapon(player, weaponId) == "New"
+	local crafted = InventoryService.GiveWeapon(player, weaponId) == "New"
+	if crafted then
+		GameEvents.Fire("CraftWeapon", player, weaponId)
+	end
+	return crafted
 end
 
 function InventoryService.Upgrade(player, uid)
@@ -219,6 +224,7 @@ function InventoryService.Upgrade(player, uid)
 	item.Level += 1
 	push(player, data)
 	message(player, ("%s upgraded to +%d!"):format(weapon.Name, item.Level))
+	GameEvents.Fire("UpgradeWeapon", player, item.Id)
 	return true
 end
 

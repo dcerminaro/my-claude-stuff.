@@ -42,6 +42,11 @@ A Greek mythology RPG / temple tycoon for Roblox.
 | `src/server/Services/ArenaService.luau` | ServerScriptService › Services › ArenaService | ModuleScript |
 | `src/server/Services/AbilityService.luau` | ServerScriptService › Services › AbilityService | ModuleScript |
 | `src/server/Services/DiagnosticsService.luau` | ServerScriptService › Services › DiagnosticsService | ModuleScript |
+| `src/shared/WeaponConfig.luau`, `QuestConfig.luau` | ReplicatedStorage › Shared › (same names) | ModuleScript |
+| `src/server/Services/InventoryService.luau` | ServerScriptService › Services › InventoryService | ModuleScript |
+| `src/server/Services/QuestService.luau`, `GameEvents.luau` | ServerScriptService › Services › (same names) | ModuleScript |
+| `src/client/WeaponUI.client.luau` | StarterPlayer › StarterPlayerScripts › WeaponUI | LocalScript |
+| `src/client/QuestUI.client.luau` | StarterPlayer › StarterPlayerScripts › QuestUI | LocalScript |
 | `src/client/HUDController.client.luau` | StarterPlayer › StarterPlayerScripts › HUDController | LocalScript |
 | `src/client/TempleUI.client.luau` | StarterPlayer › StarterPlayerScripts › TempleUI | LocalScript |
 | `src/client/GodUI.client.luau` | StarterPlayer › StarterPlayerScripts › GodUI | LocalScript |

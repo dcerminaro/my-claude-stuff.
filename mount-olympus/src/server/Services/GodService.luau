@@ -12,6 +12,7 @@
 --   * Builds the Hall of the Gods in Olympus Plaza.
 --   * Tells TempleService which colours to paint the temple.
 
+local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local Workspace = game:GetService("Workspace")
@@ -320,6 +321,7 @@ function GodService.UpgradeBlessing(player, blessingId)
 	data.Blessings[entry.God][blessingId] = info.NextLevel
 	refreshAll(player, data, false)
 	message(player, ("%s reached level %d!"):format(entry.Blessing.Name, info.NextLevel))
+	GameEvents.Fire("UpgradeBlessing", player, blessingId)
 	return true
 end
 
@@ -350,6 +352,7 @@ function GodService.Worship(player, godId)
 	ProgressionService.AddCurrency(player, "DivineFavor", favor, "Worship")
 	pushAttributes(player, data)
 	message(player, ("%s is pleased: +%d Favor, +%d Loyalty"):format(GodConfig.Gods[godId].DisplayName, favor, gainedLoyalty))
+	GameEvents.Fire("Worship", player, godId)
 	return true
 end
 

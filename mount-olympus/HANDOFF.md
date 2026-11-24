@@ -51,7 +51,7 @@ Follow the master specification in **Part C** exactly, including its section 19
 | 4B. God abilities | **Confirmed** ("Phase 4 confirmed") |
 | 5. Arenas | **Accepted** — developer said "move on to phase 6" (v25) |
 | 6. Ascension | **Accepted** — developer: "we can work on how it looks later, next phase" (v30) |
-| 7. Content Expansion | In progress: 7A gods (v33) · 7B arenas/bosses/trials (v35) · **7C weapons/forge built and server-tested, live (v36)** · 7D quests · 7E endgame |
+| 7. Content Expansion | In progress: 7A gods (v33) · 7B arenas/bosses/trials (v35) · 7C weapons/forge (v36) · **7D quests built and server-tested, live (v39)** · 7E endgame |
 | 5–8 | Not started |
 
 ### How to set up Phase 1 on a Mac (or Windows PC)
@@ -427,6 +427,28 @@ environment, so a session can `rojo build` and publish via
    (equip/upgrade) and Forge (all weapons, sources, craft). The weapon model in
    hand changes on equip (SwordBuilder builds every type; model name stays
    "DivineSword"). Preview: `docs/weapons-preview.png`.
+
+### Design decisions made in Phase 7D (quests)
+1. **Data-driven** (`Shared/QuestConfig`): chains Story (M01–M16, follows the
+   arenas and ascension ranks), Combat (C1–C4), Boss Hunts (B1–B6), Temple
+   (T1–T7), Devotion (W1–W5), Forge (F1–F4), plus a 3-quest chain per god that
+   only shows while you worship that god. The first unfinished quest of each
+   chain is active; claiming it unlocks the next.
+2. **Daily quests:** 3 of 8 picked per player per UTC day (seeded, so the same
+   all day); rewards × (1 + level / 20) so they stay useful late (Ambrosia not
+   scaled).
+3. **Progress:** counted from `Services/GameEvents` (KillEnemy, KillBoss,
+   WinArena, UpgradeBuilding, Worship, UpgradeBlessing, UseAbility,
+   CraftWeapon, UpgradeWeapon, EarnGold — gold from quests/debug excluded).
+   "State" objectives read the save instead (god chosen, rank, temple tier,
+   a building's level, total building levels, total blessing levels, weapons
+   owned), so experienced players aren't stuck on things they already did.
+4. **Rewards** only on Claim (server-checked, marked done before paying, so
+   double taps can't pay twice). Saved in `data.Quests` (Active, Completed,
+   Daily{Day, Ids, Progress, Claimed}).
+5. **UI** (`QuestUI`): "Quests" button (left, under Weapons; turns green with a
+   count when something is ready) and a tracker under the god badge showing
+   3 quests (finished first, then story). Tap either to open the quest log.
 
 ### Ideas from the developer for later (not built yet)
 - **Rank outfits and physique (Phase 6, Ascension):** each ascension rank gets

@@ -13,6 +13,7 @@
 --   ArenaRunId, ArenaName, ArenaState, ArenaWave, ArenaWaves,
 --   ArenaEnemiesLeft, ArenaTimerEnd (server time).
 
+local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local Workspace = game:GetService("Workspace")
@@ -341,6 +342,11 @@ finish = function(run, victory)
 	run.Enemies = {}
 	run.Remaining = 0
 	publish(run)
+	if victory then
+		for player in run.Players do
+			GameEvents.Fire("WinArena", player, run.Arena.Id)
+		end
+	end
 	if victory and run.OnVictory then
 		task.spawn(run.OnVictory, run) -- e.g. an ascension trial ranks the player up
 	end

@@ -14,6 +14,7 @@
 -- Other systems can read temple bonuses with:
 --   TempleService.GetEffect(player, "CombatBonusPercent")  -> number
 
+local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
@@ -357,6 +358,7 @@ function TempleService.RequestUpgrade(player, buildingId)
 
 	pushAttributes(player, data)
 	refreshPads(player)
+	GameEvents.Fire("UpgradeBuilding", player, buildingId)
 	return true
 end
 
