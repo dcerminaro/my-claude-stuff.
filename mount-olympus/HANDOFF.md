@@ -12,12 +12,15 @@ You are continuing development of a Roblox game with a **beginner** developer.
 Follow the master specification in **Part C** exactly, including its section 19
 ("How to work with me").
 
-- Phase 1 code is **written but not yet tested in Roblox Studio**. The developer
-  currently has only an iPad and is getting access to a Mac. Roblox Studio does
-  not run on iPad.
-- **Do not start Phase 2** until the developer runs the Phase 1 tests and replies
-  **"Phase 1 confirmed"**. Then build Phase 2 on top of the existing code; do
-  not rewrite Phase 1 unless a bug requires it.
+- The developer currently has only an **iPad** (Roblox Studio does not run on
+  iPad). They test by playing the published game in the Roblox app. Builds are
+  published from the cloud session with Open Cloud (see "Publishing without
+  Studio" below), and server logic is checked with the Luau Execution API using
+  a fake player before going live.
+- Phase 1 is **confirmed**. Phase 2 is built and server-tested; **do not start
+  Phase 3** until the developer replies **"Phase 2 confirmed"**. Build each
+  phase on top of the existing code; do not rewrite earlier phases unless a bug
+  requires it.
 - When delivering a phase, give: complete scripts, exact Explorer placement, an
   updated `.rbxlx` place file (built with `rojo build`), step-by-step tests,
   likely errors and fixes, and a completion checklist.
@@ -29,13 +32,14 @@ Follow the master specification in **Part C** exactly, including its section 19
 
 | Phase | Status |
 |---|---|
-| 1. Core Framework | **Code complete, awaiting testing in Studio** |
-| 2. Temple Tycoon | Next, starts after "Phase 1 confirmed" |
-| 3–8 | Not started |
+| 1. Core Framework | **Confirmed** by the developer |
+| 2. Temple Tycoon | **Built and server-tested**, live in the game, awaiting "Phase 2 confirmed" |
+| 3. God Selection | Next, starts after "Phase 2 confirmed" |
+| 4–8 | Not started |
 
 ### How to set up Phase 1 on a Mac (or Windows PC)
 1. Install Roblox Studio from create.roblox.com and sign in.
-2. Open the place file `MountOlympus_Phase1.rbxlx` (**File → Open from File**).
+2. Open the place file `MountOlympus.rbxlx` (**File → Open from File**).
    (Alternative: sync live from this repo with Rojo — see `README.md`.)
 3. **File → Publish to Roblox As…** → create a new experience.
 4. **Home → Game Settings → Security** → turn on **Enable Studio Access to API Services**.
@@ -48,7 +52,8 @@ Follow the master specification in **Part C** exactly, including its section 19
 ReplicatedStorage
 └── Shared                      (Folder)
     ├── GameConfig              (ModuleScript)
-    └── Progression             (ModuleScript)
+    ├── Progression             (ModuleScript)
+    └── TempleConfig            (ModuleScript)   Phase 2
 
 ServerScriptService
 ├── Main                        (Script)
@@ -56,16 +61,19 @@ ServerScriptService
     ├── DataService             (ModuleScript)
     ├── ProgressionService      (ModuleScript)
     ├── PlotService             (ModuleScript)
-    └── WorldBuilder            (ModuleScript)
+    ├── WorldBuilder            (ModuleScript)
+    ├── TempleService           (ModuleScript)   Phase 2
+    └── TempleModels            (ModuleScript)   Phase 2
 
 StarterPlayer
 └── StarterPlayerScripts
-    └── HUDController           (LocalScript)
+    ├── HUDController           (LocalScript)
+    └── TempleUI                (LocalScript)    Phase 2
 ```
 Created automatically at runtime: `ReplicatedStorage > Remotes` (RemoteEvents
-`Notify`, `RequestTeleport`), `Workspace > Hub`, `Workspace > TemplePlots`
-(Plot1–Plot8, each a Model with `Base`, `Sign`, `Buildings` folder; attribute
-`OwnerUserId`, 0 = free).
+`Notify`, `RequestTeleport`, `RequestUpgrade`), `Workspace > Hub`,
+`Workspace > TemplePlots` (Plot1–Plot8, each a Model with `Base`, `Sign`,
+`Buildings` folder, `Pads` folder; attribute `OwnerUserId`, 0 = free).
 
 ### Design decisions made in Phase 1 (developer asked to confirm)
 1. **Level cap per rank:** players stop levelling at the top of their rank's
@@ -89,6 +97,39 @@ Open Cloud API key is saved as a network secret on this repo's Claude cloud
 environment, so a session can `rojo build` and publish via
 `POST https://apis.roblox.com/universes/v1/<universe>/places/<place>/versions?versionType=Published`
 (Content-Type `application/xml`, body = the `.rbxlx`).
+
+### Design decisions made in Phase 2 (developer asked to confirm)
+1. **Temple tier = 1 + Temple Core level.** Core has 5 levels, so tiers 1–6
+   (up to Celestial Palace) are reachable now; tier 7 Divine Citadel comes in
+   Phase 7 ("full temple progression").
+2. **Requirements:** a building's level N needs temple tier ≥ N. Temple Core
+   level N needs character level 5 / 10 / 25 / 45 / 70.
+3. **Buying:** glowing pads with a short hold-to-buy prompt (hold E, tap on
+   mobile, X on controller) instead of step-on pads, to stop accidental buys.
+   The Temple Upgrades menu buys the same things. Only the plot owner can buy.
+4. **Income:** paid automatically every 5 s while the player is in the game.
+   Treasury 30/75/180/420/900 Gold per minute; Altar 5/12/25/50/100 Favor per minute.
+5. **Effects stored now, used later:** Fountain (regen %), Training Grounds
+   (combat %), Statue Hall (worship %) are in `TempleConfig` and readable via
+   `TempleService.GetEffect`, but take effect in Phases 3–4.
+6. **Costs** (Gold, levels 1–5): Treasury 100/600/3K/15K/75K, Altar
+   250/1.5K/7.5K/35K/150K, Fountain 300/2K/10K/45K/180K, Training
+   400/2.5K/12K/50K/200K, Statue Hall 500/3K/15K/60K/250K, Core
+   1K/8K/40K/160K/600K. Placeholders, balanced in Phase 8.
+7. No save-layout change (uses the reserved `Temple.Tier` / `Temple.Buildings`),
+   so `SchemaVersion` stays 1.
+
+---
+
+## Part B2 — Phase 2 tests
+- **Start:** your plot shows the Ruined Shrine and 6 glowing pads with labels. Gold Treasury pad is green ("Build Gold Treasury / 100 Gold").
+- **Build:** hold the prompt on the Treasury pad: Gold drops to 0 and the Treasury rises out of the ground with gold sparkles.
+- **Income:** Gold goes up by about 2–3 every 5 seconds (30/min).
+- **Locks:** Treasury level 2 says "Needs temple tier 2"; Temple Core says "Reach character level 5".
+- **Tier up:** `!xp 2000`, `!gold 1000`, buy Temple Core: the shrine is replaced by the Sacred Sanctuary.
+- **Menu:** "Temple Upgrades" button opens the menu; levels, effects and costs match the pads; buttons buy.
+- **Saving:** leave and rejoin: everything you built is rebuilt (possibly on a different plot).
+- **Others:** another player cannot buy on your plot ("This is not your temple").
 
 ---
 
@@ -131,8 +172,21 @@ the server validates them.
   Ambrosia, DataLoaded, PlotName`.
 
 **PlotService** (server) — `AssignPlot`, `ReleasePlot`, `GetPlot(player)`,
-`TeleportPlayer(player, "Temple" | "Plaza")`. Currently it builds a placeholder
-Ruined Shrine; **Phase 2 replaces that with a rebuild from `data.Temple`**.
+`TeleportPlayer(player, "Temple" | "Plaza")`. Release clears the plot's
+`Buildings` and `Pads` (visual only; saved data is untouched).
+
+**TempleService** (server, Phase 2) — `SetupPlayer(player, plot)` rebuilds the
+temple from `data.Temple` and creates pads; `ReleasePlayer`, `Rebuild` (after
+`!reset`), `RequestUpgrade(player, buildingId)` (all validation lives here),
+`GetEffect(player, effectName)`, `PayIncome(seconds)`. Publishes attributes
+`TempleTier, TempleTierName, Temple_<BuildingId>, GoldPerMinute, FavorPerMinute`.
+Phase 3 should colour the temple by god by passing a palette into `TempleModels`.
+
+**TempleModels** (server, Phase 2) — placeholder models: `Temple(tier, origin)`,
+`Building(id, level, origin)`, `AnimateIn(model)`.
+
+**TempleConfig** (shared, Phase 2) — buildings, costs, effects, slots, tiers,
+and `GetUpgradeInfo` (the purchase rules, shared by server and menu).
 
 **Notify remote** (server → client): `FireClient(player, "LevelUp" | "RankUp" | "Message", value)` shows a pop-up.
 

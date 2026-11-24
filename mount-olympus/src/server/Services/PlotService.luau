@@ -1,25 +1,20 @@
 -- PlotService (ModuleScript)
 -- Location: ServerScriptService > Services > PlotService
 --
--- Gives each player one free temple plot, builds the starting Ruined Shrine
--- on it, frees the plot when they leave, and handles Temple/Plaza teleports.
--- Ownership is stored on the plot as the attribute "OwnerUserId" (0 = free).
--- Phase 2 will use that attribute to stop anyone changing another player's temple.
+-- Gives each player one free temple plot, frees it when they leave, and
+-- handles Temple/Plaza teleports. Ownership is stored on the plot as the
+-- attribute "OwnerUserId" (0 = free). TempleService builds the temple on it
+-- and uses OwnerUserId to stop anyone changing another player's temple.
 
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("GameConfig"))
-local WorldBuilder = require(ServerScriptService:WaitForChild("Services"):WaitForChild("WorldBuilder"))
 
 local PlotService = {}
 
 local plotsFolder = nil
 local plotByPlayer = {} -- [Player] = plot Model
-
-local STONE = Color3.fromRGB(128, 122, 114)
-local WORN_MARBLE = Color3.fromRGB(210, 205, 196)
 
 local function setSign(plot, text)
 	local sign = plot:FindFirstChild("Sign")
@@ -28,82 +23,6 @@ local function setSign(plot, text)
 	if textLabel then
 		textLabel.Text = text
 	end
-end
-
--- Tier 1 placeholder: a small broken altar with crumbling columns.
-local function buildRuinedShrine(plot)
-	local buildings = plot:FindFirstChild("Buildings")
-	local base = plot:FindFirstChild("Base")
-	if not buildings or not base then
-		return
-	end
-	buildings:ClearAllChildren()
-
-	local model = Instance.new("Model")
-	model.Name = "RuinedShrine"
-
-	local top = base.Position.Y + base.Size.Y / 2
-	local cx, cz = base.Position.X, base.Position.Z
-	local MP = WorldBuilder.MakePart
-
-	MP(model, {
-		Name = "Foundation",
-		Size = Vector3.new(22, 1, 22),
-		Position = Vector3.new(cx, top + 0.5, cz),
-		Material = Enum.Material.Slate,
-		Color = STONE,
-	})
-	local floorY = top + 1
-
-	MP(model, {
-		Name = "Altar",
-		Size = Vector3.new(6, 3, 3),
-		Position = Vector3.new(cx, floorY + 1.5, cz),
-		Material = Enum.Material.Slate,
-		Color = Color3.fromRGB(165, 160, 152),
-	})
-	MP(model, {
-		Name = "BrokenAltarTop",
-		Size = Vector3.new(4, 0.8, 3.2),
-		CFrame = CFrame.new(cx + 1.5, floorY + 3.3, cz) * CFrame.Angles(0, 0, math.rad(-14)),
-		Material = Enum.Material.Slate,
-		Color = Color3.fromRGB(150, 145, 138),
-	})
-
-	-- Column stumps: { x offset, z offset, height }
-	local stumps = { { -8, -8, 7 }, { 8, -8, 3.5 }, { -8, 8, 2 }, { 8, 8, 9 } }
-	for i, s in stumps do
-		local height = s[3]
-		MP(model, {
-			Name = "ColumnStump" .. i,
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(height, 2.6, 2.6),
-			CFrame = CFrame.new(cx + s[1], floorY + height / 2, cz + s[2]) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = WORN_MARBLE,
-		})
-	end
-
-	MP(model, {
-		Name = "FallenColumn",
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(9, 2.4, 2.4),
-		CFrame = CFrame.new(cx - 2, floorY + 1.2, cz - 6) * CFrame.Angles(0, math.rad(25), 0),
-		Color = WORN_MARBLE,
-	})
-
-	-- Rubble: { x, z, size }
-	local rubble = { { 4, -3, 1.2 }, { -4, 3, 0.9 }, { 6, 5, 1.5 }, { -6, -2, 0.8 } }
-	for i, r in rubble do
-		MP(model, {
-			Name = "Rubble" .. i,
-			Size = Vector3.new(r[3], r[3] * 0.7, r[3]),
-			CFrame = CFrame.new(cx + r[1], floorY + r[3] * 0.35, cz + r[2]) * CFrame.Angles(0, math.rad(i * 37), 0),
-			Material = Enum.Material.Slate,
-			Color = STONE,
-		})
-	end
-
-	model.Parent = buildings
 end
 
 function PlotService.Init()
@@ -130,8 +49,7 @@ function PlotService.AssignPlot(player)
 			plotByPlayer[player] = plot
 			player:SetAttribute("PlotName", plot.Name)
 			setSign(plot, player.DisplayName .. "'s Temple")
-			-- Phase 2 replaces this with a rebuild from the player's saved temple data.
-			buildRuinedShrine(plot)
+			-- The temple itself is built from saved data by TempleService.SetupPlayer.
 			return plot
 		end
 	end
@@ -149,6 +67,10 @@ function PlotService.ReleasePlot(player)
 	local buildings = plot:FindFirstChild("Buildings")
 	if buildings then
 		buildings:ClearAllChildren()
+	end
+	local pads = plot:FindFirstChild("Pads")
+	if pads then
+		pads:ClearAllChildren()
 	end
 	plot:SetAttribute("OwnerUserId", 0)
 	plot:SetAttribute("OwnerName", nil)

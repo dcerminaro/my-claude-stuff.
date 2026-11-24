@@ -22,6 +22,9 @@
       "StarterPlayerScripts": {
         "HUDController": {
           "$path": "src/client/HUDController.client.luau"
+        },
+        "TempleUI": {
+          "$path": "src/client/TempleUI.client.luau"
         }
       }
     }

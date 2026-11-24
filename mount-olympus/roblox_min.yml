@@ -16,3 +16,6 @@ globals:
   TweenInfo: {any: true}
   task: {any: true}
   warn: {args: [{type: "..."}]}
+  ColorSequence: {any: true}
+  NumberRange: {any: true}
+  NumberSequence: {any: true}

@@ -2,12 +2,12 @@
 
 A Greek mythology RPG / temple tycoon for Roblox.
 
-- **Status:** Phase 1 (Core Framework). Code complete, **not yet tested in Roblox Studio**.
+- **Status:** Phase 1 (Core Framework) confirmed by the developer. Phase 2 (Temple Tycoon) built, server-tested on Roblox, awaiting play-testing.
 - **Full design spec, decisions, and roadmap:** [`HANDOFF.md`](HANDOFF.md).
 
 ## Fastest way to try it (no tools needed)
 
-1. On a Mac or Windows PC, download **`MountOlympus_Phase1.rbxlx`** from this folder.
+1. On a Mac or Windows PC, download **`MountOlympus.rbxlx`** from this folder.
 2. In Roblox Studio: **File → Open from File** → choose it.
 3. **File → Publish to Roblox As…** → create a new experience.
 4. **Home → Game Settings → Security** → turn on **Enable Studio Access to API Services**.
@@ -20,12 +20,16 @@ A Greek mythology RPG / temple tycoon for Roblox.
 |---|---|---|
 | `src/shared/GameConfig.luau` | ReplicatedStorage › Shared › GameConfig | ModuleScript |
 | `src/shared/Progression.luau` | ReplicatedStorage › Shared › Progression | ModuleScript |
+| `src/shared/TempleConfig.luau` | ReplicatedStorage › Shared › TempleConfig | ModuleScript |
 | `src/server/Main.server.luau` | ServerScriptService › Main | Script |
 | `src/server/Services/DataService.luau` | ServerScriptService › Services › DataService | ModuleScript |
 | `src/server/Services/ProgressionService.luau` | ServerScriptService › Services › ProgressionService | ModuleScript |
 | `src/server/Services/PlotService.luau` | ServerScriptService › Services › PlotService | ModuleScript |
 | `src/server/Services/WorldBuilder.luau` | ServerScriptService › Services › WorldBuilder | ModuleScript |
+| `src/server/Services/TempleService.luau` | ServerScriptService › Services › TempleService | ModuleScript |
+| `src/server/Services/TempleModels.luau` | ServerScriptService › Services › TempleModels | ModuleScript |
 | `src/client/HUDController.client.luau` | StarterPlayer › StarterPlayerScripts › HUDController | LocalScript |
+| `src/client/TempleUI.client.luau` | StarterPlayer › StarterPlayerScripts › TempleUI | LocalScript |
 
 `default.project.json` is the [Rojo](https://rojo.space) project file that defines this mapping.
 
@@ -40,8 +44,11 @@ Instead of re-opening the place file after every change, you can live-sync the c
 Rebuild the place file after changing code:
 
 ```sh
-rojo build -o MountOlympus_Phase1.rbxlx
+rojo build -o MountOlympus.rbxlx
 ```
+
+The place file is also kept up to date in this folder, and each tested build is
+published straight to the experience with Open Cloud (see `HANDOFF.md`).
 
 Lint (uses a minimal Roblox globals list in `roblox_min.yml`, since `selene`'s
 full Roblox std needs internet access to generate):

@@ -18,6 +18,7 @@ local WorldBuilder = require(Services:WaitForChild("WorldBuilder"))
 local DataService = require(Services:WaitForChild("DataService"))
 local ProgressionService = require(Services:WaitForChild("ProgressionService"))
 local PlotService = require(Services:WaitForChild("PlotService"))
+local TempleService = require(Services:WaitForChild("TempleService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -33,6 +34,10 @@ local teleportRemote = Instance.new("RemoteEvent") -- client -> server "take me 
 teleportRemote.Name = "RequestTeleport"
 teleportRemote.Parent = remotes
 
+local upgradeRemote = Instance.new("RemoteEvent") -- client -> server "upgrade this temple building"
+upgradeRemote.Name = "RequestUpgrade"
+upgradeRemote.Parent = remotes
+
 remotes.Parent = ReplicatedStorage
 
 --------------------------------------------------------------------------
@@ -42,6 +47,7 @@ WorldBuilder.Build()
 DataService.Init()
 ProgressionService.Init(DataService, notifyRemote)
 PlotService.Init()
+TempleService.Init(DataService, ProgressionService, PlotService, notifyRemote, upgradeRemote)
 
 --------------------------------------------------------------------------
 -- 3. Debug chat commands
@@ -103,6 +109,7 @@ local function runDebugCommand(player, message)
 	elseif command == "!reset" then
 		if DataService.ResetData(player) then
 			ProgressionService.RefreshAll(player)
+			TempleService.Rebuild(player)
 			reply("Progress reset to defaults")
 		end
 	else
@@ -134,6 +141,7 @@ local function onPlayerAdded(player)
 	end
 
 	ProgressionService.SetupPlayer(player)
+	TempleService.SetupPlayer(player, plot)
 	player:SetAttribute("DataLoaded", true)
 	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
 end
@@ -147,6 +155,7 @@ end
 
 Players.PlayerRemoving:Connect(function(player)
 	lastTeleport[player] = nil
+	TempleService.ReleasePlayer(player)
 	PlotService.ReleasePlot(player)
 	DataService.ReleasePlayer(player) -- yields while saving
 end)
