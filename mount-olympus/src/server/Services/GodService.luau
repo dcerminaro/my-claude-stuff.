@@ -420,6 +420,21 @@ function GodService.Pray(player)
 	return true
 end
 
+-- Studio / owner test command: every blessing of the current god to max level.
+function GodService.DebugMaxBlessings(player)
+	local data = DataService.GetData(player)
+	local god = data and GodConfig.Gods[data.SelectedGod]
+	if not god then
+		return false
+	end
+	data.Blessings[god.Id] = data.Blessings[god.Id] or {}
+	for _, blessing in god.Blessings do
+		data.Blessings[god.Id][blessing.Id] = MAX_LEVEL
+	end
+	refreshAll(player, data, false)
+	return true
+end
+
 -- Studio / owner test command: add loyalty to the current god.
 function GodService.AddLoyalty(player, amount)
 	local data = DataService.GetData(player)

@@ -606,7 +606,8 @@ function EnemyService.Spawn(enemyType, cframe, options)
 end
 
 -- Damages an enemy on behalf of a player. Returns true if it was hit.
-function EnemyService.DamageEnemy(model, amount, player)
+-- options.Knockback = push speed (studs/s) instead of the default.
+function EnemyService.DamageEnemy(model, amount, player, options)
 	local record = enemies[model]
 	if not record or record.Dead or record.Humanoid.Health <= 0 then
 		return false
@@ -653,7 +654,7 @@ function EnemyService.DamageEnemy(model, amount, player)
 			local push = Instance.new("LinearVelocity")
 			push.Attachment0 = attachment
 			push.RelativeTo = Enum.ActuatorRelativeTo.World
-			push.VectorVelocity = away.Unit * KNOCKBACK_SPEED
+			push.VectorVelocity = away.Unit * (options and options.Knockback or KNOCKBACK_SPEED)
 			push.MaxForce = 40000
 			push.Parent = record.Root
 			Debris:AddItem(push, 0.12)

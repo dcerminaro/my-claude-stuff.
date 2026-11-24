@@ -167,6 +167,12 @@ function ProgressionService.SetupPlayer(player)
 	end
 end
 
+-- Re-applies max health and speed WITHOUT healing (e.g. when a speed buff starts or ends).
+function ProgressionService.RefreshStats(player)
+	ProgressionService.Refresh(player)
+	task.spawn(applyCharacterStats, player, player.Character, false)
+end
+
 -- Refresh everything, including the character's health (used after a data reset).
 function ProgressionService.RefreshAll(player)
 	ProgressionService.Refresh(player)

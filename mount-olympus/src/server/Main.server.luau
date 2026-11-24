@@ -24,6 +24,7 @@ local GodService = require(Services:WaitForChild("GodService"))
 local EnemyService = require(Services:WaitForChild("EnemyService"))
 local CombatService = require(Services:WaitForChild("CombatService"))
 local DiagnosticsService = require(Services:WaitForChild("DiagnosticsService"))
+local AbilityService = require(Services:WaitForChild("AbilityService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -60,6 +61,7 @@ local combatRemotes = {
 }
 local fxRemote = newRemote("CombatFX") -- server -> clients damage numbers and effects
 local reportRemote = newRemote("ClientReport") -- client -> server diagnostics report
+local abilityRemote = newRemote("UseAbility") -- client -> server "use my Q / E / R / Form ability"
 
 remotes.Parent = ReplicatedStorage
 
@@ -76,6 +78,9 @@ GodService.BuildHall()
 CombatService.Init(TempleService, EnemyService, fxRemote, combatRemotes)
 EnemyService.Init(DataService, ProgressionService, CombatService, fxRemote)
 EnemyService.SpawnPracticeField()
+AbilityService.Init(DataService, ProgressionService, TempleService, EnemyService, GodService, fxRemote, abilityRemote)
+CombatService.SetModifierProvider(AbilityService.GetModifiers)
+CombatService.SetDashHandler(AbilityService.OnDash)
 if GameConfig.Debug.Diagnostics then
 	DiagnosticsService.Init(reportRemote)
 end
@@ -128,6 +133,8 @@ local function runDebugCommand(player, message)
 	elseif command == "!spend" and number then
 		local ok = ProgressionService.SpendCurrency(player, "Gold", number)
 		reply(if ok then "Spent " .. number .. " Gold" else "Not enough Gold (purchase refused)")
+	elseif command == "!blessall" then
+		reply(if GodService.DebugMaxBlessings(player) then "All blessings of your god are now max level" else "Choose a god first")
 	elseif command == "!loyalty" and number then
 		reply(if GodService.AddLoyalty(player, number) then "Added " .. number .. " loyalty" else "Choose a god first")
 	elseif command == "!rank" then
@@ -147,7 +154,7 @@ local function runDebugCommand(player, message)
 			reply("Progress reset to defaults")
 		end
 	else
-		reply("Commands: !xp N, !gold N, !favor N, !ambrosia N, !loyalty N, !spend N, !rank, !save, !data, !reset")
+		reply("Commands: !xp N, !gold N, !favor N, !ambrosia N, !loyalty N, !blessall, !spend N, !rank, !save, !data, !reset")
 	end
 end
 
@@ -178,6 +185,7 @@ local function onPlayerAdded(player)
 	GodService.SetupPlayer(player)
 	TempleService.SetupPlayer(player, plot)
 	CombatService.SetupPlayer(player)
+	AbilityService.SetupPlayer(player)
 	player:SetAttribute("DataLoaded", true)
 	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
 end
@@ -194,6 +202,7 @@ Players.PlayerRemoving:Connect(function(player)
 	TempleService.ReleasePlayer(player)
 	GodService.ReleasePlayer(player)
 	CombatService.ReleasePlayer(player)
+	AbilityService.ReleasePlayer(player)
 	PlotService.ReleasePlot(player)
 	DataService.ReleasePlayer(player) -- yields while saving
 end)

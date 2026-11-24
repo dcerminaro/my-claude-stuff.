@@ -9,6 +9,104 @@
       </Properties>
       <Item class="ModuleScript" referent="2">
         <Properties>
+          <string name="Name">AbilityConfig</string>
+          <string name="Source"><![CDATA[-- AbilityConfig (ModuleScript)
+-- Location: ReplicatedStorage > Shared > AbilityConfig
+--
+-- Numbers for the god abilities (Phase 4B). Each ability belongs to the
+-- blessing with the same Id (see Shared > Gods), and its slot comes from
+-- that blessing's `Ability` field (Q, Dash, E, R or Form).
+-- Damage = BaseAttack (level + blessings) x (1 + Training Grounds bonus)
+--          x (1 + active buffs) x (Damage + PerLevel x (blessing level - 1)).
+-- All numbers are PLACEHOLDERS, balanced in Phase 8.
+
+local AbilityConfig = {}
+
+-- Keyboard and controller keys for each slot (touch screens get buttons).
+AbilityConfig.Keys = {
+	Q = { Enum.KeyCode.Q, Enum.KeyCode.ButtonL1 },
+	E = { Enum.KeyCode.E, Enum.KeyCode.ButtonR1 },
+	R = { Enum.KeyCode.R, Enum.KeyCode.ButtonY },
+	Form = { Enum.KeyCode.T, Enum.KeyCode.DPadUp },
+}
+AbilityConfig.SlotOrder = { "Q", "E", "R", "Form" }
+AbilityConfig.KeyLabels = { Q = "Q", E = "E", R = "R", Form = "T" }
+
+AbilityConfig.Abilities = {
+	------------------------------------------------------------------ Zeus
+	LightningStrike = {
+		Kind = "Strike", Move = "Cast", Cooldown = 6,
+		Damage = 2.2, PerLevel = 0.4,
+		Range = 28,  -- how far away it can target an enemy
+		Radius = 6,  -- splash around the strike
+	},
+	ThunderDash = {
+		Kind = "DashHit", Cooldown = 4,
+		Damage = 1.2, PerLevel = 0.3,
+		Width = 6, Distance = 11, Knockback = 8,
+	},
+	ChainLightning = {
+		Kind = "Chain", Move = "Lunge", Cooldown = 9,
+		Damage = 1.6, PerLevel = 0.3,
+		Range = 22, JumpRange = 14, Jumps = 3, JumpsPerLevel = 1,
+		Falloff = 0.85, -- each jump does 85% of the previous one
+	},
+	WrathOfOlympus = {
+		Kind = "Storm", Move = "Cast", Cooldown = 30,
+		Damage = 1.1, PerLevel = 0.25,
+		Radius = 20, Pulses = 5, Interval = 0.5,
+	},
+	AscendedThunderForm = {
+		Kind = "Buff", Move = "Cast", Cooldown = 60, Duration = 12,
+		AttackPercent = 40, AttackPerLevel = 10, SpeedPercent = 25,
+	},
+
+	------------------------------------------------------------------ Ares
+	WarSlash = {
+		Kind = "Cleave", Move = "Cleave", Cooldown = 5,
+		Damage = 2.4, PerLevel = 0.4,
+		Range = 11, ArcDot = -0.2, -- about 200 degrees in front
+		Knockback = 16,
+	},
+	BattleCharge = {
+		Kind = "DashHit", Cooldown = 4,
+		Damage = 1.4, PerLevel = 0.3,
+		Width = 6, Distance = 11, Knockback = 22,
+	},
+	BerserkerRage = {
+		Kind = "Buff", Move = "Cast", Cooldown = 18, Duration = 8,
+		AttackPercent = 35, AttackPerLevel = 10, SpeedPercent = 15,
+	},
+	GodOfWar = {
+		Kind = "Slam", Move = "Slam", Cooldown = 25,
+		Damage = 3.5, PerLevel = 0.6,
+		Radius = 14, Delay = 0.5, -- lands when the sword hits the ground
+		Knockback = 28,
+	},
+	DivineWarlordForm = {
+		Kind = "Buff", Move = "Cast", Cooldown = 60, Duration = 12,
+		AttackPercent = 30, AttackPerLevel = 10, DamageTaken = 0.7, -- take 30% less damage
+	},
+}
+
+for id, ability in AbilityConfig.Abilities do
+	ability.Id = id
+end
+
+function AbilityConfig.DamageMultiplier(abilityId, level)
+	local a = AbilityConfig.Abilities[abilityId]
+	if not a or not a.Damage then
+		return 0
+	end
+	return a.Damage + (a.PerLevel or 0) * (math.max(level, 1) - 1)
+end
+
+return AbilityConfig
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="3">
+        <Properties>
           <string name="Name">CombatConfig</string>
           <string name="Source"><![CDATA[-- CombatConfig (ModuleScript)
 -- Location: ReplicatedStorage > Shared > CombatConfig
@@ -148,7 +246,7 @@ return CombatConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="3">
+      <Item class="ModuleScript" referent="4">
         <Properties>
           <string name="Name">GameConfig</string>
           <string name="Source"><![CDATA[-- GameConfig (ModuleScript)
@@ -249,7 +347,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v17"
+GameConfig.BuildLabel = "v19"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -271,7 +369,7 @@ return GameConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="4">
+      <Item class="ModuleScript" referent="5">
         <Properties>
           <string name="Name">GodConfig</string>
           <string name="Source"><![CDATA[-- GodConfig (ModuleScript)
@@ -390,11 +488,11 @@ return GodConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="5">
+      <Item class="Folder" referent="6">
         <Properties>
           <string name="Name">Gods</string>
         </Properties>
-        <Item class="ModuleScript" referent="6">
+        <Item class="ModuleScript" referent="7">
           <Properties>
             <string name="Name">Apollo</string>
             <string name="Source"><![CDATA[-- Apollo (ModuleScript)
@@ -420,7 +518,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="7">
+        <Item class="ModuleScript" referent="8">
           <Properties>
             <string name="Name">Ares</string>
             <string name="Source"><![CDATA[-- Ares (ModuleScript)
@@ -457,7 +555,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="8">
+        <Item class="ModuleScript" referent="9">
           <Properties>
             <string name="Name">Athena</string>
             <string name="Source"><![CDATA[-- Athena (ModuleScript)
@@ -483,7 +581,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="9">
+        <Item class="ModuleScript" referent="10">
           <Properties>
             <string name="Name">Hades</string>
             <string name="Source"><![CDATA[-- Hades (ModuleScript)
@@ -509,7 +607,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="10">
+        <Item class="ModuleScript" referent="11">
           <Properties>
             <string name="Name">Poseidon</string>
             <string name="Source"><![CDATA[-- Poseidon (ModuleScript)
@@ -535,7 +633,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="11">
+        <Item class="ModuleScript" referent="12">
           <Properties>
             <string name="Name">Zeus</string>
             <string name="Source"><![CDATA[-- Zeus (ModuleScript)
@@ -578,7 +676,7 @@ return {
           </Properties>
         </Item>
       </Item>
-      <Item class="ModuleScript" referent="12">
+      <Item class="ModuleScript" referent="13">
         <Properties>
           <string name="Name">Progression</string>
           <string name="Source"><![CDATA[-- Progression (ModuleScript)
@@ -642,7 +740,7 @@ return Progression
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="13">
+      <Item class="ModuleScript" referent="14">
         <Properties>
           <string name="Name">SwordAnimator</string>
           <string name="Source"><![CDATA[-- SwordAnimator (ModuleScript, used by the client only)
@@ -959,7 +1057,7 @@ return SwordAnimator
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="14">
+      <Item class="ModuleScript" referent="15">
         <Properties>
           <string name="Name">SwordBuilder</string>
           <string name="Source"><![CDATA[-- SwordBuilder (ModuleScript)
@@ -1107,7 +1205,7 @@ return SwordBuilder
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="15">
+      <Item class="ModuleScript" referent="16">
         <Properties>
           <string name="Name">SwordPoses</string>
           <string name="Source"><![CDATA[-- SwordPoses (ModuleScript)
@@ -1188,10 +1286,46 @@ local lungeThrust = {
 	Waist = { 0, 8, 0 },
 }
 
+-- Abilities (Phase 4B)
+-- Cast: sword raised straight up to the sky.
+local castUp = {
+	RightShoulder = { 170, 0, 5 },
+	RightElbow = { 0, 0, 0 },
+	RightWrist = { -90, 0, 0 },
+	LeftShoulder = { 25, 0, -15 },
+	Waist = { 0, 0, 0 },
+}
+-- Slam: sword driven down into the ground in front.
+local slamDown = {
+	RightShoulder = { 45, 0, -5 },
+	RightElbow = { 10, 0, 0 },
+	RightWrist = { -150, 0, 0 },
+	LeftShoulder = { 30, 0, -20 },
+	Waist = { 0, 0, 0 },
+}
+-- Cleave: a wide sweep from far right to far left.
+local cleaveStart = {
+	RightShoulder = { 90, 0, 75 },
+	RightElbow = { 15, 0, 0 },
+	RightWrist = { -85, 0, 0 },
+	LeftShoulder = { 20, 0, -10 },
+	Waist = { 0, -25, 0 },
+}
+local cleaveEnd = {
+	RightShoulder = { 85, 0, -70 },
+	RightElbow = { 10, 0, 0 },
+	RightWrist = { -85, 0, 0 },
+	LeftShoulder = { -10, 0, -15 },
+	Waist = { 0, 25, 0 },
+}
+
 Poses.Moves = {
 	Slash1 = { { 0, Poses.Hold }, { 0.09, slash1Up }, { 0.2, slash1Down }, { 0.42, Poses.Hold } },
 	Slash2 = { { 0, Poses.Hold }, { 0.08, slash2Start }, { 0.19, slash2End }, { 0.42, Poses.Hold } },
 	Lunge = { { 0, Poses.Hold }, { 0.1, lungeBack }, { 0.21, lungeThrust }, { 0.5, Poses.Hold } },
+	Cast = { { 0, Poses.Hold }, { 0.15, castUp }, { 0.45, castUp }, { 0.7, Poses.Hold } },
+	Slam = { { 0, Poses.Hold }, { 0.2, castUp }, { 0.4, castUp }, { 0.5, slamDown }, { 0.8, slamDown }, { 1.05, Poses.Hold } },
+	Cleave = { { 0, Poses.Hold }, { 0.1, cleaveStart }, { 0.24, cleaveEnd }, { 0.55, Poses.Hold } },
 }
 Poses.ComboOrder = { "Slash1", "Slash2", "Lunge" }
 
@@ -1216,13 +1350,17 @@ Poses.Named = {
 	Slash2End = slash2End,
 	LungeBack = lungeBack,
 	LungeThrust = lungeThrust,
+	CastUp = castUp,
+	SlamDown = slamDown,
+	CleaveStart = cleaveStart,
+	CleaveEnd = cleaveEnd,
 }
 
 return Poses
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="16">
+      <Item class="ModuleScript" referent="17">
         <Properties>
           <string name="Name">TempleConfig</string>
           <string name="Source"><![CDATA[-- TempleConfig (ModuleScript)
@@ -1394,11 +1532,11 @@ return TempleConfig
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="17">
+  <Item class="ServerScriptService" referent="18">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Script" referent="18">
+    <Item class="Script" referent="19">
       <Properties>
         <string name="Name">Main</string>
         <token name="RunContext">0</token>
@@ -1428,6 +1566,7 @@ local GodService = require(Services:WaitForChild("GodService"))
 local EnemyService = require(Services:WaitForChild("EnemyService"))
 local CombatService = require(Services:WaitForChild("CombatService"))
 local DiagnosticsService = require(Services:WaitForChild("DiagnosticsService"))
+local AbilityService = require(Services:WaitForChild("AbilityService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -1464,6 +1603,7 @@ local combatRemotes = {
 }
 local fxRemote = newRemote("CombatFX") -- server -> clients damage numbers and effects
 local reportRemote = newRemote("ClientReport") -- client -> server diagnostics report
+local abilityRemote = newRemote("UseAbility") -- client -> server "use my Q / E / R / Form ability"
 
 remotes.Parent = ReplicatedStorage
 
@@ -1480,6 +1620,9 @@ GodService.BuildHall()
 CombatService.Init(TempleService, EnemyService, fxRemote, combatRemotes)
 EnemyService.Init(DataService, ProgressionService, CombatService, fxRemote)
 EnemyService.SpawnPracticeField()
+AbilityService.Init(DataService, ProgressionService, TempleService, EnemyService, GodService, fxRemote, abilityRemote)
+CombatService.SetModifierProvider(AbilityService.GetModifiers)
+CombatService.SetDashHandler(AbilityService.OnDash)
 if GameConfig.Debug.Diagnostics then
 	DiagnosticsService.Init(reportRemote)
 end
@@ -1532,6 +1675,8 @@ local function runDebugCommand(player, message)
 	elseif command == "!spend" and number then
 		local ok = ProgressionService.SpendCurrency(player, "Gold", number)
 		reply(if ok then "Spent " .. number .. " Gold" else "Not enough Gold (purchase refused)")
+	elseif command == "!blessall" then
+		reply(if GodService.DebugMaxBlessings(player) then "All blessings of your god are now max level" else "Choose a god first")
 	elseif command == "!loyalty" and number then
 		reply(if GodService.AddLoyalty(player, number) then "Added " .. number .. " loyalty" else "Choose a god first")
 	elseif command == "!rank" then
@@ -1551,7 +1696,7 @@ local function runDebugCommand(player, message)
 			reply("Progress reset to defaults")
 		end
 	else
-		reply("Commands: !xp N, !gold N, !favor N, !ambrosia N, !loyalty N, !spend N, !rank, !save, !data, !reset")
+		reply("Commands: !xp N, !gold N, !favor N, !ambrosia N, !loyalty N, !blessall, !spend N, !rank, !save, !data, !reset")
 	end
 end
 
@@ -1582,6 +1727,7 @@ local function onPlayerAdded(player)
 	GodService.SetupPlayer(player)
 	TempleService.SetupPlayer(player, plot)
 	CombatService.SetupPlayer(player)
+	AbilityService.SetupPlayer(player)
 	player:SetAttribute("DataLoaded", true)
 	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
 end
@@ -1598,6 +1744,7 @@ Players.PlayerRemoving:Connect(function(player)
 	TempleService.ReleasePlayer(player)
 	GodService.ReleasePlayer(player)
 	CombatService.ReleasePlayer(player)
+	AbilityService.ReleasePlayer(player)
 	PlotService.ReleasePlot(player)
 	DataService.ReleasePlayer(player) -- yields while saving
 end)
@@ -1645,11 +1792,382 @@ end)
 ]]></string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="19">
+    <Item class="Folder" referent="20">
       <Properties>
         <string name="Name">Services</string>
       </Properties>
-      <Item class="ModuleScript" referent="20">
+      <Item class="ModuleScript" referent="21">
+        <Properties>
+          <string name="Name">AbilityService</string>
+          <string name="Source"><![CDATA[-- AbilityService (ModuleScript)
+-- Location: ServerScriptService > Services > AbilityService
+--
+-- God abilities (Phase 4B), all decided on the server:
+--   * The client only says "use slot Q/E/R/Form" (or that it dashed).
+--   * The server finds the active god's blessing for that slot, checks the
+--     blessing is unlocked, the cooldown, and that the player is alive and
+--     not blocking, then works out targets and damage itself.
+--   * Abilities of gods you don't currently worship can't be used.
+--   * Cooldowns are published as player attributes "Cooldown_<slot>"
+--     (the server time when the slot is ready again) for the buttons.
+--   * Buffs (Forms, Berserker Rage) add attack %, speed % and/or damage
+--     reduction for a few seconds.
+-- Visuals are drawn on every device from CombatFX events.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local AbilityConfig = require(Shared:WaitForChild("AbilityConfig"))
+local GodConfig = require(Shared:WaitForChild("GodConfig"))
+
+local AbilityService = {}
+
+local DataService = nil
+local ProgressionService = nil
+local TempleService = nil
+local EnemyService = nil
+local GodService = nil
+local fxRemote = nil
+
+local state = {} -- [Player] = { ReadyAt = { [slot] = os.clock() }, Buffs = { [abilityId] = { Until, ... } } }
+
+--------------------------------------------------------------------------
+-- Helpers
+--------------------------------------------------------------------------
+local function flat(v)
+	return Vector3.new(v.X, 0, v.Z)
+end
+
+local function getParts(player)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if humanoid and root and humanoid.Health > 0 then
+		return character, humanoid, root
+	end
+	return nil
+end
+
+local function godColor(player)
+	local data = DataService.GetData(player)
+	return GodConfig.GetColors(data and data.SelectedGod or "").Primary
+end
+
+-- The active god's blessing for a slot, and its level (0 = locked).
+local function blessingForSlot(data, slot)
+	local god = GodConfig.Gods[data.SelectedGod]
+	if not god then
+		return nil, 0
+	end
+	for _, blessing in god.Blessings do
+		if blessing.Ability == slot then
+			local tree = data.Blessings[god.Id]
+			local level = if type(tree) == "table" then tonumber(tree[blessing.Id]) or 0 else 0
+			return blessing, level
+		end
+	end
+	return nil, 0
+end
+
+local function activeBuffs(player)
+	local st = state[player]
+	local mods = { AttackPercent = 0, SpeedPercent = 0, DamageTaken = 1 }
+	if not st then
+		return mods
+	end
+	local now = os.clock()
+	for id, buff in st.Buffs do
+		if now < buff.Until then
+			mods.AttackPercent += buff.AttackPercent
+			mods.SpeedPercent += buff.SpeedPercent
+			mods.DamageTaken *= buff.DamageTaken
+		else
+			st.Buffs[id] = nil
+		end
+	end
+	return mods
+end
+
+-- Damage one point of "ability damage" is worth for this player.
+local function baseDamage(player)
+	local baseAttack = player:GetAttribute("BaseAttack") or 10
+	local combatBonus = TempleService.GetEffect(player, "CombatBonusPercent") / 100
+	local buff = activeBuffs(player).AttackPercent / 100
+	return baseAttack * (1 + combatBonus) * (1 + buff)
+end
+
+local function hit(player, record, amount, knockback)
+	if EnemyService.DamageEnemy(record.Model, amount, player, { Knockback = knockback }) then
+		fxRemote:FireAllClients("Hit", record.Root.Position, record.Model, nil)
+		return true
+	end
+	return false
+end
+
+-- Enemies in range, those in front first, then by distance.
+local function enemiesNear(root, range)
+	local look = flat(root.CFrame.LookVector).Unit
+	local list = {}
+	for _, record in EnemyService.GetEnemiesInRange(root.Position, range) do
+		local offset = flat(record.Root.Position - root.Position)
+		local inFront = offset.Magnitude < 1 or look:Dot(offset.Unit) > 0.3
+		table.insert(list, { Record = record, Distance = offset.Magnitude, InFront = inFront })
+	end
+	table.sort(list, function(a, b)
+		if a.InFront ~= b.InFront then
+			return a.InFront
+		end
+		return a.Distance < b.Distance
+	end)
+	return list
+end
+
+local function distanceToSegment(point, a, b)
+	local ab = flat(b - a)
+	local ap = flat(point - a)
+	local length = ab.Magnitude
+	if length < 0.01 then
+		return ap.Magnitude
+	end
+	local t = math.clamp(ap:Dot(ab) / (length * length), 0, 1)
+	return (ap - ab * t).Magnitude
+end
+
+-- Lets other players' screens play the same move.
+local function broadcastMove(player, moveName)
+	if not moveName then
+		return
+	end
+	for _, other in Players:GetPlayers() do
+		if other ~= player then
+			fxRemote:FireClient(other, "Swing", player, moveName)
+		end
+	end
+end
+
+--------------------------------------------------------------------------
+-- What each kind of ability does
+--------------------------------------------------------------------------
+local Kinds = {}
+
+-- A bolt from the sky on the best target, damaging everything around it.
+function Kinds.Strike(player, root, cfg, level, color)
+	local best = enemiesNear(root, cfg.Range)[1]
+	local point = if best then best.Record.Root.Position else root.Position + flat(root.CFrame.LookVector).Unit * 12
+	local damage = baseDamage(player) * AbilityConfig.DamageMultiplier(cfg.Id, level)
+	for _, record in EnemyService.GetEnemiesInRange(point, cfg.Radius) do
+		hit(player, record, damage)
+	end
+	fxRemote:FireAllClients("Lightning", point, color, cfg.Radius)
+end
+
+-- Jumps from enemy to enemy, weaker each time.
+function Kinds.Chain(player, root, cfg, level, color)
+	local first = enemiesNear(root, cfg.Range)[1]
+	local points = { root.Position + Vector3.new(0, 2, 0) }
+	if first then
+		local damage = baseDamage(player) * AbilityConfig.DamageMultiplier(cfg.Id, level)
+		local current = first.Record
+		local done = {}
+		local jumps = cfg.Jumps + (cfg.JumpsPerLevel or 0) * (level - 1)
+		for _ = 0, jumps do
+			done[current] = true
+			hit(player, current, damage)
+			table.insert(points, current.Root.Position)
+			damage *= cfg.Falloff
+			local nextRecord, nextDistance = nil, math.huge
+			for _, record in EnemyService.GetEnemiesInRange(current.Root.Position, cfg.JumpRange) do
+				local d = (record.Root.Position - current.Root.Position).Magnitude
+				if not done[record] and d < nextDistance then
+					nextRecord, nextDistance = record, d
+				end
+			end
+			if not nextRecord then
+				break
+			end
+			current = nextRecord
+		end
+	else
+		table.insert(points, root.Position + flat(root.CFrame.LookVector).Unit * 14 + Vector3.new(0, 2, 0))
+	end
+	fxRemote:FireAllClients("Chain", root.Position, color, points)
+end
+
+-- Several lightning pulses around the player.
+function Kinds.Storm(player, _root, cfg, level, color)
+	for pulse = 1, cfg.Pulses do
+		task.delay((pulse - 1) * cfg.Interval + 0.3, function()
+			local _, _, root = getParts(player)
+			if not root then
+				return
+			end
+			local damage = baseDamage(player) * AbilityConfig.DamageMultiplier(cfg.Id, level)
+			local struck = 0
+			for _, record in EnemyService.GetEnemiesInRange(root.Position, cfg.Radius) do
+				if hit(player, record, damage) and struck < 6 then
+					struck += 1
+					fxRemote:FireAllClients("Lightning", record.Root.Position, color, 3)
+				end
+			end
+			fxRemote:FireAllClients("Shockwave", root.Position, color, cfg.Radius)
+		end)
+	end
+end
+
+-- A wide swing in front with knockback.
+function Kinds.Cleave(player, root, cfg, level, color)
+	local damage = baseDamage(player) * AbilityConfig.DamageMultiplier(cfg.Id, level)
+	local look = flat(root.CFrame.LookVector).Unit
+	for _, record in EnemyService.GetEnemiesInRange(root.Position, cfg.Range + 3) do
+		local offset = flat(record.Root.Position - root.Position)
+		if offset.Magnitude <= cfg.Range + 1.5 and (offset.Magnitude < 1.5 or look:Dot(offset.Unit) >= cfg.ArcDot) then
+			hit(player, record, damage, cfg.Knockback)
+		end
+	end
+	fxRemote:FireAllClients("Cleave", root.Position, color, root.CFrame.LookVector, cfg.Range)
+end
+
+-- Jump-slam: damage around the player when the sword hits the ground.
+function Kinds.Slam(player, _root, cfg, level, color)
+	task.delay(cfg.Delay, function()
+		local _, _, root = getParts(player)
+		if not root then
+			return
+		end
+		local damage = baseDamage(player) * AbilityConfig.DamageMultiplier(cfg.Id, level)
+		for _, record in EnemyService.GetEnemiesInRange(root.Position, cfg.Radius) do
+			hit(player, record, damage, cfg.Knockback)
+		end
+		fxRemote:FireAllClients("Shockwave", root.Position, color, cfg.Radius)
+	end)
+end
+
+-- A timed power-up with an aura.
+function Kinds.Buff(player, _root, cfg, level, color)
+	local st = state[player]
+	st.Buffs[cfg.Id] = {
+		Until = os.clock() + cfg.Duration,
+		AttackPercent = (cfg.AttackPercent or 0) + (cfg.AttackPerLevel or 0) * (level - 1),
+		SpeedPercent = cfg.SpeedPercent or 0,
+		DamageTaken = cfg.DamageTaken or 1,
+	}
+	ProgressionService.RefreshStats(player) -- applies the speed bonus now
+	task.delay(cfg.Duration + 0.05, function()
+		if state[player] then
+			activeBuffs(player) -- clears it
+			ProgressionService.RefreshStats(player)
+		end
+	end)
+	fxRemote:FireAllClients("Aura", Vector3.zero, color, player, cfg.Duration)
+end
+
+-- Upgraded dash: damages enemies along the dash path.
+function Kinds.DashHit(player, root, cfg, level, color, direction)
+	local start = root.Position
+	local finish = start + direction * cfg.Distance
+	local damage = baseDamage(player) * AbilityConfig.DamageMultiplier(cfg.Id, level)
+	for _, record in EnemyService.GetEnemiesInRange(start, cfg.Distance + cfg.Width) do
+		if distanceToSegment(record.Root.Position, start, finish) <= cfg.Width / 2 + record.Root.Size.X / 2 then
+			hit(player, record, damage, cfg.Knockback)
+		end
+	end
+	fxRemote:FireAllClients("DashTrail", start, color, finish)
+end
+
+--------------------------------------------------------------------------
+-- Using abilities
+--------------------------------------------------------------------------
+local function setCooldown(player, slot, seconds)
+	local st = state[player]
+	st.ReadyAt[slot] = os.clock() + seconds
+	player:SetAttribute("Cooldown_" .. slot, Workspace:GetServerTimeNow() + seconds)
+end
+
+-- Returns true if the ability was used.
+function AbilityService.UseAbility(player, slot, direction)
+	local st = state[player]
+	local data = DataService.GetData(player)
+	local _, _, root = getParts(player)
+	if not st or not data or not root or player:GetAttribute("Blocking") == true then
+		return false
+	end
+	local blessing, level = blessingForSlot(data, slot)
+	if not blessing or level < 1 then
+		return false -- locked, or this god has no ability here
+	end
+	local cfg = AbilityConfig.Abilities[blessing.Id]
+	if not cfg or not Kinds[cfg.Kind] then
+		return false
+	end
+	if os.clock() < (st.ReadyAt[slot] or 0) - 0.1 then
+		return false -- still cooling down (small allowance for network timing)
+	end
+	setCooldown(player, slot, cfg.Cooldown)
+
+	broadcastMove(player, cfg.Move)
+	Kinds[cfg.Kind](player, root, cfg, level, godColor(player), direction)
+	return true
+end
+
+-- Called by CombatService after a dash: runs the god's dash ability if unlocked and ready.
+function AbilityService.OnDash(player, direction)
+	if typeof(direction) ~= "Vector3" or direction ~= direction then
+		return
+	end
+	direction = flat(direction)
+	if direction.Magnitude < 0.1 then
+		return
+	end
+	AbilityService.UseAbility(player, "Dash", direction.Unit)
+end
+
+-- { AttackPercent, SpeedPercent, DamageTaken } from active buffs.
+function AbilityService.GetModifiers(player)
+	return activeBuffs(player)
+end
+
+function AbilityService.Init(dataService, progressionService, templeService, enemyService, godService, fxRemoteEvent, abilityRemote)
+	DataService = dataService
+	ProgressionService = progressionService
+	TempleService = templeService
+	EnemyService = enemyService
+	GodService = godService
+	fxRemote = fxRemoteEvent
+
+	-- Speed from buffs joins the blessing bonuses that ProgressionService applies.
+	ProgressionService.SetBonusProvider(function(player)
+		local bonuses = GodService.GetBonuses(player)
+		bonuses.SpeedPercent += activeBuffs(player).SpeedPercent
+		return bonuses
+	end)
+
+	if abilityRemote then
+		abilityRemote.OnServerEvent:Connect(function(player, slot)
+			if slot == "Q" or slot == "E" or slot == "R" or slot == "Form" then
+				AbilityService.UseAbility(player, slot)
+			end
+		end)
+	end
+end
+
+function AbilityService.SetupPlayer(player)
+	state[player] = { ReadyAt = {}, Buffs = {} }
+	for _, slot in { "Q", "E", "R", "Form", "Dash" } do
+		player:SetAttribute("Cooldown_" .. slot, 0)
+	end
+end
+
+function AbilityService.ReleasePlayer(player)
+	state[player] = nil
+end
+
+return AbilityService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="22">
         <Properties>
           <string name="Name">CombatService</string>
           <string name="Source"><![CDATA[-- CombatService (ModuleScript)
@@ -1687,6 +2205,12 @@ local CombatService = {}
 local TempleService = nil
 local EnemyService = nil
 local fxRemote = nil
+local modifierProvider = nil -- Phase 4B: function(player) -> { AttackPercent, DamageTaken }
+local dashHandler = nil      -- Phase 4B: function(player, direction) for god dash abilities
+
+local function modifiers(player)
+	return if modifierProvider then modifierProvider(player) else { AttackPercent = 0, DamageTaken = 1 }
+end
 
 local CFG = CombatConfig.Player
 local state = {} -- [Player] = { NextAttackAt, NextDashAt, InvulnerableUntil, Blocking, SavedWalkSpeed, Shield, LastDamagedAt }
@@ -1834,6 +2358,7 @@ function CombatService.BasicAttack(player, combo)
 
 	local baseAttack = player:GetAttribute("BaseAttack") or 10
 	local combatBonus = TempleService.GetEffect(player, "CombatBonusPercent") / 100
+	local buffBonus = modifiers(player).AttackPercent / 100
 	local look = flat(root.CFrame.LookVector).Unit
 
 	-- Enemies in front of the player, closest first.
@@ -1854,7 +2379,7 @@ function CombatService.BasicAttack(player, combo)
 	for i = 1, math.min(#candidates, attack.MaxTargets) do
 		local record = candidates[i].Record
 		local spread = 1 + random:NextNumber(-attack.RandomSpread, attack.RandomSpread)
-		local damage = baseAttack * attack.DamageMultiplier * (1 + combatBonus) * spread
+		local damage = baseAttack * attack.DamageMultiplier * (1 + combatBonus) * (1 + buffBonus) * spread
 		if EnemyService.DamageEnemy(record.Model, damage, player) then
 			hits += 1
 			fxRemote:FireAllClients("Hit", record.Root.Position, record.Model, player)
@@ -1863,7 +2388,7 @@ function CombatService.BasicAttack(player, combo)
 	return hits
 end
 
-function CombatService.Dash(player)
+function CombatService.Dash(player, direction)
 	local st = state[player]
 	if not st or not getParts(player) then
 		return false
@@ -1874,6 +2399,9 @@ function CombatService.Dash(player)
 	end
 	st.NextDashAt = now + CFG.Dash.Cooldown * 0.9
 	st.InvulnerableUntil = now + CFG.Dash.InvulnerableTime
+	if dashHandler then
+		dashHandler(player, direction) -- god dash ability (Thunder Dash / Battle Charge)
+	end
 	return true
 end
 
@@ -1892,6 +2420,7 @@ function CombatService.DamagePlayer(player, amount, _sourcePosition)
 		return 0
 	end
 	local style = "Player"
+	amount *= modifiers(player).DamageTaken
 	if st.Blocking then
 		amount *= CFG.Block.DamageTaken
 		style = "Blocked"
@@ -1922,8 +2451,8 @@ function CombatService.Init(templeService, enemyService, fxRemoteEvent, remotes)
 				setBlocking(player, on)
 			end
 		end)
-		remotes.Dash.OnServerEvent:Connect(function(player)
-			CombatService.Dash(player)
+		remotes.Dash.OnServerEvent:Connect(function(player, direction)
+			CombatService.Dash(player, direction)
 		end)
 	end
 
@@ -1947,6 +2476,15 @@ function CombatService.Init(templeService, enemyService, fxRemoteEvent, remotes)
 			end
 		end
 	end)
+end
+
+-- Phase 4B hooks (set by AbilityService's owner, Main).
+function CombatService.SetModifierProvider(provider)
+	modifierProvider = provider
+end
+
+function CombatService.SetDashHandler(handler)
+	dashHandler = handler
 end
 
 function CombatService.SetupPlayer(player)
@@ -2006,7 +2544,7 @@ return CombatService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="21">
+      <Item class="ModuleScript" referent="23">
         <Properties>
           <string name="Name">DataService</string>
           <string name="Source"><![CDATA[-- DataService (ModuleScript)
@@ -2386,7 +2924,7 @@ return DataService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="22">
+      <Item class="ModuleScript" referent="24">
         <Properties>
           <string name="Name">DiagnosticsService</string>
           <string name="Source"><![CDATA[-- DiagnosticsService (ModuleScript)
@@ -2487,7 +3025,7 @@ return DiagnosticsService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="23">
+      <Item class="ModuleScript" referent="25">
         <Properties>
           <string name="Name">EnemyService</string>
           <string name="Source"><![CDATA[-- EnemyService (ModuleScript)
@@ -3098,7 +3636,8 @@ function EnemyService.Spawn(enemyType, cframe, options)
 end
 
 -- Damages an enemy on behalf of a player. Returns true if it was hit.
-function EnemyService.DamageEnemy(model, amount, player)
+-- options.Knockback = push speed (studs/s) instead of the default.
+function EnemyService.DamageEnemy(model, amount, player, options)
 	local record = enemies[model]
 	if not record or record.Dead or record.Humanoid.Health <= 0 then
 		return false
@@ -3145,7 +3684,7 @@ function EnemyService.DamageEnemy(model, amount, player)
 			local push = Instance.new("LinearVelocity")
 			push.Attachment0 = attachment
 			push.RelativeTo = Enum.ActuatorRelativeTo.World
-			push.VectorVelocity = away.Unit * KNOCKBACK_SPEED
+			push.VectorVelocity = away.Unit * (options and options.Knockback or KNOCKBACK_SPEED)
 			push.MaxForce = 40000
 			push.Parent = record.Root
 			Debris:AddItem(push, 0.12)
@@ -3204,7 +3743,7 @@ return EnemyService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="24">
+      <Item class="ModuleScript" referent="26">
         <Properties>
           <string name="Name">GodService</string>
           <string name="Source"><![CDATA[-- GodService (ModuleScript)
@@ -3629,6 +4168,21 @@ function GodService.Pray(player)
 	return true
 end
 
+-- Studio / owner test command: every blessing of the current god to max level.
+function GodService.DebugMaxBlessings(player)
+	local data = DataService.GetData(player)
+	local god = data and GodConfig.Gods[data.SelectedGod]
+	if not god then
+		return false
+	end
+	data.Blessings[god.Id] = data.Blessings[god.Id] or {}
+	for _, blessing in god.Blessings do
+		data.Blessings[god.Id][blessing.Id] = MAX_LEVEL
+	end
+	refreshAll(player, data, false)
+	return true
+end
+
 -- Studio / owner test command: add loyalty to the current god.
 function GodService.AddLoyalty(player, amount)
 	local data = DataService.GetData(player)
@@ -3645,7 +4199,7 @@ return GodService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="25">
+      <Item class="ModuleScript" referent="27">
         <Properties>
           <string name="Name">PlotService</string>
           <string name="Source"><![CDATA[-- PlotService (ModuleScript)
@@ -3773,7 +4327,7 @@ return PlotService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="26">
+      <Item class="ModuleScript" referent="28">
         <Properties>
           <string name="Name">ProgressionService</string>
           <string name="Source"><![CDATA[-- ProgressionService (ModuleScript)
@@ -3945,6 +4499,12 @@ function ProgressionService.SetupPlayer(player)
 	end
 end
 
+-- Re-applies max health and speed WITHOUT healing (e.g. when a speed buff starts or ends).
+function ProgressionService.RefreshStats(player)
+	ProgressionService.Refresh(player)
+	task.spawn(applyCharacterStats, player, player.Character, false)
+end
+
 -- Refresh everything, including the character's health (used after a data reset).
 function ProgressionService.RefreshAll(player)
 	ProgressionService.Refresh(player)
@@ -4042,7 +4602,7 @@ return ProgressionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="27">
+      <Item class="ModuleScript" referent="29">
         <Properties>
           <string name="Name">TempleModels</string>
           <string name="Source"><![CDATA[-- TempleModels (ModuleScript)
@@ -4524,7 +5084,7 @@ return TempleModels
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="28">
+      <Item class="ModuleScript" referent="30">
         <Properties>
           <string name="Name">TempleService</string>
           <string name="Source"><![CDATA[-- TempleService (ModuleScript)
@@ -4931,7 +5491,7 @@ return TempleService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="29">
+      <Item class="ModuleScript" referent="31">
         <Properties>
           <string name="Name">WorldBuilder</string>
           <string name="Source"><![CDATA[-- WorldBuilder (ModuleScript)
@@ -5171,16 +5731,16 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="30">
+  <Item class="StarterPlayer" referent="32">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <token name="AvatarJointUpgrade_SerializedRollout">1</token>
     </Properties>
-    <Item class="StarterCharacterScripts" referent="31">
+    <Item class="StarterCharacterScripts" referent="33">
       <Properties>
         <string name="Name">StarterCharacterScripts</string>
       </Properties>
-      <Item class="Script" referent="32">
+      <Item class="Script" referent="34">
         <Properties>
           <string name="Name">Health</string>
           <token name="RunContext">0</token>
@@ -5194,11 +5754,478 @@ return WorldBuilder
         </Properties>
       </Item>
     </Item>
-    <Item class="StarterPlayerScripts" referent="33">
+    <Item class="StarterPlayerScripts" referent="35">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="34">
+      <Item class="LocalScript" referent="36">
+        <Properties>
+          <string name="Name">AbilityController</string>
+          <string name="Source"><![CDATA[-- AbilityController (LocalScript)
+-- Location: StarterPlayer > StarterPlayerScripts > AbilityController
+--
+-- Phase 4B, the device side of god abilities:
+--   * Ability buttons with cooldown countdowns. Touch screens: round buttons
+--     around the Attack button. Keyboard/controller: a bar above the health bar.
+--     Keys: Q, E, R, T (Form); controller L1, R1, Y, D-pad up.
+--   * Only abilities whose blessing you have unlocked (for your current god) show.
+--   * Plays your own ability animation immediately and asks the server to use it;
+--     the server decides whether it happens and what it hits.
+--   * Draws ability effects for everyone: lightning bolts, chain lightning,
+--     shockwaves, the cleave arc, dash trails and auras.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ContextActionService = game:GetService("ContextActionService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local AbilityConfig = require(Shared:WaitForChild("AbilityConfig"))
+local GodConfig = require(Shared:WaitForChild("GodConfig"))
+local SwordAnimator = require(Shared:WaitForChild("SwordAnimator"))
+
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local abilityRemote = Remotes:WaitForChild("UseAbility")
+local fxRemote = Remotes:WaitForChild("CombatFX")
+
+local SLOTS = AbilityConfig.SlotOrder
+
+--------------------------------------------------------------------------
+-- Which ability is in each slot right now
+--------------------------------------------------------------------------
+local function abilityForSlot(slot)
+	local god = GodConfig.Gods[player:GetAttribute("SelectedGod") or ""]
+	if not god then
+		return nil
+	end
+	for _, blessing in god.Blessings do
+		if blessing.Ability == slot then
+			local level = player:GetAttribute("Blessing_" .. blessing.Id) or 0
+			if level >= 1 then
+				return blessing, AbilityConfig.Abilities[blessing.Id], level
+			end
+			return nil
+		end
+	end
+	return nil
+end
+
+local function cooldownLeft(slot)
+	return math.max(0, (player:GetAttribute("Cooldown_" .. slot) or 0) - Workspace:GetServerTimeNow())
+end
+
+local function alive()
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	return humanoid ~= nil and humanoid.Health > 0
+end
+
+local localReadyAt = {} -- stops double-presses before the server's answer arrives
+
+local function useSlot(slot)
+	if player:GetAttribute("DataLoaded") ~= true or not alive() or player:GetAttribute("Blocking") == true then
+		return
+	end
+	local blessing, cfg = abilityForSlot(slot)
+	if not blessing or not cfg then
+		return
+	end
+	local now = os.clock()
+	if cooldownLeft(slot) > 0.15 or now < (localReadyAt[slot] or 0) then
+		return
+	end
+	localReadyAt[slot] = now + 0.5
+	if cfg.Move then
+		SwordAnimator.Play(player.Character, cfg.Move)
+	end
+	abilityRemote:FireServer(slot)
+end
+
+--------------------------------------------------------------------------
+-- Buttons
+--------------------------------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "AbilityButtons"
+gui.ResetOnSpawn = false
+gui.Enabled = false
+gui.Parent = playerGui
+
+local buttons = {}
+
+local function makeButton(slot)
+	local b = Instance.new("TextButton")
+	b.Name = slot
+	b.AnchorPoint = Vector2.new(0.5, 0.5)
+	b.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+	b.BackgroundTransparency = 0.2
+	b.Text = ""
+	b.AutoButtonColor = false
+	b.Visible = false
+	b.Parent = gui
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1, 0)
+	corner.Parent = b
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 3
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = b
+
+	-- Dark cover that shrinks as the cooldown runs out.
+	local cover = Instance.new("Frame")
+	cover.Name = "Cooldown"
+	cover.AnchorPoint = Vector2.new(0.5, 1)
+	cover.Position = UDim2.fromScale(0.5, 1)
+	cover.Size = UDim2.fromScale(1, 0)
+	cover.BackgroundColor3 = Color3.new(0, 0, 0)
+	cover.BackgroundTransparency = 0.45
+	cover.ZIndex = 2
+	cover.Parent = b
+	local coverCorner = Instance.new("UICorner")
+	coverCorner.CornerRadius = UDim.new(1, 0)
+	coverCorner.Parent = cover
+
+	local name = Instance.new("TextLabel")
+	name.Name = "AbilityName"
+	name.AnchorPoint = Vector2.new(0.5, 0.5)
+	name.Position = UDim2.fromScale(0.5, 0.5)
+	name.Size = UDim2.fromScale(0.86, 0.5)
+	name.BackgroundTransparency = 1
+	name.Font = Enum.Font.GothamBold
+	name.TextScaled = true
+	name.TextColor3 = Color3.new(1, 1, 1)
+	name.TextStrokeTransparency = 0.4
+	name.ZIndex = 3
+	name.Parent = b
+
+	local key = Instance.new("TextLabel")
+	key.Name = "Key"
+	key.AnchorPoint = Vector2.new(0.5, 0)
+	key.Position = UDim2.fromScale(0.5, 0.04)
+	key.Size = UDim2.fromScale(0.5, 0.22)
+	key.BackgroundTransparency = 1
+	key.Font = Enum.Font.GothamBlack
+	key.TextScaled = true
+	key.TextColor3 = Color3.fromRGB(255, 230, 150)
+	key.TextStrokeTransparency = 0.4
+	key.Text = AbilityConfig.KeyLabels[slot]
+	key.ZIndex = 3
+	key.Parent = b
+
+	local timer = Instance.new("TextLabel")
+	timer.Name = "Timer"
+	timer.AnchorPoint = Vector2.new(0.5, 1)
+	timer.Position = UDim2.fromScale(0.5, 0.96)
+	timer.Size = UDim2.fromScale(0.6, 0.26)
+	timer.BackgroundTransparency = 1
+	timer.Font = Enum.Font.GothamBlack
+	timer.TextScaled = true
+	timer.TextColor3 = Color3.new(1, 1, 1)
+	timer.TextStrokeTransparency = 0.2
+	timer.Text = ""
+	timer.ZIndex = 4
+	timer.Parent = b
+
+	b.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+			useSlot(slot)
+		end
+	end)
+	buttons[slot] = { Button = b, Stroke = stroke, Cover = cover, Name = name, Key = key, Timer = timer }
+end
+for _, slot in SLOTS do
+	makeButton(slot)
+end
+
+-- Short names that fit on a round button.
+local function shortName(blessingName)
+	local words = string.split(blessingName, " ")
+	if #words >= 3 then
+		return words[1] .. "\n" .. words[2]
+	end
+	return table.concat(words, "\n")
+end
+
+local function layout()
+	local camera = Workspace.CurrentCamera
+	local viewport = if camera then camera.ViewportSize else Vector2.new(1280, 720)
+	local touch = UserInputService.TouchEnabled
+	for _, b in buttons do
+		b.Key.Visible = not touch
+	end
+	if touch then
+		-- Same jump-button geometry as the Attack/Block/Dash buttons.
+		local big = math.min(viewport.X, viewport.Y) > 500
+		local jumpSize = if big then 120 else 70
+		local jumpLeft = if big then 170 else 95
+		local jumpTop = if big then 210 else 90
+		local jumpCenterY = jumpTop - jumpSize / 2
+		local gap = if big then 16 else 10
+		local attackSize = math.floor(jumpSize * 1.05)
+		local size = math.floor(jumpSize * 0.75)
+		local attackX = jumpLeft + gap + attackSize / 2 -- distance from the right edge
+		local qX = attackX + attackSize / 2 + gap + size / 2
+		local rX = qX + size + gap
+		local lowY = jumpCenterY
+		local highY = jumpCenterY + size + gap
+		local spots = { Q = { qX, lowY }, E = { qX, highY }, R = { rX, lowY }, Form = { rX, highY } }
+		for slot, b in buttons do
+			b.Button.Size = UDim2.fromOffset(size, size)
+			b.Button.Position = UDim2.new(1, -spots[slot][1], 1, -spots[slot][2])
+		end
+	else
+		-- A bar above the health bar (bottom centre).
+		local size = 68
+		local gap = 12
+		local total = #SLOTS * size + (#SLOTS - 1) * gap
+		for i, slot in SLOTS do
+			local b = buttons[slot].Button
+			b.Size = UDim2.fromOffset(size, size)
+			b.Position = UDim2.new(0.5, -total / 2 + (i - 1) * (size + gap) + size / 2, 1, -(24 + 24 + 14 + size / 2))
+		end
+	end
+end
+layout()
+if Workspace.CurrentCamera then
+	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(layout)
+end
+
+local function refresh()
+	local god = GodConfig.Gods[player:GetAttribute("SelectedGod") or ""]
+	local color = if god then god.Colors.Primary else Color3.fromRGB(212, 175, 55)
+	for slot, b in buttons do
+		local blessing = abilityForSlot(slot)
+		b.Button.Visible = blessing ~= nil
+		if blessing then
+			b.Name.Text = shortName(blessing.Name)
+			b.Stroke.Color = color
+		end
+	end
+	gui.Enabled = player:GetAttribute("DataLoaded") == true
+end
+
+local watched = { "SelectedGod", "DataLoaded" }
+for blessingId in GodConfig.BlessingsById do
+	table.insert(watched, "Blessing_" .. blessingId)
+end
+for _, attribute in watched do
+	player:GetAttributeChangedSignal(attribute):Connect(refresh)
+end
+refresh()
+
+-- Cooldown countdowns
+task.spawn(function()
+	while true do
+		task.wait(0.1)
+		for slot, b in buttons do
+			if b.Button.Visible then
+				local _, cfg = abilityForSlot(slot)
+				local left = cooldownLeft(slot)
+				local total = if cfg then cfg.Cooldown else 1
+				b.Cover.Size = UDim2.fromScale(1, math.clamp(left / total, 0, 1))
+				b.Timer.Text = if left > 0.05 then tostring(math.ceil(left)) else ""
+			end
+		end
+	end
+end)
+
+-- Keyboard and controller keys (touch uses the buttons above).
+for _, slot in SLOTS do
+	ContextActionService:BindAction("OlympusAbility" .. slot, function(_, inputState)
+		if inputState == Enum.UserInputState.Begin then
+			useSlot(slot)
+		end
+		return Enum.ContextActionResult.Pass
+	end, false, table.unpack(AbilityConfig.Keys[slot]))
+end
+
+--------------------------------------------------------------------------
+-- Effects (drawn on this device)
+--------------------------------------------------------------------------
+local fxFolder = Workspace:FindFirstChild("ClientEffects") or Instance.new("Folder")
+fxFolder.Name = "ClientEffects"
+fxFolder.Parent = Workspace
+
+local function effectPart(props)
+	local part = Instance.new("Part")
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.CastShadow = false
+	part.Material = Enum.Material.Neon
+	for key, value in props do
+		part[key] = value
+	end
+	part.Parent = fxFolder
+	return part
+end
+
+local function fadeOut(part, time)
+	TweenService:Create(part, TweenInfo.new(time), { Transparency = 1 }):Play()
+	Debris:AddItem(part, time + 0.05)
+end
+
+-- A jagged lightning bolt from a to b.
+local function bolt(a, b, color, thickness, life)
+	local segments = math.max(3, math.floor((b - a).Magnitude / 4))
+	local points = { a }
+	for i = 1, segments - 1 do
+		local t = i / segments
+		local jitter = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 3
+		table.insert(points, a:Lerp(b, t) + jitter)
+	end
+	table.insert(points, b)
+	for i = 1, #points - 1 do
+		local p0, p1 = points[i], points[i + 1]
+		local length = (p1 - p0).Magnitude
+		local seg = effectPart({
+			Size = Vector3.new(thickness, thickness, length),
+			CFrame = CFrame.lookAt((p0 + p1) / 2, p1),
+			Color = color,
+		})
+		fadeOut(seg, life)
+	end
+end
+
+local function lightFlash(position, color, range)
+	local holder = effectPart({ Size = Vector3.new(0.2, 0.2, 0.2), Transparency = 1, Position = position })
+	local light = Instance.new("PointLight")
+	light.Color = color
+	light.Range = range
+	light.Brightness = 4
+	light.Parent = holder
+	TweenService:Create(light, TweenInfo.new(0.35), { Brightness = 0 }):Play()
+	Debris:AddItem(holder, 0.4)
+end
+
+local function groundY(position)
+	return position.Y - 2.9 -- character roots sit about 3 studs above the ground
+end
+
+local function shockwave(position, color, radius)
+	local ring = effectPart({
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.3, 2, 2),
+		CFrame = CFrame.new(position.X, groundY(position), position.Z) * CFrame.Angles(0, 0, math.rad(90)),
+		Color = color,
+		Transparency = 0.25,
+	})
+	TweenService:Create(ring, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Size = Vector3.new(0.3, radius * 2, radius * 2),
+		Transparency = 1,
+	}):Play()
+	Debris:AddItem(ring, 0.45)
+end
+
+local function sparks(position, color, count)
+	local holder = effectPart({ Size = Vector3.new(0.2, 0.2, 0.2), Transparency = 1, Position = position })
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Color = ColorSequence.new(color)
+	emitter.LightEmission = 1
+	emitter.Lifetime = NumberRange.new(0.3, 0.6)
+	emitter.Speed = NumberRange.new(8, 18)
+	emitter.SpreadAngle = Vector2.new(180, 180)
+	emitter.Size = NumberSequence.new(0.45, 0)
+	emitter.Rate = 0
+	emitter.Parent = holder
+	emitter:Emit(count)
+	Debris:AddItem(holder, 1)
+end
+
+local auras = {}
+
+local function aura(character, color, duration)
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+	if auras[character] then
+		auras[character]:Destroy()
+	end
+	local attachment = Instance.new("Attachment")
+	attachment.Name = "AbilityAura"
+	attachment.Parent = root
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Color = ColorSequence.new(color)
+	emitter.LightEmission = 1
+	emitter.Lifetime = NumberRange.new(0.5, 0.9)
+	emitter.Rate = 30
+	emitter.Speed = NumberRange.new(2, 4)
+	emitter.SpreadAngle = Vector2.new(180, 180)
+	emitter.Acceleration = Vector3.new(0, 6, 0)
+	emitter.Size = NumberSequence.new(0.5, 0)
+	emitter.Parent = attachment
+	local light = Instance.new("PointLight")
+	light.Color = color
+	light.Range = 12
+	light.Brightness = 2
+	light.Parent = attachment
+	auras[character] = attachment
+	task.delay(duration, function()
+		if auras[character] == attachment then
+			auras[character] = nil
+		end
+		attachment:Destroy()
+	end)
+end
+
+fxRemote.OnClientEvent:Connect(function(kind, position, color, extra, extra2)
+	if typeof(color) ~= "Color3" then
+		return
+	end
+	if kind == "Lightning" then
+		local radius = if typeof(extra) == "number" then extra else 4
+		bolt(position + Vector3.new(math.random(-4, 4), 45, math.random(-4, 4)), position, color, 0.6, 0.3)
+		lightFlash(position, color, 24)
+		sparks(position, color, 20)
+		shockwave(position, color, radius)
+	elseif kind == "Chain" and type(extra) == "table" then
+		for i = 1, #extra - 1 do
+			if typeof(extra[i]) == "Vector3" and typeof(extra[i + 1]) == "Vector3" then
+				bolt(extra[i], extra[i + 1], color, 0.4, 0.35)
+				sparks(extra[i + 1], color, 10)
+			end
+		end
+		lightFlash(position, color, 16)
+	elseif kind == "Shockwave" then
+		shockwave(position, color, if typeof(extra) == "number" then extra else 10)
+		sparks(position, color, 16)
+	elseif kind == "Cleave" and typeof(extra) == "Vector3" then
+		local look = Vector3.new(extra.X, 0, extra.Z).Unit
+		local range = if typeof(extra2) == "number" then extra2 else 10
+		local base = CFrame.lookAt(position, position + look)
+		for i = -5, 5 do
+			local angle = math.rad(i * 18)
+			local spot = (base * CFrame.Angles(0, angle, 0) * CFrame.new(0, 0, -range * 0.75)).Position
+			local piece = effectPart({
+				Size = Vector3.new(range * 0.32, 0.25, 0.6),
+				CFrame = CFrame.lookAt(spot, position) * CFrame.Angles(0, math.rad(90), 0),
+				Color = color,
+				Transparency = 0.15,
+			})
+			task.delay((i + 5) * 0.012, function()
+				fadeOut(piece, 0.3)
+			end)
+		end
+		sparks(position + look * range * 0.6, color, 18)
+	elseif kind == "DashTrail" and typeof(extra) == "Vector3" then
+		bolt(position, extra, color, 0.5, 0.4)
+		bolt(position + Vector3.new(0, 1, 0), extra + Vector3.new(0, 1, 0), color, 0.3, 0.3)
+		sparks(extra, color, 14)
+	elseif kind == "Aura" and typeof(extra) == "Instance" and extra:IsA("Player") then
+		aura(extra.Character, color, if typeof(extra2) == "number" then extra2 else 10)
+	end
+end)
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="LocalScript" referent="37">
         <Properties>
           <string name="Name">CombatController</string>
           <string name="Source"><![CDATA[-- CombatController (LocalScript)
@@ -5560,7 +6587,7 @@ local function dash()
 	Debris:AddItem(attachment, CFG.Dash.Duration)
 
 	burst(root.Position, godColor(), 16, 8)
-	dashRemote:FireServer()
+	dashRemote:FireServer(direction) -- the server uses it for god dash abilities
 end
 
 --------------------------------------------------------------------------
@@ -5825,7 +6852,7 @@ updateEnabled()
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="35">
+      <Item class="LocalScript" referent="38">
         <Properties>
           <string name="Name">Diagnostics</string>
           <string name="Source"><![CDATA[-- Diagnostics (LocalScript)
@@ -5923,7 +6950,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="36">
+      <Item class="LocalScript" referent="39">
         <Properties>
           <string name="Name">GodUI</string>
           <string name="Source"><![CDATA[-- GodUI (LocalScript)
@@ -6502,7 +7529,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="37">
+      <Item class="LocalScript" referent="40">
         <Properties>
           <string name="Name">HUDController</string>
           <string name="Source"><![CDATA[-- HUDController (LocalScript)
@@ -6979,7 +8006,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="38">
+      <Item class="LocalScript" referent="41">
         <Properties>
           <string name="Name">TempleUI</string>
           <string name="Source"><![CDATA[-- TempleUI (LocalScript)

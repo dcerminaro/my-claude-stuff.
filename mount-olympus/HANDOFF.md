@@ -40,7 +40,7 @@ Follow the master specification in **Part C** exactly, including its section 19
 | 2. Temple Tycoon | **Confirmed** by the developer |
 | 3. God Selection | **Confirmed** by the developer |
 | 4A. Combat core | **Confirmed** by the developer ("It works perfect!", v17) |
-| 4B. God abilities | Next |
+| 4B. God abilities | **Built and server-tested**, live (v19), awaiting play-testing → then "Phase 4 confirmed" |
 | 5–8 | Not started |
 
 ### How to set up Phase 1 on a Mac (or Windows PC)
@@ -256,6 +256,32 @@ environment, so a session can `rojo build` and publish via
   body `{"message":"<new version>"}` (needs the API key permission
   `universe-messaging-service` → publish).
 
+### Design decisions made in Phase 4B (developer asked to confirm)
+1. **Slots** come from each blessing's `Ability` field: Q, Dash (upgrades the
+   normal dash), E, R (ultimate), Form (key T). An ability needs its blessing
+   at level ≥ 1 for the **current** god; higher blessing levels add damage /
+   buff strength. Cooldowns are per slot and carry over when changing god.
+2. **Zeus:** Lightning Strike (Q, 6 s: bolt on the best target + 6-stud
+   splash), Thunder Dash (dash, 4 s: damages enemies on the dash path),
+   Chain Lightning (E, 9 s: 4–6 targets, −15% per jump), Wrath of Olympus
+   (R, 30 s: 5 pulses in a 20-stud radius), Ascended Thunder Form (Form, 60 s:
+   12 s of +40–60% attack, +25% speed).
+3. **Ares:** War Slash (Q, 5 s: ~200° cleave, 11 studs, knockback), Battle
+   Charge (dash, 4 s: path damage + strong knockback), Berserker Rage (E,
+   18 s: 8 s of +35–55% attack, +15% speed), God of War (R, 25 s: slam after
+   0.5 s, 14-stud radius, big knockback), Divine Warlord Form (Form, 60 s: 12 s
+   of +30–50% attack and 30% less damage taken).
+4. **Damage** = BaseAttack × (1 + Training Grounds) × (1 + buffs) × ability
+   multiplier (`AbilityConfig`). Basic attacks also get the buff bonus.
+5. **Buttons:** touch — round buttons left of Attack (Q, E bottom/top; R,
+   Form further left), with a dark cooldown cover and seconds; keyboard/
+   controller — a bar above the health bar showing the key letters.
+   Controller: L1 = Q, R1 = E, Y = R, D-pad up = Form.
+6. **Animations:** new poses Cast (sword to the sky), Slam, Cleave; effects
+   drawn on each device (`CombatFX`: Lightning, Chain, Shockwave, Cleave,
+   DashTrail, Aura).
+7. New test command `!blessall` (current god's blessings to max level).
+
 ### Ideas from the developer for later (not built yet)
 - **Rank outfits and physique (Phase 6, Ascension):** each ascension rank gets
   its own outfit, and the character gets bigger with a more powerful physique
@@ -379,6 +405,13 @@ player)`, `GetEnemiesInRange(pos, range)`, `SpawnPracticeField()`. Rewards go
 to all contributors once. **Phase 4B abilities** should damage via
 `EnemyService.DamageEnemy` and find targets with `GetEnemiesInRange`.
 **Phase 5 arenas** should spawn waves with `Spawn(..., {OnDeath = ...})`.
+
+**AbilityService** (server, Phase 4B) — `UseAbility(player, slot)`,
+`OnDash(player, direction)` (via `CombatService.SetDashHandler`),
+`GetModifiers(player)` → `{AttackPercent, SpeedPercent, DamageTaken}` (via
+`CombatService.SetModifierProvider`; speed is folded into the
+ProgressionService bonus provider). Attributes `Cooldown_<slot>` = server time
+when ready. Ability numbers live in `Shared/AbilityConfig`.
 
 **CombatFX remote** (server → clients): `("Damage", pos, amount, style)`,
 `("Hit", pos)`, `("Death", pos)`, `("Reward", pos, text)`.

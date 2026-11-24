@@ -357,7 +357,7 @@ local function dash()
 	Debris:AddItem(attachment, CFG.Dash.Duration)
 
 	burst(root.Position, godColor(), 16, 8)
-	dashRemote:FireServer()
+	dashRemote:FireServer(direction) -- the server uses it for god dash abilities
 end
 
 --------------------------------------------------------------------------

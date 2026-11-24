@@ -2,7 +2,7 @@
 
 A Greek mythology RPG / temple tycoon for Roblox.
 
-- **Status:** Phases 1–3 confirmed by the developer. Phase 4A (core combat) built, server-tested on Roblox, awaiting play-testing. Phase 4B (god abilities) is next.
+- **Status:** Phases 1–3 and 4A confirmed by the developer. Phase 4B (god abilities) built, server-tested on Roblox, awaiting play-testing.
 - **Full design spec, decisions, and roadmap:** [`HANDOFF.md`](HANDOFF.md).
 
 ## Fastest way to try it (no tools needed)
@@ -21,6 +21,8 @@ A Greek mythology RPG / temple tycoon for Roblox.
 | `src/shared/GameConfig.luau` | ReplicatedStorage › Shared › GameConfig | ModuleScript |
 | `src/shared/Progression.luau` | ReplicatedStorage › Shared › Progression | ModuleScript |
 | `src/shared/TempleConfig.luau` | ReplicatedStorage › Shared › TempleConfig | ModuleScript |
+| `src/shared/AbilityConfig.luau` | ReplicatedStorage › Shared › AbilityConfig | ModuleScript |
+| `src/shared/SwordBuilder.luau`, `SwordPoses.luau`, `SwordAnimator.luau` | ReplicatedStorage › Shared › (same names) | ModuleScript |
 | `src/shared/CombatConfig.luau` | ReplicatedStorage › Shared › CombatConfig | ModuleScript |
 | `src/shared/GodConfig.luau` | ReplicatedStorage › Shared › GodConfig | ModuleScript |
 | `src/shared/Gods/*.luau` (Zeus, Ares, Poseidon, Hades, Athena, Apollo) | ReplicatedStorage › Shared › Gods › *(one per god)* | ModuleScript |
@@ -34,10 +36,14 @@ A Greek mythology RPG / temple tycoon for Roblox.
 | `src/server/Services/GodService.luau` | ServerScriptService › Services › GodService | ModuleScript |
 | `src/server/Services/EnemyService.luau` | ServerScriptService › Services › EnemyService | ModuleScript |
 | `src/server/Services/CombatService.luau` | ServerScriptService › Services › CombatService | ModuleScript |
+| `src/server/Services/AbilityService.luau` | ServerScriptService › Services › AbilityService | ModuleScript |
+| `src/server/Services/DiagnosticsService.luau` | ServerScriptService › Services › DiagnosticsService | ModuleScript |
 | `src/client/HUDController.client.luau` | StarterPlayer › StarterPlayerScripts › HUDController | LocalScript |
 | `src/client/TempleUI.client.luau` | StarterPlayer › StarterPlayerScripts › TempleUI | LocalScript |
 | `src/client/GodUI.client.luau` | StarterPlayer › StarterPlayerScripts › GodUI | LocalScript |
 | `src/client/CombatController.client.luau` | StarterPlayer › StarterPlayerScripts › CombatController | LocalScript |
+| `src/client/AbilityController.client.luau` | StarterPlayer › StarterPlayerScripts › AbilityController | LocalScript |
+| `src/client/Diagnostics.client.luau` | StarterPlayer › StarterPlayerScripts › Diagnostics | LocalScript |
 | `src/character/Health.server.luau` | StarterPlayer › StarterCharacterScripts › Health (empty: disables default regen) | Script |
 
 `default.project.json` is the [Rojo](https://rojo.space) project file that defines this mapping.

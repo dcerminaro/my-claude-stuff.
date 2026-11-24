@@ -76,10 +76,46 @@ local lungeThrust = {
 	Waist = { 0, 8, 0 },
 }
 
+-- Abilities (Phase 4B)
+-- Cast: sword raised straight up to the sky.
+local castUp = {
+	RightShoulder = { 170, 0, 5 },
+	RightElbow = { 0, 0, 0 },
+	RightWrist = { -90, 0, 0 },
+	LeftShoulder = { 25, 0, -15 },
+	Waist = { 0, 0, 0 },
+}
+-- Slam: sword driven down into the ground in front.
+local slamDown = {
+	RightShoulder = { 45, 0, -5 },
+	RightElbow = { 10, 0, 0 },
+	RightWrist = { -150, 0, 0 },
+	LeftShoulder = { 30, 0, -20 },
+	Waist = { 0, 0, 0 },
+}
+-- Cleave: a wide sweep from far right to far left.
+local cleaveStart = {
+	RightShoulder = { 90, 0, 75 },
+	RightElbow = { 15, 0, 0 },
+	RightWrist = { -85, 0, 0 },
+	LeftShoulder = { 20, 0, -10 },
+	Waist = { 0, -25, 0 },
+}
+local cleaveEnd = {
+	RightShoulder = { 85, 0, -70 },
+	RightElbow = { 10, 0, 0 },
+	RightWrist = { -85, 0, 0 },
+	LeftShoulder = { -10, 0, -15 },
+	Waist = { 0, 25, 0 },
+}
+
 Poses.Moves = {
 	Slash1 = { { 0, Poses.Hold }, { 0.09, slash1Up }, { 0.2, slash1Down }, { 0.42, Poses.Hold } },
 	Slash2 = { { 0, Poses.Hold }, { 0.08, slash2Start }, { 0.19, slash2End }, { 0.42, Poses.Hold } },
 	Lunge = { { 0, Poses.Hold }, { 0.1, lungeBack }, { 0.21, lungeThrust }, { 0.5, Poses.Hold } },
+	Cast = { { 0, Poses.Hold }, { 0.15, castUp }, { 0.45, castUp }, { 0.7, Poses.Hold } },
+	Slam = { { 0, Poses.Hold }, { 0.2, castUp }, { 0.4, castUp }, { 0.5, slamDown }, { 0.8, slamDown }, { 1.05, Poses.Hold } },
+	Cleave = { { 0, Poses.Hold }, { 0.1, cleaveStart }, { 0.24, cleaveEnd }, { 0.55, Poses.Hold } },
 }
 Poses.ComboOrder = { "Slash1", "Slash2", "Lunge" }
 
@@ -104,6 +140,10 @@ Poses.Named = {
 	Slash2End = slash2End,
 	LungeBack = lungeBack,
 	LungeThrust = lungeThrust,
+	CastUp = castUp,
+	SlamDown = slamDown,
+	CleaveStart = cleaveStart,
+	CleaveEnd = cleaveEnd,
 }
 
 return Poses

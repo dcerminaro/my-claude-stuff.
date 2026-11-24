@@ -33,6 +33,12 @@ local CombatService = {}
 local TempleService = nil
 local EnemyService = nil
 local fxRemote = nil
+local modifierProvider = nil -- Phase 4B: function(player) -> { AttackPercent, DamageTaken }
+local dashHandler = nil      -- Phase 4B: function(player, direction) for god dash abilities
+
+local function modifiers(player)
+	return if modifierProvider then modifierProvider(player) else { AttackPercent = 0, DamageTaken = 1 }
+end
 
 local CFG = CombatConfig.Player
 local state = {} -- [Player] = { NextAttackAt, NextDashAt, InvulnerableUntil, Blocking, SavedWalkSpeed, Shield, LastDamagedAt }
@@ -180,6 +186,7 @@ function CombatService.BasicAttack(player, combo)
 
 	local baseAttack = player:GetAttribute("BaseAttack") or 10
 	local combatBonus = TempleService.GetEffect(player, "CombatBonusPercent") / 100
+	local buffBonus = modifiers(player).AttackPercent / 100
 	local look = flat(root.CFrame.LookVector).Unit
 
 	-- Enemies in front of the player, closest first.
@@ -200,7 +207,7 @@ function CombatService.BasicAttack(player, combo)
 	for i = 1, math.min(#candidates, attack.MaxTargets) do
 		local record = candidates[i].Record
 		local spread = 1 + random:NextNumber(-attack.RandomSpread, attack.RandomSpread)
-		local damage = baseAttack * attack.DamageMultiplier * (1 + combatBonus) * spread
+		local damage = baseAttack * attack.DamageMultiplier * (1 + combatBonus) * (1 + buffBonus) * spread
 		if EnemyService.DamageEnemy(record.Model, damage, player) then
 			hits += 1
 			fxRemote:FireAllClients("Hit", record.Root.Position, record.Model, player)
@@ -209,7 +216,7 @@ function CombatService.BasicAttack(player, combo)
 	return hits
 end
 
-function CombatService.Dash(player)
+function CombatService.Dash(player, direction)
 	local st = state[player]
 	if not st or not getParts(player) then
 		return false
@@ -220,6 +227,9 @@ function CombatService.Dash(player)
 	end
 	st.NextDashAt = now + CFG.Dash.Cooldown * 0.9
 	st.InvulnerableUntil = now + CFG.Dash.InvulnerableTime
+	if dashHandler then
+		dashHandler(player, direction) -- god dash ability (Thunder Dash / Battle Charge)
+	end
 	return true
 end
 
@@ -238,6 +248,7 @@ function CombatService.DamagePlayer(player, amount, _sourcePosition)
 		return 0
 	end
 	local style = "Player"
+	amount *= modifiers(player).DamageTaken
 	if st.Blocking then
 		amount *= CFG.Block.DamageTaken
 		style = "Blocked"
@@ -268,8 +279,8 @@ function CombatService.Init(templeService, enemyService, fxRemoteEvent, remotes)
 				setBlocking(player, on)
 			end
 		end)
-		remotes.Dash.OnServerEvent:Connect(function(player)
-			CombatService.Dash(player)
+		remotes.Dash.OnServerEvent:Connect(function(player, direction)
+			CombatService.Dash(player, direction)
 		end)
 	end
 
@@ -293,6 +304,15 @@ function CombatService.Init(templeService, enemyService, fxRemoteEvent, remotes)
 			end
 		end
 	end)
+end
+
+-- Phase 4B hooks (set by AbilityService's owner, Main).
+function CombatService.SetModifierProvider(provider)
+	modifierProvider = provider
+end
+
+function CombatService.SetDashHandler(handler)
+	dashHandler = handler
 end
 
 function CombatService.SetupPlayer(player)

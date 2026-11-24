@@ -31,6 +31,9 @@
         },
         "Diagnostics": {
           "$path": "src/client/Diagnostics.client.luau"
+        },
+        "AbilityController": {
+          "$path": "src/client/AbilityController.client.luau"
         }
       },
       "StarterCharacterScripts": {
