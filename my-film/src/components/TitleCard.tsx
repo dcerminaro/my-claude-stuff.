@@ -188,7 +188,7 @@ export const TitleCard: React.FC<{
             color: look.text,
             ...lineIn(l1),
             textAlign: "center",
-            maxWidth: "88%",
+            maxWidth: width * 0.88,
           }}
         >
           {line1}
@@ -203,7 +203,7 @@ export const TitleCard: React.FC<{
               look.name === "ink" ? "none" : `0 0 18px ${look.accent}`,
             ...lineIn(l2),
             textAlign: "center",
-            maxWidth: "88%",
+            maxWidth: width * 0.88,
           }}
         >
           {line2}

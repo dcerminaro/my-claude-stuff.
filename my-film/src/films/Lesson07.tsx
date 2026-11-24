@@ -416,10 +416,22 @@ const DebtShot: React.FC = () => {
         durationInFrames={creditorsAt - DEBT_START - 16}
         layout="none"
       >
-        <RepPop text="IOU: 830 TALENTS" x={540} y={1250} size={80} color={RED} />
+        <RepPop
+          text="IOU: 830 TALENTS"
+          x={540}
+          y={1250}
+          size={80}
+          color={RED}
+        />
       </Sequence>
       <Sequence from={creditorsAt - SHOT.debt[0]} layout="none">
-        <RepPop text="CAN'T LEAVE ROME" x={540} y={1250} size={80} color={RED} />
+        <RepPop
+          text="CAN'T LEAVE ROME"
+          x={540}
+          y={1250}
+          size={80}
+          color={RED}
+        />
       </Sequence>
     </AbsoluteFill>
   );

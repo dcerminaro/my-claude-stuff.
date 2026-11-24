@@ -9,6 +9,7 @@ import { LESSON_04_DURATION, Lesson04 } from "./films/Lesson04";
 import { LESSON_05_DURATION, Lesson05 } from "./films/Lesson05";
 import { LESSON_06_DURATION, Lesson06 } from "./films/Lesson06";
 import { LESSON_07_DURATION, Lesson07 } from "./films/Lesson07";
+import { LESSON_08_DURATION, Lesson08 } from "./films/Lesson08";
 import { LookName } from "./looks";
 import { FPS, H, W } from "./theme";
 
@@ -36,6 +37,14 @@ export const RemotionRoot: React.FC = () => {
           height={H}
         />
       ))}
+      <Composition
+        id="Lesson08"
+        component={Lesson08}
+        durationInFrames={LESSON_08_DURATION}
+        fps={FPS}
+        width={1080}
+        height={1920}
+      />
       <Composition
         id="Lesson07"
         component={Lesson07}
