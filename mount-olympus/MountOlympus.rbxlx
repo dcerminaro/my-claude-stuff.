@@ -74,7 +74,7 @@ CombatConfig.Enemies = {
 		LeashRange = 55,
 		XP = 25,
 		Gold = 10,
-		RespawnTime = 10,
+		RespawnTime = 6,
 		Appearance = {
 			Skin = Color3.fromRGB(204, 160, 120),
 			Shirt = Color3.fromRGB(120, 60, 40),
@@ -95,7 +95,7 @@ CombatConfig.Enemies = {
 		LeashRange = 55,
 		XP = 35,
 		Gold = 14,
-		RespawnTime = 12,
+		RespawnTime = 7,
 		Appearance = {
 			Skin = Color3.fromRGB(235, 230, 215),
 			Shirt = Color3.fromRGB(225, 220, 205),
@@ -110,10 +110,12 @@ CombatConfig.Enemies = {
 		Damage = 0,
 		WalkSpeed = 0,
 		Passive = true,   -- never moves or attacks
+		Immortal = true,  -- when "knocked out" it pops straight back up instead of dying
+		Builder = "Dummy", -- a wooden training dummy instead of a character
 		RegenDelay = 3,   -- heals fully after 3 seconds without being hit
 		XP = 0,
 		Gold = 0,
-		RespawnTime = 3,
+		RespawnTime = 0,
 		Appearance = {
 			Skin = Color3.fromRGB(214, 190, 140),
 			Shirt = Color3.fromRGB(160, 120, 80),
@@ -1045,6 +1047,9 @@ end)
 --   * Damage to players (from enemies), damage numbers.
 --   * Health regeneration (replaces Roblox's default), boosted by the
 --     Divine Fountain.
+--   * Gives every player a placeholder sword (held as a Tool, so Roblox's
+--     sword-holding pose is used) that glows in their god's colour and
+--     leaves a light trail when swung. Real weapons come in Phase 7.
 --
 -- Other systems call: CombatService.DamagePlayer(player, amount, sourcePosition)
 
@@ -1053,6 +1058,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CombatConfig = require(Shared:WaitForChild("CombatConfig"))
+local GodConfig = require(Shared:WaitForChild("GodConfig"))
 
 local CombatService = {}
 
@@ -1128,6 +1134,129 @@ local function setBlocking(player, on)
 end
 
 --------------------------------------------------------------------------
+-- Placeholder sword
+--------------------------------------------------------------------------
+local SWORD_NAME = "DivineSword"
+
+local function swordColor(player)
+	return GodConfig.GetColors(player:GetAttribute("SelectedGod") or "").Primary
+end
+
+local function colorSword(player, tool)
+	local color = swordColor(player)
+	local handle = tool:FindFirstChild("Handle")
+	local glow = handle and handle:FindFirstChild("Glow")
+	local trail = handle and handle:FindFirstChild("SwingTrail")
+	if glow then
+		glow.Color = color
+	end
+	if trail then
+		trail.Color = ColorSequence.new(color)
+	end
+end
+
+local function weldTo(handle, part, offset)
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.Massless = true
+	part.CFrame = handle.CFrame * offset
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = handle
+	weld.Part1 = part
+	weld.Parent = part
+	part.Parent = handle
+	return part
+end
+
+local function giveSword(player, character)
+	if character:FindFirstChild(SWORD_NAME) then
+		return
+	end
+	local tool = Instance.new("Tool")
+	tool.Name = SWORD_NAME
+	tool.CanBeDropped = false
+	tool.ManualActivationOnly = true
+	tool.RequiresHandle = true
+	-- Same grip as Roblox's classic sword: the blade points up and forward.
+	tool.Grip = CFrame.new(0, 0, -1.7, 0, 0, 1, 1, 0, 0, 0, 1, 0)
+
+	-- The handle is the blade (it runs along Z; the hand holds the -Z end).
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = Vector3.new(0.22, 0.5, 4.2)
+	handle.Material = Enum.Material.Metal
+	handle.Color = Color3.fromRGB(205, 210, 220)
+	handle.CanCollide = false
+	handle.Massless = true
+	handle.CFrame = CFrame.new()
+	handle.Parent = tool
+
+	local glow = Instance.new("Part")
+	glow.Name = "Glow"
+	glow.Size = Vector3.new(0.26, 0.14, 3.0)
+	glow.Material = Enum.Material.Neon
+	weldTo(handle, glow, CFrame.new(0, 0, 0.5))
+
+	local guard = Instance.new("Part")
+	guard.Name = "Guard"
+	guard.Size = Vector3.new(0.32, 1.6, 0.32)
+	guard.Material = Enum.Material.Metal
+	guard.Color = Color3.fromRGB(212, 175, 55)
+	weldTo(handle, guard, CFrame.new(0, 0, -1.15))
+
+	local grip = Instance.new("Part")
+	grip.Name = "GripWrap"
+	grip.Size = Vector3.new(0.3, 0.6, 0.95)
+	grip.Material = Enum.Material.Fabric
+	grip.Color = Color3.fromRGB(110, 70, 40)
+	weldTo(handle, grip, CFrame.new(0, 0, -1.75))
+
+	local pommel = Instance.new("Part")
+	pommel.Name = "Pommel"
+	pommel.Shape = Enum.PartType.Ball
+	pommel.Size = Vector3.new(0.45, 0.45, 0.45)
+	pommel.Material = Enum.Material.Metal
+	pommel.Color = Color3.fromRGB(212, 175, 55)
+	weldTo(handle, pommel, CFrame.new(0, 0, -2.3))
+
+	-- Light trail between the guard and the tip while swinging.
+	local a0 = Instance.new("Attachment")
+	a0.Name = "TrailBase"
+	a0.Position = Vector3.new(0, 0, -1.0)
+	a0.Parent = handle
+	local a1 = Instance.new("Attachment")
+	a1.Name = "TrailTip"
+	a1.Position = Vector3.new(0, 0, 2.1)
+	a1.Parent = handle
+	local trail = Instance.new("Trail")
+	trail.Name = "SwingTrail"
+	trail.Attachment0 = a0
+	trail.Attachment1 = a1
+	trail.Lifetime = 0.2
+	trail.LightEmission = 1
+	trail.FaceCamera = true
+	trail.Transparency = NumberSequence.new(0.1, 1)
+	trail.Enabled = false
+	trail.Parent = handle
+
+	colorSword(player, tool)
+	tool.Parent = character -- equipped straight away
+end
+
+local function flashTrail(player)
+	local character = player.Character
+	local tool = character and character:FindFirstChild(SWORD_NAME)
+	local trail = tool and tool:FindFirstChild("Handle") and tool.Handle:FindFirstChild("SwingTrail")
+	if trail then
+		trail.Enabled = true
+		task.delay(0.3, function()
+			trail.Enabled = false
+		end)
+	end
+end
+
+--------------------------------------------------------------------------
 -- Requests from the client
 --------------------------------------------------------------------------
 function CombatService.BasicAttack(player)
@@ -1142,6 +1271,7 @@ function CombatService.BasicAttack(player)
 	end
 	local attack = CFG.BasicAttack
 	st.NextAttackAt = now + attack.Cooldown * 0.9 -- small tolerance for network timing
+	flashTrail(player)
 
 	local baseAttack = player:GetAttribute("BaseAttack") or 10
 	local combatBonus = TempleService.GetEffect(player, "CombatBonusPercent") / 100
@@ -1264,7 +1394,22 @@ function CombatService.SetupPlayer(player)
 		LastDamagedAt = 0,
 	}
 	player:SetAttribute("Blocking", false)
-	player.CharacterAdded:Connect(function()
+	player:GetAttributeChangedSignal("SelectedGod"):Connect(function()
+		local tool = player.Character and player.Character:FindFirstChild(SWORD_NAME)
+		if tool then
+			colorSword(player, tool)
+		end
+	end)
+	if player.Character then
+		task.spawn(giveSword, player, player.Character)
+	end
+	player.CharacterAdded:Connect(function(character)
+		task.spawn(function()
+			character:WaitForChild("Humanoid", 10)
+			if character.Parent then
+				giveSword(player, character)
+			end
+		end)
 		local st = state[player]
 		if st then
 			st.Blocking = false
@@ -1707,6 +1852,7 @@ local CombatService = nil
 local fxRemote = nil
 
 local enemies = {} -- [Model] = record
+local templates = {} -- [enemyType] = finished body, built once and cloned (cloning is instant)
 local getPlayers = function()
 	return Players:GetPlayers()
 end
@@ -1795,6 +1941,108 @@ local function addWeapon(model, color)
 	weld.Part1 = blade
 	weld.Parent = blade
 	blade.Parent = model
+end
+
+-- Wooden training dummy: crossed feet, post, straw body with a target,
+-- arms, and a sack head. Everything is anchored; the root sits 3 studs up.
+local function buildDummy()
+	local model = Instance.new("Model")
+	local WOOD = Color3.fromRGB(120, 85, 55)
+	local STRAW = Color3.fromRGB(222, 196, 130)
+	local ROPE = Color3.fromRGB(140, 100, 60)
+	local SACK = Color3.fromRGB(196, 168, 120)
+	local origin = CFrame.new(0, 3, 0) -- root position; ground is 3 below
+	local function part(name, size, offset, props)
+		local p = Instance.new("Part")
+		p.Name = name
+		p.Size = size
+		p.Anchored = true
+		p.TopSurface = Enum.SurfaceType.Smooth
+		p.BottomSurface = Enum.SurfaceType.Smooth
+		p.CFrame = origin * offset
+		for key, value in props or {} do
+			p[key] = value
+		end
+		p.Parent = model
+		return p
+	end
+	local function vcyl(name, height, diameter, y, color, material)
+		-- vertical cylinder whose centre is `y` studs above the ground
+		return part(name, Vector3.new(height, diameter, diameter), CFrame.new(0, y - 3, 0) * CFrame.Angles(0, 0, math.rad(90)), {
+			Shape = Enum.PartType.Cylinder, Color = color, Material = material or Enum.Material.Wood,
+		})
+	end
+
+	local root = part("HumanoidRootPart", Vector3.new(2, 2, 1), CFrame.new(), { Transparency = 1, CanCollide = false })
+	part("FootA", Vector3.new(4, 0.4, 0.7), CFrame.new(0, -2.8, 0), { Color = WOOD, Material = Enum.Material.Wood })
+	part("FootB", Vector3.new(0.7, 0.4, 4), CFrame.new(0, -2.8, 0), { Color = WOOD, Material = Enum.Material.Wood })
+	vcyl("Post", 5.6, 0.6, 3.2, WOOD)
+	vcyl("Body", 2.8, 2.1, 3.4, STRAW, Enum.Material.Fabric)
+	vcyl("RopeLow", 0.25, 2.2, 2.3, ROPE, Enum.Material.Fabric)
+	vcyl("RopeHigh", 0.25, 2.2, 4.5, ROPE, Enum.Material.Fabric)
+	-- Target on the front (local -Z faces the player)
+	for i, ring in { { 1.5, Color3.fromRGB(200, 40, 35) }, { 1.0, Color3.fromRGB(245, 240, 230) }, { 0.45, Color3.fromRGB(200, 40, 35) } } do
+		part("Target" .. i, Vector3.new(0.08, ring[1], ring[1]), CFrame.new(0, 0.4, -1.05 - i * 0.03) * CFrame.Angles(0, math.rad(90), 0), {
+			Shape = Enum.PartType.Cylinder, Color = ring[2], Material = Enum.Material.SmoothPlastic,
+		})
+	end
+	part("Arms", Vector3.new(4.6, 0.4, 0.4), CFrame.new(0, 1.3, 0), { Color = WOOD, Material = Enum.Material.Wood })
+	for i, x in { -2.4, 2.4 } do
+		part("Hand" .. i, Vector3.new(0.8, 0.8, 0.8), CFrame.new(x, 1.3, 0), { Shape = Enum.PartType.Ball, Color = STRAW, Material = Enum.Material.Fabric })
+	end
+	part("Head", Vector3.new(1.6, 1.6, 1.6), CFrame.new(0, 2.85, 0), { Shape = Enum.PartType.Ball, Color = SACK, Material = Enum.Material.Fabric })
+	for i, x in { -0.3, 0.3 } do
+		part("Eye" .. i, Vector3.new(0.22, 0.22, 0.1), CFrame.new(x, 3.0, -0.76), { Color = Color3.fromRGB(40, 30, 25) })
+	end
+	part("Mouth", Vector3.new(0.6, 0.08, 0.1), CFrame.new(0, 2.6, -0.76), { Color = Color3.fromRGB(40, 30, 25) })
+	part("Knot", Vector3.new(0.5, 0.35, 0.5), CFrame.new(0, 3.75, 0), { Color = ROPE, Material = Enum.Material.Fabric })
+
+	local humanoid = Instance.new("Humanoid")
+	humanoid.RequiresNeck = false
+	humanoid.Parent = model
+	model.PrimaryPart = root
+	return model
+end
+
+-- A finished enemy body for this type (the first one is built, the rest are copies).
+local function makeBody(enemyType, cfg)
+	if cfg.Builder == "Dummy" then
+		return buildDummy()
+	end
+	if templates[enemyType] == nil then
+		templates[enemyType] = false -- "being built": other spawns wait for it
+		local template = buildRig(cfg.Appearance)
+		addWeapon(template, cfg.Appearance.Weapon)
+		templates[enemyType] = template
+	end
+	while templates[enemyType] == false do
+		task.wait()
+	end
+	return templates[enemyType]:Clone()
+end
+
+-- Dummies rock back and spring upright when hit.
+local function wobble(record, strength)
+	local model = record.Model
+	if not record.BasePivot then
+		return
+	end
+	record.WobbleToken = (record.WobbleToken or 0) + 1
+	local token = record.WobbleToken
+	local ground = record.BasePivot * CFrame.new(0, -3, 0)
+	local tilt = Instance.new("NumberValue")
+	tilt.Value = strength
+	tilt.Changed:Connect(function(angle)
+		if record.WobbleToken == token and model.Parent then
+			model:PivotTo(ground * CFrame.Angles(math.rad(angle), 0, 0) * CFrame.new(0, 3, 0))
+		end
+	end)
+	tilt.Value = strength + 0.01
+	local tween = TweenService:Create(tilt, TweenInfo.new(0.6, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), { Value = 0 })
+	tween.Completed:Connect(function()
+		tilt:Destroy()
+	end)
+	tween:Play()
 end
 
 local function addHealthBar(record)
@@ -2100,9 +2348,8 @@ function EnemyService.Spawn(enemyType, cframe, options)
 	end
 	options = options or {}
 
-	local model = buildRig(cfg.Appearance)
+	local model = makeBody(enemyType, cfg)
 	model.Name = enemyType
-	addWeapon(model, cfg.Appearance.Weapon)
 
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
 	local root = model:FindFirstChild("HumanoidRootPart")
@@ -2117,6 +2364,7 @@ function EnemyService.Spawn(enemyType, cframe, options)
 	if cfg.Passive then
 		root.Anchored = true
 	end
+	local basePivot = if cfg.Builder == "Dummy" then model:GetPivot() else nil
 	model:SetAttribute("IsEnemy", true)
 	model.Parent = folder
 	if not root.Anchored then
@@ -2142,6 +2390,7 @@ function EnemyService.Spawn(enemyType, cframe, options)
 		DamageMultiplier = options.DamageMultiplier or 1,
 		RewardMultiplier = options.RewardMultiplier or 1,
 		OnDeath = options.OnDeath,
+		BasePivot = basePivot,
 	}
 	addHealthBar(record)
 
@@ -2182,6 +2431,21 @@ function EnemyService.DamageEnemy(model, amount, player)
 	end
 	local head = model:FindFirstChild("Head") or record.Root
 	fxRemote:FireAllClients("Damage", head.Position + Vector3.new(0, 1.5, 0), amount, "Enemy")
+
+	if record.Config.Immortal then
+		-- Training dummies never die: a "knockout" pops them straight back up.
+		if record.Humanoid.Health - amount <= 0 then
+			record.Humanoid.Health = record.Humanoid.MaxHealth
+			fxRemote:FireAllClients("Damage", head.Position + Vector3.new(0, 3, 0), 0, "KnockedOut")
+			fxRemote:FireAllClients("Death", record.Root.Position)
+			wobble(record, 35)
+		else
+			record.Humanoid.Health -= amount
+			wobble(record, 12)
+		end
+		return true
+	end
+
 	record.Humanoid:TakeDamage(amount)
 	if record.Humanoid.Health <= 0 then
 		die(record)
@@ -2228,7 +2492,7 @@ function EnemyService.SpawnPracticeField()
 				end,
 			})
 		end
-		spawnOne()
+		task.spawn(spawnOne) -- all at once, not one after another
 	end
 end
 
@@ -4266,17 +4530,25 @@ local dashRemote = Remotes:WaitForChild("CombatDash")
 local fxRemote = Remotes:WaitForChild("CombatFX")
 
 local CFG = CombatConfig.Player
-local ATTACK_ANIMATION = "rbxassetid://522635514" -- Roblox's default R15 sword slash
+-- Roblox's own default R15 sword animations (free for every game).
+local SLASH_ANIMATION = "rbxassetid://522635514"
+local LUNGE_ANIMATION = "rbxassetid://522638767"
+local COMBO_RESET = 1.2 -- seconds; the combo starts over after a pause
+local LUNGE_SPEED = 24  -- small step forward on the 3rd hit of the combo
 
--- Our own health bar replaces Roblox's default one.
+-- Our own health bar replaces Roblox's default one, and the sword is always
+-- held, so the backpack bar isn't needed.
 pcall(function()
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
+	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
 end)
 
 --------------------------------------------------------------------------
 -- Character helpers
 --------------------------------------------------------------------------
-local attackTrack = nil
+local comboTracks = {} -- slash, slash, lunge
+local comboIndex = 0
+local lastAttackAt = 0
 
 local function getParts()
 	local character = player.Character
@@ -4293,16 +4565,25 @@ local function godColor()
 end
 
 local function loadAttackTrack(character)
-	attackTrack = nil
+	comboTracks = {}
+	comboIndex = 0
 	local humanoid = character:WaitForChild("Humanoid", 10)
 	local animator = humanoid and humanoid:WaitForChild("Animator", 10)
-	if animator then
-		pcall(function()
-			local animation = Instance.new("Animation")
-			animation.AnimationId = ATTACK_ANIMATION
-			attackTrack = animator:LoadAnimation(animation)
-		end)
+	if not animator then
+		return
 	end
+	local function load(id)
+		local ok, track = pcall(function()
+			local animation = Instance.new("Animation")
+			animation.AnimationId = id
+			local t = animator:LoadAnimation(animation)
+			t.Priority = Enum.AnimationPriority.Action
+			return t
+		end)
+		return if ok then track else nil
+	end
+	local slash = load(SLASH_ANIMATION)
+	comboTracks = { slash, slash, load(LUNGE_ANIMATION) }
 end
 player.CharacterAdded:Connect(loadAttackTrack)
 if player.Character then
@@ -4330,27 +4611,19 @@ local function anchoredPart(props)
 	return part
 end
 
--- A glowing arc sweeping in front of the player.
-local function slashEffect(root)
-	local color = godColor()
-	local pivot = root.CFrame * CFrame.new(0, 0.3, 0)
-	local blade = anchoredPart({
-		Size = Vector3.new(0.2, 0.3, CFG.BasicAttack.Range),
-		Material = Enum.Material.Neon,
-		Color = color,
-		Transparency = 0.2,
-	})
-	local startAngle, endAngle = math.rad(70), math.rad(-70)
-	local value = Instance.new("NumberValue")
-	value.Value = startAngle
-	value.Changed:Connect(function(angle)
-		blade.CFrame = pivot * CFrame.Angles(0, angle, 0) * CFrame.new(0, 0, -CFG.BasicAttack.Range / 2)
-	end)
-	blade.CFrame = pivot * CFrame.Angles(0, startAngle, 0) * CFrame.new(0, 0, -CFG.BasicAttack.Range / 2)
-	TweenService:Create(value, TweenInfo.new(0.18, Enum.EasingStyle.Quad), { Value = endAngle }):Play()
-	TweenService:Create(blade, TweenInfo.new(0.25), { Transparency = 1 }):Play()
-	Debris:AddItem(blade, 0.3)
-	Debris:AddItem(value, 0.3)
+-- Show the sword's light trail straight away on your own screen
+-- (the server turns it on for everyone else).
+local function flashTrail()
+	local character = player.Character
+	local tool = character and character:FindFirstChild("DivineSword")
+	local handle = tool and tool:FindFirstChild("Handle")
+	local trail = handle and handle:FindFirstChild("SwingTrail")
+	if trail then
+		trail.Enabled = true
+		task.delay(0.3, function()
+			trail.Enabled = false
+		end)
+	end
 end
 
 local function burst(position, color, count, speed)
@@ -4373,6 +4646,7 @@ local DAMAGE_COLORS = {
 	Player = Color3.fromRGB(255, 80, 70),
 	Blocked = Color3.fromRGB(120, 190, 255),
 	Dodged = Color3.fromRGB(200, 255, 200),
+	KnockedOut = Color3.fromRGB(255, 255, 255),
 }
 
 local function floatingText(position, textValue, color, size, rise)
@@ -4403,7 +4677,11 @@ fxRemote.OnClientEvent:Connect(function(kind, position, value, style)
 	end
 	if kind == "Damage" then
 		local jitter = Vector3.new(math.random() - 0.5, 0, math.random() - 0.5) * 2
-		local label = if style == "Dodged" then "Dodged!" elseif style == "Blocked" then ("%d (blocked)"):format(value) else tostring(value)
+		local label = if style == "Dodged"
+			then "Dodged!"
+			elseif style == "KnockedOut" then "Knocked out!"
+			elseif style == "Blocked" then ("%d (blocked)"):format(value)
+			else tostring(value)
 		floatingText(position + jitter, label, DAMAGE_COLORS[style] or DAMAGE_COLORS.Enemy, if style == "Enemy" then 26 else 22, 3)
 	elseif kind == "Hit" then
 		burst(position, godColor(), 12, 14)
@@ -4434,10 +4712,35 @@ local function attack()
 	end
 	nextAttackAt = now + CFG.BasicAttack.Cooldown
 	local _, _, root = getParts()
-	if attackTrack then
-		attackTrack:Play(0.05)
+
+	-- Combo: slash, slash, lunge. Starts over after a short pause.
+	if now - lastAttackAt > COMBO_RESET then
+		comboIndex = 0
 	end
-	slashEffect(root)
+	lastAttackAt = now
+	comboIndex = comboIndex % 3 + 1
+	local track = comboTracks[comboIndex]
+	if track then
+		track:Play(0.05, 1, 1.15)
+	end
+	if comboIndex == 3 then
+		-- A small step forward on the lunge.
+		local attachment = Instance.new("Attachment")
+		attachment.Parent = root
+		local push = Instance.new("LinearVelocity")
+		push.Attachment0 = attachment
+		push.RelativeTo = Enum.ActuatorRelativeTo.World
+		push.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
+		push.PrimaryTangentAxis = Vector3.xAxis
+		push.SecondaryTangentAxis = Vector3.zAxis
+		local look = root.CFrame.LookVector
+		push.PlaneVelocity = Vector2.new(look.X, look.Z).Unit * LUNGE_SPEED
+		push.MaxForce = 60000
+		push.Parent = root
+		Debris:AddItem(push, 0.12)
+		Debris:AddItem(attachment, 0.12)
+	end
+	flashTrail()
 	attackRemote:FireServer()
 end
 

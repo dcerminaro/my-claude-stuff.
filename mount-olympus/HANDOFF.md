@@ -168,8 +168,10 @@ environment, so a session can `rojo build` and publish via
 
 ### Design decisions made in Phase 4A (developer asked to confirm)
 1. **Practice Field** behind the plaza spawn (new "Practice" travel button): 3
-   Training Dummies (500 HP, heal after 3 s, no rewards), 3 Bandits, 2
-   Skeletons; each respawns after it dies. Arenas replace this in Phase 5.
+   wooden Training Dummies (500 HP, wobble when hit, never die — a knockout
+   pops them straight back up — heal after 3 s, no rewards), 3 Bandits
+   (respawn 6 s), 2 Skeletons (respawn 7 s). Enemy bodies are built once per
+   type and cloned, so spawns are instant. Arenas replace this in Phase 5.
 2. **Controls:** attack = left click / R2 / on-screen Attack; block = hold F /
    L2 / hold on-screen Block (70% less damage, half speed, can't attack);
    dash = Left Shift / B / on-screen Dash (2 s cooldown, 0.3 s where you can't
@@ -184,8 +186,13 @@ environment, so a session can `rojo build` and publish via
 5. **Regeneration:** Roblox's default is replaced: 1% max HP per second after
    5 s without damage, × (1 + Divine Fountain bonus) — so the Fountain is live.
 6. **Death:** respawn after 4 s at the plaza; nothing is lost.
-7. **Animations:** Roblox's own default R15 walk and sword-slash animations
-   (free to use); proper animations come in Phase 8.
+7. **Animations:** Roblox's own default R15 walk, sword-slash and lunge
+   animations (free to use) as a slash–slash–lunge combo (small step forward
+   on the lunge, resets after 1.2 s). Players hold a placeholder sword (a Tool,
+   so the default sword-holding pose plays; Backpack UI hidden) with a glow and
+   swing trail in their god's colour. Proper animations come in Phase 8, real
+   weapons in Phase 7. (Developer feedback: the first version's animations and
+   grey dummies looked bad, and spawning was slow; this is the fix.)
 
 ### Ideas from the developer for later (not built yet)
 - **Rank outfits and physique (Phase 6, Ascension):** each ascension rank gets

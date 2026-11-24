@@ -33,6 +33,7 @@ local CombatService = nil
 local fxRemote = nil
 
 local enemies = {} -- [Model] = record
+local templates = {} -- [enemyType] = finished body, built once and cloned (cloning is instant)
 local getPlayers = function()
 	return Players:GetPlayers()
 end
@@ -121,6 +122,108 @@ local function addWeapon(model, color)
 	weld.Part1 = blade
 	weld.Parent = blade
 	blade.Parent = model
+end
+
+-- Wooden training dummy: crossed feet, post, straw body with a target,
+-- arms, and a sack head. Everything is anchored; the root sits 3 studs up.
+local function buildDummy()
+	local model = Instance.new("Model")
+	local WOOD = Color3.fromRGB(120, 85, 55)
+	local STRAW = Color3.fromRGB(222, 196, 130)
+	local ROPE = Color3.fromRGB(140, 100, 60)
+	local SACK = Color3.fromRGB(196, 168, 120)
+	local origin = CFrame.new(0, 3, 0) -- root position; ground is 3 below
+	local function part(name, size, offset, props)
+		local p = Instance.new("Part")
+		p.Name = name
+		p.Size = size
+		p.Anchored = true
+		p.TopSurface = Enum.SurfaceType.Smooth
+		p.BottomSurface = Enum.SurfaceType.Smooth
+		p.CFrame = origin * offset
+		for key, value in props or {} do
+			p[key] = value
+		end
+		p.Parent = model
+		return p
+	end
+	local function vcyl(name, height, diameter, y, color, material)
+		-- vertical cylinder whose centre is `y` studs above the ground
+		return part(name, Vector3.new(height, diameter, diameter), CFrame.new(0, y - 3, 0) * CFrame.Angles(0, 0, math.rad(90)), {
+			Shape = Enum.PartType.Cylinder, Color = color, Material = material or Enum.Material.Wood,
+		})
+	end
+
+	local root = part("HumanoidRootPart", Vector3.new(2, 2, 1), CFrame.new(), { Transparency = 1, CanCollide = false })
+	part("FootA", Vector3.new(4, 0.4, 0.7), CFrame.new(0, -2.8, 0), { Color = WOOD, Material = Enum.Material.Wood })
+	part("FootB", Vector3.new(0.7, 0.4, 4), CFrame.new(0, -2.8, 0), { Color = WOOD, Material = Enum.Material.Wood })
+	vcyl("Post", 5.6, 0.6, 3.2, WOOD)
+	vcyl("Body", 2.8, 2.1, 3.4, STRAW, Enum.Material.Fabric)
+	vcyl("RopeLow", 0.25, 2.2, 2.3, ROPE, Enum.Material.Fabric)
+	vcyl("RopeHigh", 0.25, 2.2, 4.5, ROPE, Enum.Material.Fabric)
+	-- Target on the front (local -Z faces the player)
+	for i, ring in { { 1.5, Color3.fromRGB(200, 40, 35) }, { 1.0, Color3.fromRGB(245, 240, 230) }, { 0.45, Color3.fromRGB(200, 40, 35) } } do
+		part("Target" .. i, Vector3.new(0.08, ring[1], ring[1]), CFrame.new(0, 0.4, -1.05 - i * 0.03) * CFrame.Angles(0, math.rad(90), 0), {
+			Shape = Enum.PartType.Cylinder, Color = ring[2], Material = Enum.Material.SmoothPlastic,
+		})
+	end
+	part("Arms", Vector3.new(4.6, 0.4, 0.4), CFrame.new(0, 1.3, 0), { Color = WOOD, Material = Enum.Material.Wood })
+	for i, x in { -2.4, 2.4 } do
+		part("Hand" .. i, Vector3.new(0.8, 0.8, 0.8), CFrame.new(x, 1.3, 0), { Shape = Enum.PartType.Ball, Color = STRAW, Material = Enum.Material.Fabric })
+	end
+	part("Head", Vector3.new(1.6, 1.6, 1.6), CFrame.new(0, 2.85, 0), { Shape = Enum.PartType.Ball, Color = SACK, Material = Enum.Material.Fabric })
+	for i, x in { -0.3, 0.3 } do
+		part("Eye" .. i, Vector3.new(0.22, 0.22, 0.1), CFrame.new(x, 3.0, -0.76), { Color = Color3.fromRGB(40, 30, 25) })
+	end
+	part("Mouth", Vector3.new(0.6, 0.08, 0.1), CFrame.new(0, 2.6, -0.76), { Color = Color3.fromRGB(40, 30, 25) })
+	part("Knot", Vector3.new(0.5, 0.35, 0.5), CFrame.new(0, 3.75, 0), { Color = ROPE, Material = Enum.Material.Fabric })
+
+	local humanoid = Instance.new("Humanoid")
+	humanoid.RequiresNeck = false
+	humanoid.Parent = model
+	model.PrimaryPart = root
+	return model
+end
+
+-- A finished enemy body for this type (the first one is built, the rest are copies).
+local function makeBody(enemyType, cfg)
+	if cfg.Builder == "Dummy" then
+		return buildDummy()
+	end
+	if templates[enemyType] == nil then
+		templates[enemyType] = false -- "being built": other spawns wait for it
+		local template = buildRig(cfg.Appearance)
+		addWeapon(template, cfg.Appearance.Weapon)
+		templates[enemyType] = template
+	end
+	while templates[enemyType] == false do
+		task.wait()
+	end
+	return templates[enemyType]:Clone()
+end
+
+-- Dummies rock back and spring upright when hit.
+local function wobble(record, strength)
+	local model = record.Model
+	if not record.BasePivot then
+		return
+	end
+	record.WobbleToken = (record.WobbleToken or 0) + 1
+	local token = record.WobbleToken
+	local ground = record.BasePivot * CFrame.new(0, -3, 0)
+	local tilt = Instance.new("NumberValue")
+	tilt.Value = strength
+	tilt.Changed:Connect(function(angle)
+		if record.WobbleToken == token and model.Parent then
+			model:PivotTo(ground * CFrame.Angles(math.rad(angle), 0, 0) * CFrame.new(0, 3, 0))
+		end
+	end)
+	tilt.Value = strength + 0.01
+	local tween = TweenService:Create(tilt, TweenInfo.new(0.6, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), { Value = 0 })
+	tween.Completed:Connect(function()
+		tilt:Destroy()
+	end)
+	tween:Play()
 end
 
 local function addHealthBar(record)
@@ -426,9 +529,8 @@ function EnemyService.Spawn(enemyType, cframe, options)
 	end
 	options = options or {}
 
-	local model = buildRig(cfg.Appearance)
+	local model = makeBody(enemyType, cfg)
 	model.Name = enemyType
-	addWeapon(model, cfg.Appearance.Weapon)
 
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
 	local root = model:FindFirstChild("HumanoidRootPart")
@@ -443,6 +545,7 @@ function EnemyService.Spawn(enemyType, cframe, options)
 	if cfg.Passive then
 		root.Anchored = true
 	end
+	local basePivot = if cfg.Builder == "Dummy" then model:GetPivot() else nil
 	model:SetAttribute("IsEnemy", true)
 	model.Parent = folder
 	if not root.Anchored then
@@ -468,6 +571,7 @@ function EnemyService.Spawn(enemyType, cframe, options)
 		DamageMultiplier = options.DamageMultiplier or 1,
 		RewardMultiplier = options.RewardMultiplier or 1,
 		OnDeath = options.OnDeath,
+		BasePivot = basePivot,
 	}
 	addHealthBar(record)
 
@@ -508,6 +612,21 @@ function EnemyService.DamageEnemy(model, amount, player)
 	end
 	local head = model:FindFirstChild("Head") or record.Root
 	fxRemote:FireAllClients("Damage", head.Position + Vector3.new(0, 1.5, 0), amount, "Enemy")
+
+	if record.Config.Immortal then
+		-- Training dummies never die: a "knockout" pops them straight back up.
+		if record.Humanoid.Health - amount <= 0 then
+			record.Humanoid.Health = record.Humanoid.MaxHealth
+			fxRemote:FireAllClients("Damage", head.Position + Vector3.new(0, 3, 0), 0, "KnockedOut")
+			fxRemote:FireAllClients("Death", record.Root.Position)
+			wobble(record, 35)
+		else
+			record.Humanoid.Health -= amount
+			wobble(record, 12)
+		end
+		return true
+	end
+
 	record.Humanoid:TakeDamage(amount)
 	if record.Humanoid.Health <= 0 then
 		die(record)
@@ -554,7 +673,7 @@ function EnemyService.SpawnPracticeField()
 				end,
 			})
 		end
-		spawnOne()
+		task.spawn(spawnOne) -- all at once, not one after another
 	end
 end
 

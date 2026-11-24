@@ -32,17 +32,25 @@ local dashRemote = Remotes:WaitForChild("CombatDash")
 local fxRemote = Remotes:WaitForChild("CombatFX")
 
 local CFG = CombatConfig.Player
-local ATTACK_ANIMATION = "rbxassetid://522635514" -- Roblox's default R15 sword slash
+-- Roblox's own default R15 sword animations (free for every game).
+local SLASH_ANIMATION = "rbxassetid://522635514"
+local LUNGE_ANIMATION = "rbxassetid://522638767"
+local COMBO_RESET = 1.2 -- seconds; the combo starts over after a pause
+local LUNGE_SPEED = 24  -- small step forward on the 3rd hit of the combo
 
--- Our own health bar replaces Roblox's default one.
+-- Our own health bar replaces Roblox's default one, and the sword is always
+-- held, so the backpack bar isn't needed.
 pcall(function()
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
+	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
 end)
 
 --------------------------------------------------------------------------
 -- Character helpers
 --------------------------------------------------------------------------
-local attackTrack = nil
+local comboTracks = {} -- slash, slash, lunge
+local comboIndex = 0
+local lastAttackAt = 0
 
 local function getParts()
 	local character = player.Character
@@ -59,16 +67,25 @@ local function godColor()
 end
 
 local function loadAttackTrack(character)
-	attackTrack = nil
+	comboTracks = {}
+	comboIndex = 0
 	local humanoid = character:WaitForChild("Humanoid", 10)
 	local animator = humanoid and humanoid:WaitForChild("Animator", 10)
-	if animator then
-		pcall(function()
-			local animation = Instance.new("Animation")
-			animation.AnimationId = ATTACK_ANIMATION
-			attackTrack = animator:LoadAnimation(animation)
-		end)
+	if not animator then
+		return
 	end
+	local function load(id)
+		local ok, track = pcall(function()
+			local animation = Instance.new("Animation")
+			animation.AnimationId = id
+			local t = animator:LoadAnimation(animation)
+			t.Priority = Enum.AnimationPriority.Action
+			return t
+		end)
+		return if ok then track else nil
+	end
+	local slash = load(SLASH_ANIMATION)
+	comboTracks = { slash, slash, load(LUNGE_ANIMATION) }
 end
 player.CharacterAdded:Connect(loadAttackTrack)
 if player.Character then
@@ -96,27 +113,19 @@ local function anchoredPart(props)
 	return part
 end
 
--- A glowing arc sweeping in front of the player.
-local function slashEffect(root)
-	local color = godColor()
-	local pivot = root.CFrame * CFrame.new(0, 0.3, 0)
-	local blade = anchoredPart({
-		Size = Vector3.new(0.2, 0.3, CFG.BasicAttack.Range),
-		Material = Enum.Material.Neon,
-		Color = color,
-		Transparency = 0.2,
-	})
-	local startAngle, endAngle = math.rad(70), math.rad(-70)
-	local value = Instance.new("NumberValue")
-	value.Value = startAngle
-	value.Changed:Connect(function(angle)
-		blade.CFrame = pivot * CFrame.Angles(0, angle, 0) * CFrame.new(0, 0, -CFG.BasicAttack.Range / 2)
-	end)
-	blade.CFrame = pivot * CFrame.Angles(0, startAngle, 0) * CFrame.new(0, 0, -CFG.BasicAttack.Range / 2)
-	TweenService:Create(value, TweenInfo.new(0.18, Enum.EasingStyle.Quad), { Value = endAngle }):Play()
-	TweenService:Create(blade, TweenInfo.new(0.25), { Transparency = 1 }):Play()
-	Debris:AddItem(blade, 0.3)
-	Debris:AddItem(value, 0.3)
+-- Show the sword's light trail straight away on your own screen
+-- (the server turns it on for everyone else).
+local function flashTrail()
+	local character = player.Character
+	local tool = character and character:FindFirstChild("DivineSword")
+	local handle = tool and tool:FindFirstChild("Handle")
+	local trail = handle and handle:FindFirstChild("SwingTrail")
+	if trail then
+		trail.Enabled = true
+		task.delay(0.3, function()
+			trail.Enabled = false
+		end)
+	end
 end
 
 local function burst(position, color, count, speed)
@@ -139,6 +148,7 @@ local DAMAGE_COLORS = {
 	Player = Color3.fromRGB(255, 80, 70),
 	Blocked = Color3.fromRGB(120, 190, 255),
 	Dodged = Color3.fromRGB(200, 255, 200),
+	KnockedOut = Color3.fromRGB(255, 255, 255),
 }
 
 local function floatingText(position, textValue, color, size, rise)
@@ -169,7 +179,11 @@ fxRemote.OnClientEvent:Connect(function(kind, position, value, style)
 	end
 	if kind == "Damage" then
 		local jitter = Vector3.new(math.random() - 0.5, 0, math.random() - 0.5) * 2
-		local label = if style == "Dodged" then "Dodged!" elseif style == "Blocked" then ("%d (blocked)"):format(value) else tostring(value)
+		local label = if style == "Dodged"
+			then "Dodged!"
+			elseif style == "KnockedOut" then "Knocked out!"
+			elseif style == "Blocked" then ("%d (blocked)"):format(value)
+			else tostring(value)
 		floatingText(position + jitter, label, DAMAGE_COLORS[style] or DAMAGE_COLORS.Enemy, if style == "Enemy" then 26 else 22, 3)
 	elseif kind == "Hit" then
 		burst(position, godColor(), 12, 14)
@@ -200,10 +214,35 @@ local function attack()
 	end
 	nextAttackAt = now + CFG.BasicAttack.Cooldown
 	local _, _, root = getParts()
-	if attackTrack then
-		attackTrack:Play(0.05)
+
+	-- Combo: slash, slash, lunge. Starts over after a short pause.
+	if now - lastAttackAt > COMBO_RESET then
+		comboIndex = 0
 	end
-	slashEffect(root)
+	lastAttackAt = now
+	comboIndex = comboIndex % 3 + 1
+	local track = comboTracks[comboIndex]
+	if track then
+		track:Play(0.05, 1, 1.15)
+	end
+	if comboIndex == 3 then
+		-- A small step forward on the lunge.
+		local attachment = Instance.new("Attachment")
+		attachment.Parent = root
+		local push = Instance.new("LinearVelocity")
+		push.Attachment0 = attachment
+		push.RelativeTo = Enum.ActuatorRelativeTo.World
+		push.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
+		push.PrimaryTangentAxis = Vector3.xAxis
+		push.SecondaryTangentAxis = Vector3.zAxis
+		local look = root.CFrame.LookVector
+		push.PlaneVelocity = Vector2.new(look.X, look.Z).Unit * LUNGE_SPEED
+		push.MaxForce = 60000
+		push.Parent = root
+		Debris:AddItem(push, 0.12)
+		Debris:AddItem(attachment, 0.12)
+	end
+	flashTrail()
 	attackRemote:FireServer()
 end
 
