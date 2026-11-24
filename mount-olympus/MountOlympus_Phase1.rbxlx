@@ -1,0 +1,1853 @@
+<roblox version="4">
+  <Item class="ReplicatedStorage" referent="0">
+    <Properties>
+      <string name="Name">ReplicatedStorage</string>
+    </Properties>
+    <Item class="Folder" referent="1">
+      <Properties>
+        <string name="Name">Shared</string>
+      </Properties>
+      <Item class="ModuleScript" referent="2">
+        <Properties>
+          <string name="Name">GameConfig</string>
+          <string name="Source"><![CDATA[-- GameConfig (ModuleScript)
+-- Location: ReplicatedStorage > Shared > GameConfig
+--
+-- Central settings for Mount Olympus: Rise of the Gods.
+-- Both the server and the client read this file.
+-- Players CAN read anything in ReplicatedStorage, so never put secrets here.
+-- Changing a number here is how you balance the game; you should not need
+-- to edit the other scripts to tweak values.
+
+local GameConfig = {}
+
+--------------------------------------------------------------------------
+-- DATA SAVING
+--------------------------------------------------------------------------
+GameConfig.Data = {
+	StoreName = "MountOlympus_PlayerData", -- changing this starts everyone fresh
+	SchemaVersion = 1,         -- bump when the data layout changes (see DataService migrations)
+	AutosaveInterval = 120,    -- seconds between automatic saves
+	SessionLockTimeout = 600,  -- a lock older than this (seconds) is treated as left behind by a crashed server
+	MaxLoadAttempts = 6,
+	LoadRetryDelay = 5,        -- seconds between load attempts
+	MaxSaveAttempts = 3,
+}
+
+--------------------------------------------------------------------------
+-- LEVELS AND STATS
+--------------------------------------------------------------------------
+GameConfig.Progression = {
+	MaxLevel = 200,
+
+	-- XP needed to go from level L to L+1 = floor(BaseXP * L ^ XPExponent)
+	-- Placeholder curve; tuned during Phase 8 balancing.
+	BaseXP = 100,
+	XPExponent = 1.5,
+
+	-- If true, a player stops levelling at the top of their rank's range
+	-- (e.g. Mortal stops at 10) until they complete the ascension trial.
+	LevelCappedByRank = true,
+
+	BaseHealth = 100,
+	HealthPerLevel = 10,
+	BaseAttack = 10,
+	AttackPerLevel = 2,
+}
+
+--------------------------------------------------------------------------
+-- ASCENSION RANKS
+-- Trial = the trial that must be completed to REACH this rank.
+--------------------------------------------------------------------------
+GameConfig.Ranks = {
+	{ Name = "Mortal",     MinLevel = 1,   MaxLevel = 10,  Trial = "",                 Color = Color3.fromRGB(120, 112, 100) },
+	{ Name = "Warrior",    MinLevel = 11,  MaxLevel = 25,  Trial = "TrainingChampion", Color = Color3.fromRGB(165, 105, 55) },
+	{ Name = "Champion",   MinLevel = 26,  MaxLevel = 45,  Trial = "SpartanArena",     Color = Color3.fromRGB(180, 55, 45) },
+	{ Name = "Hero",       MinLevel = 46,  MaxLevel = 70,  Trial = "Minotaur",         Color = Color3.fromRGB(50, 110, 190) },
+	{ Name = "Demigod",    MinLevel = 71,  MaxLevel = 100, Trial = "DivineTrial",      Color = Color3.fromRGB(125, 70, 195) },
+	{ Name = "Lesser God", MinLevel = 101, MaxLevel = 140, Trial = "Cerberus",         Color = Color3.fromRGB(30, 150, 140) },
+	{ Name = "Olympian",   MinLevel = 141, MaxLevel = 180, Trial = "OlympianGauntlet", Color = Color3.fromRGB(200, 150, 20) },
+	{ Name = "Elder God",  MinLevel = 181, MaxLevel = 200, Trial = "TitanKing",        Color = Color3.fromRGB(230, 120, 20) },
+}
+
+--------------------------------------------------------------------------
+-- CURRENCIES
+--------------------------------------------------------------------------
+GameConfig.Currencies = { "Gold", "DivineFavor", "Ambrosia" }
+
+GameConfig.CurrencyInfo = {
+	Gold        = { DisplayName = "Gold",   Color = Color3.fromRGB(212, 175, 55) },
+	DivineFavor = { DisplayName = "Favor",  Color = Color3.fromRGB(110, 170, 255) },
+	Ambrosia    = { DisplayName = "Ambrosia", Color = Color3.fromRGB(230, 110, 170) },
+}
+
+GameConfig.StartingCurrencies = {
+	Gold = 100,
+	DivineFavor = 0,
+	Ambrosia = 0,
+}
+
+--------------------------------------------------------------------------
+-- TEMPLE PLOTS
+-- Count must be >= the server's Max Players (Game Settings > Places).
+--------------------------------------------------------------------------
+GameConfig.Plots = {
+	Count = 8,
+	Columns = 4,
+	Size = Vector3.new(80, 1, 80),
+	Spacing = 100,
+	Origin = Vector3.new(-150, 0.5, 200), -- centre of Plot1
+}
+
+--------------------------------------------------------------------------
+-- MISC
+--------------------------------------------------------------------------
+GameConfig.Teleport = {
+	Cooldown = 3, -- seconds between teleport requests
+}
+
+GameConfig.Debug = {
+	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
+	-- never in the live game, even if this is left true.
+	ChatCommandsInStudio = true,
+}
+
+return GameConfig
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="3">
+        <Properties>
+          <string name="Name">Progression</string>
+          <string name="Source"><![CDATA[-- Progression (ModuleScript)
+-- Location: ReplicatedStorage > Shared > Progression
+--
+-- Pure formulas shared by server and client (no data is changed here).
+-- The server uses these to apply progression; the client uses them for display.
+
+local GameConfig = require(script.Parent:WaitForChild("GameConfig"))
+
+local P = GameConfig.Progression
+local Progression = {}
+
+-- XP required to go from `level` to `level + 1`. Returns 0 at max level.
+function Progression.XPToNextLevel(level)
+	if level >= P.MaxLevel then
+		return 0
+	end
+	return math.floor(P.BaseXP * level ^ P.XPExponent)
+end
+
+function Progression.GetRank(rankIndex)
+	local index = math.clamp(math.floor(tonumber(rankIndex) or 1), 1, #GameConfig.Ranks)
+	return GameConfig.Ranks[index]
+end
+
+-- Highest level a player can reach at their current rank.
+function Progression.GetLevelCap(rankIndex)
+	if not P.LevelCappedByRank then
+		return P.MaxLevel
+	end
+	return math.min(Progression.GetRank(rankIndex).MaxLevel, P.MaxLevel)
+end
+
+function Progression.GetMaxHealth(level)
+	return P.BaseHealth + P.HealthPerLevel * (level - 1)
+end
+
+function Progression.GetBaseAttack(level)
+	return P.BaseAttack + P.AttackPerLevel * (level - 1)
+end
+
+-- 950 -> "950", 1500 -> "1.5K", 2000000 -> "2M"
+local SUFFIXES = { "", "K", "M", "B", "T", "Qa" }
+function Progression.FormatNumber(n)
+	n = math.floor(tonumber(n) or 0)
+	if math.abs(n) < 1000 then
+		return tostring(n)
+	end
+	local value = n
+	local i = 1
+	while math.abs(value) >= 1000 and i < #SUFFIXES do
+		value /= 1000
+		i += 1
+	end
+	local text = string.format("%.1f%s", value, SUFFIXES[i])
+	return (string.gsub(text, "%.0(%a)", "%1"))
+end
+
+return Progression
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="ServerScriptService" referent="4">
+    <Properties>
+      <string name="Name">ServerScriptService</string>
+    </Properties>
+    <Item class="Script" referent="5">
+      <Properties>
+        <string name="Name">Main</string>
+        <token name="RunContext">0</token>
+        <string name="Source"><![CDATA[-- Main (Script)
+-- Location: ServerScriptService > Main
+--
+-- Starts every server system in the right order and handles players
+-- joining and leaving. This is the only server Script; everything else
+-- is a ModuleScript in ServerScriptService > Services.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local ServerScriptService = game:GetService("ServerScriptService")
+
+local GameConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("GameConfig"))
+
+local Services = ServerScriptService:WaitForChild("Services")
+local WorldBuilder = require(Services:WaitForChild("WorldBuilder"))
+local DataService = require(Services:WaitForChild("DataService"))
+local ProgressionService = require(Services:WaitForChild("ProgressionService"))
+local PlotService = require(Services:WaitForChild("PlotService"))
+
+--------------------------------------------------------------------------
+-- 1. Remotes (created by the server so they always exist)
+--------------------------------------------------------------------------
+local remotes = Instance.new("Folder")
+remotes.Name = "Remotes"
+
+local notifyRemote = Instance.new("RemoteEvent") -- server -> client pop-up messages
+notifyRemote.Name = "Notify"
+notifyRemote.Parent = remotes
+
+local teleportRemote = Instance.new("RemoteEvent") -- client -> server "take me to my temple / plaza"
+teleportRemote.Name = "RequestTeleport"
+teleportRemote.Parent = remotes
+
+remotes.Parent = ReplicatedStorage
+
+--------------------------------------------------------------------------
+-- 2. Start systems
+--------------------------------------------------------------------------
+WorldBuilder.Build()
+DataService.Init()
+ProgressionService.Init(DataService, notifyRemote)
+PlotService.Init()
+
+--------------------------------------------------------------------------
+-- 3. Studio-only debug chat commands
+--------------------------------------------------------------------------
+local DEBUG_ENABLED = RunService:IsStudio() and GameConfig.Debug.ChatCommandsInStudio
+
+local function runDebugCommand(player, message)
+	local args = string.split(message, " ")
+	local command = string.lower(args[1] or "")
+	local number = tonumber(args[2])
+
+	local function reply(text)
+		notifyRemote:FireClient(player, "Message", text)
+		print("[Debug] " .. player.Name .. ": " .. text)
+	end
+
+	if command == "!xp" and number then
+		ProgressionService.AddXP(player, number, "Debug")
+		reply("Added " .. number .. " XP")
+	elseif command == "!gold" and number then
+		ProgressionService.AddCurrency(player, "Gold", number, "Debug")
+		reply("Added " .. number .. " Gold")
+	elseif command == "!favor" and number then
+		ProgressionService.AddCurrency(player, "DivineFavor", number, "Debug")
+		reply("Added " .. number .. " Divine Favor")
+	elseif command == "!ambrosia" and number then
+		ProgressionService.AddCurrency(player, "Ambrosia", number, "Debug")
+		reply("Added " .. number .. " Ambrosia")
+	elseif command == "!spend" and number then
+		local ok = ProgressionService.SpendCurrency(player, "Gold", number)
+		reply(if ok then "Spent " .. number .. " Gold" else "Not enough Gold (purchase refused)")
+	elseif command == "!rank" then
+		local _, text = ProgressionService.AdvanceRank(player, "Debug")
+		reply(text)
+	elseif command == "!save" then
+		reply(if DataService.SaveNow(player) then "Saved" else "Save failed (see Output)")
+	elseif command == "!data" then
+		local data = DataService.GetData(player)
+		print("[Debug] Data for " .. player.Name .. ":\n" .. (if data then HttpService:JSONEncode(data) else "not loaded"))
+		reply("Printed your data to the Output window")
+	elseif command == "!reset" then
+		if DataService.ResetData(player) then
+			ProgressionService.RefreshAll(player)
+			reply("Progress reset to defaults")
+		end
+	else
+		reply("Commands: !xp N, !gold N, !favor N, !ambrosia N, !spend N, !rank, !save, !data, !reset")
+	end
+end
+
+--------------------------------------------------------------------------
+-- 4. Player lifecycle
+--------------------------------------------------------------------------
+local function onPlayerAdded(player)
+	if DEBUG_ENABLED then
+		player.Chatted:Connect(function(message)
+			if string.sub(message, 1, 1) == "!" then
+				runDebugCommand(player, message)
+			end
+		end)
+	end
+
+	local data = DataService.LoadPlayer(player) -- yields; nil = failed/kicked/left
+	if not data then
+		return
+	end
+
+	local plot = PlotService.AssignPlot(player)
+	if not plot then
+		player:Kick("This server has no free temple plots. Please join another server.")
+		return
+	end
+
+	ProgressionService.SetupPlayer(player)
+	player:SetAttribute("DataLoaded", true)
+	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
+end
+
+local lastTeleport = {}
+
+Players.PlayerAdded:Connect(onPlayerAdded)
+for _, player in Players:GetPlayers() do
+	task.spawn(onPlayerAdded, player) -- players who joined before this script ran
+end
+
+Players.PlayerRemoving:Connect(function(player)
+	lastTeleport[player] = nil
+	PlotService.ReleasePlot(player)
+	DataService.ReleasePlayer(player) -- yields while saving
+end)
+
+--------------------------------------------------------------------------
+-- 5. Teleport requests (validated: never trust what the client sends)
+--------------------------------------------------------------------------
+teleportRemote.OnServerEvent:Connect(function(player, destination)
+	if destination ~= "Temple" and destination ~= "Plaza" then
+		return
+	end
+	if player:GetAttribute("DataLoaded") ~= true then
+		return
+	end
+	local now = os.clock()
+	if lastTeleport[player] and now - lastTeleport[player] < GameConfig.Teleport.Cooldown then
+		return
+	end
+	lastTeleport[player] = now
+	PlotService.TeleportPlayer(player, destination)
+end)
+]]></string>
+      </Properties>
+    </Item>
+    <Item class="Folder" referent="6">
+      <Properties>
+        <string name="Name">Services</string>
+      </Properties>
+      <Item class="ModuleScript" referent="7">
+        <Properties>
+          <string name="Name">DataService</string>
+          <string name="Source"><![CDATA[-- DataService (ModuleScript)
+-- Location: ServerScriptService > Services > DataService
+--
+-- Loads and saves each player's progress with DataStoreService.
+-- Safety features:
+--   * Session locking: only one server can own a player's data at a time,
+--     so fast server-hopping cannot duplicate or roll back progress.
+--   * Never overwrites saved data with defaults. If loading fails, the
+--     player is kicked and NOTHING is written.
+--   * Retries on load and save.
+--   * Schema versioning + migrations for future updates.
+--   * Autosave, save on leave, and save on server shutdown (BindToClose).
+--
+-- Other scripts must only change data through the table returned by
+-- DataService.GetData(player). It returns nil if data is not safely loaded.
+
+local DataStoreService = game:GetService("DataStoreService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GameConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("GameConfig"))
+local DATA = GameConfig.Data
+
+local DataService = {}
+
+local store = nil
+do
+	local ok, result = pcall(function()
+		return DataStoreService:GetDataStore(DATA.StoreName)
+	end)
+	if ok then
+		store = result
+	else
+		warn("[DataService] Could not open the DataStore: " .. tostring(result))
+		warn("[DataService] In Studio: publish the place, then Game Settings > Security > Enable Studio Access to API Services.")
+	end
+end
+
+local profiles = {} -- [Player] = { Key = string, Data = table, Writing = bool, Released = bool }
+local pendingReleases = 0
+local shuttingDown = false
+
+--------------------------------------------------------------------------
+-- Default data
+--------------------------------------------------------------------------
+local function deepCopy(value)
+	if type(value) ~= "table" then
+		return value
+	end
+	local copy = {}
+	for k, v in value do
+		copy[k] = deepCopy(v)
+	end
+	return copy
+end
+
+-- The full save layout. Later phases fill in the empty sections.
+local function makeDefaultData()
+	return {
+		SchemaVersion = DATA.SchemaVersion,
+
+		Level = 1,
+		XP = 0,
+		RankIndex = 1, -- 1 = Mortal (see GameConfig.Ranks)
+
+		Currencies = deepCopy(GameConfig.StartingCurrencies),
+
+		SelectedGod = "",     -- Phase 3
+		GodLoyalty = {},      -- Phase 3: [GodName] = number
+		Blessings = {},       -- Phase 3: [GodName] = { [BlessingId] = level }
+
+		Temple = {            -- Phase 2
+			Tier = 1,
+			Buildings = {},   -- [BuildingId] = level
+		},
+
+		Inventory = {         -- Phase 7
+			Items = {},
+			EquippedWeapon = "",
+		},
+
+		Quests = {            -- Phase 7
+			Active = {},
+			Completed = {},
+			LastDailyReset = 0,
+		},
+
+		CompletedTrials = {}, -- [TrialId] = true
+
+		Stats = {
+			JoinCount = 0,
+			EnemiesDefeated = 0,
+		},
+
+		Settings = {
+			MusicVolume = 0.5,
+			SfxVolume = 0.8,
+		},
+	}
+end
+
+-- Adds any missing fields (e.g. after an update) without touching existing values.
+local function reconcile(target, template)
+	for key, value in template do
+		if target[key] == nil then
+			target[key] = deepCopy(value)
+		elseif type(value) == "table" and type(target[key]) == "table" then
+			reconcile(target[key], value)
+		end
+	end
+end
+
+--------------------------------------------------------------------------
+-- Schema migrations
+-- When you change the data layout: add a step here, then increase
+-- GameConfig.Data.SchemaVersion by 1.
+--------------------------------------------------------------------------
+local Migrations = {
+	-- Example for the future:
+	-- [1] = function(data) -- turns a version 1 save into version 2
+	--     data.Temple.Prestige = 0
+	-- end,
+}
+
+local function migrate(data)
+	local version = tonumber(data.SchemaVersion) or 0
+	while version < DATA.SchemaVersion do
+		local step = Migrations[version]
+		if step then
+			step(data)
+		end
+		version += 1
+	end
+	data.SchemaVersion = DATA.SchemaVersion
+end
+
+--------------------------------------------------------------------------
+-- Low-level DataStore calls
+-- Stored format: { Data = <player data>, SessionLock = { JobId, Time } | nil }
+--------------------------------------------------------------------------
+local function keyFor(player)
+	return "Player_" .. player.UserId
+end
+
+local function lockedByAnotherServer(lock)
+	return type(lock) == "table"
+		and lock.JobId ~= game.JobId
+		and (os.time() - (tonumber(lock.Time) or 0)) < DATA.SessionLockTimeout
+end
+
+-- Returns status ("OK", "Locked", "TooNew", "Corrupt", "Error") and data/error.
+local function tryLoad(key)
+	local status, loaded = "Error", nil
+
+	local ok, err = pcall(function()
+		store:UpdateAsync(key, function(stored)
+			status, loaded = "Error", nil
+
+			if stored ~= nil and type(stored) ~= "table" then
+				status = "Corrupt"
+				return nil -- cancel: do not write anything
+			end
+			stored = stored or {}
+
+			if lockedByAnotherServer(stored.SessionLock) then
+				status = "Locked"
+				return nil
+			end
+
+			if type(stored.Data) == "table" and (tonumber(stored.Data.SchemaVersion) or 0) > DATA.SchemaVersion then
+				status = "TooNew" -- saved by a newer version of the game; this server must not touch it
+				return nil
+			end
+
+			if type(stored.Data) ~= "table" then
+				stored.Data = makeDefaultData() -- genuinely new player (no save exists)
+			end
+
+			stored.SessionLock = { JobId = game.JobId, Time = os.time() }
+			status, loaded = "OK", stored.Data
+			return stored
+		end)
+	end)
+
+	if not ok then
+		return "Error", tostring(err)
+	end
+	return status, loaded
+end
+
+local function writeProfile(profile, release)
+	for attempt = 1, DATA.MaxSaveAttempts do
+		local lockLost = false
+		local ok, err = pcall(function()
+			store:UpdateAsync(profile.Key, function(stored)
+				lockLost = false
+				if type(stored) ~= "table" then
+					stored = {}
+				end
+				if type(stored.SessionLock) == "table" and stored.SessionLock.JobId ~= game.JobId then
+					lockLost = true -- another server owns this data now; never overwrite it
+					return nil
+				end
+				stored.Data = profile.Data
+				if release then
+					stored.SessionLock = nil
+				else
+					stored.SessionLock = { JobId = game.JobId, Time = os.time() }
+				end
+				return stored
+			end)
+		end)
+
+		if ok then
+			if lockLost then
+				warn("[DataService] Did not save " .. profile.Key .. ": another server owns this data.")
+				return false
+			end
+			print("[DataService] Saved " .. profile.Key .. (if release then " (released)" else ""))
+			return true
+		end
+
+		warn(("[DataService] Save attempt %d for %s failed: %s"):format(attempt, profile.Key, tostring(err)))
+		if attempt < DATA.MaxSaveAttempts then
+			task.wait(attempt * 2)
+		end
+	end
+	return false
+end
+
+-- Only one write per player at a time.
+local function save(profile, release)
+	while profile.Writing do
+		task.wait(0.1)
+	end
+	profile.Writing = true
+	local ok = writeProfile(profile, release)
+	profile.Writing = false
+	return ok
+end
+
+--------------------------------------------------------------------------
+-- Public API
+--------------------------------------------------------------------------
+
+-- Yields. Returns the player's data table, or nil (player is kicked or left).
+function DataService.LoadPlayer(player)
+	if not store then
+		player:Kick("Saving is unavailable right now, so your progress was not loaded. Please rejoin later.")
+		return nil
+	end
+
+	local key = keyFor(player)
+
+	for attempt = 1, DATA.MaxLoadAttempts do
+		if not player.Parent or shuttingDown then
+			return nil
+		end
+
+		local status, result = tryLoad(key)
+
+		if status == "OK" then
+			migrate(result)
+			reconcile(result, makeDefaultData())
+			result.Stats.JoinCount += 1
+
+			profiles[player] = { Key = key, Data = result, Writing = false, Released = false }
+			print(("[DataService] Loaded %s (Level %d)"):format(key, result.Level))
+
+			if not player.Parent then
+				-- They left while we were loading: hand the data straight back.
+				DataService.ReleasePlayer(player)
+				return nil
+			end
+			return result
+
+		elseif status == "TooNew" then
+			player:Kick("A newer version of Mount Olympus saved your progress. Please rejoin to get an updated server.")
+			return nil
+
+		elseif status == "Corrupt" then
+			warn("[DataService] Save for " .. key .. " is not in the expected format. Not loading or overwriting it.")
+			player:Kick("There is a problem with your save file. It has not been changed. Please contact the developer.")
+			return nil
+		end
+
+		warn(("[DataService] Load attempt %d/%d for %s: %s %s"):format(
+			attempt, DATA.MaxLoadAttempts, key, status, if result then tostring(result) else ""))
+		task.wait(DATA.LoadRetryDelay)
+	end
+
+	player:Kick("We couldn't load your progress safely, so nothing was changed. Please rejoin in a minute.")
+	return nil
+end
+
+-- Returns the live data table, or nil if not loaded / already released.
+function DataService.GetData(player)
+	local profile = profiles[player]
+	if profile and not profile.Released then
+		return profile.Data
+	end
+	return nil
+end
+
+function DataService.IsLoaded(player)
+	return DataService.GetData(player) ~= nil
+end
+
+-- Yields. Saves immediately (keeps the session lock).
+function DataService.SaveNow(player)
+	local profile = profiles[player]
+	if not profile or profile.Released then
+		return false
+	end
+	return save(profile, false)
+end
+
+-- Yields. Final save + unlock. Call when the player leaves.
+function DataService.ReleasePlayer(player)
+	local profile = profiles[player]
+	if not profile or profile.Released then
+		return
+	end
+	profile.Released = true
+	pendingReleases += 1
+	save(profile, true)
+	pendingReleases -= 1
+	if profiles[player] == profile then
+		profiles[player] = nil
+	end
+end
+
+-- Studio testing only: wipe this player's progress back to defaults.
+function DataService.ResetData(player)
+	local profile = profiles[player]
+	if not profile or profile.Released then
+		return false
+	end
+	profile.Data = makeDefaultData()
+	return true
+end
+
+function DataService.Init()
+	-- Autosave loop
+	task.spawn(function()
+		while true do
+			task.wait(DATA.AutosaveInterval)
+			for _, profile in profiles do
+				if not profile.Released and not profile.Writing then
+					task.spawn(save, profile, false)
+				end
+			end
+		end
+	end)
+
+	-- Server shutting down: save everyone before Roblox closes the server (max ~30s).
+	game:BindToClose(function()
+		shuttingDown = true
+		for player in profiles do
+			task.spawn(DataService.ReleasePlayer, player)
+		end
+		local started = os.clock()
+		while pendingReleases > 0 and os.clock() - started < 25 do
+			task.wait(0.2)
+		end
+	end)
+end
+
+return DataService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="8">
+        <Properties>
+          <string name="Name">PlotService</string>
+          <string name="Source"><![CDATA[-- PlotService (ModuleScript)
+-- Location: ServerScriptService > Services > PlotService
+--
+-- Gives each player one free temple plot, builds the starting Ruined Shrine
+-- on it, frees the plot when they leave, and handles Temple/Plaza teleports.
+-- Ownership is stored on the plot as the attribute "OwnerUserId" (0 = free).
+-- Phase 2 will use that attribute to stop anyone changing another player's temple.
+
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+
+local GameConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("GameConfig"))
+local WorldBuilder = require(ServerScriptService:WaitForChild("Services"):WaitForChild("WorldBuilder"))
+
+local PlotService = {}
+
+local plotsFolder = nil
+local plotByPlayer = {} -- [Player] = plot Model
+
+local STONE = Color3.fromRGB(128, 122, 114)
+local WORN_MARBLE = Color3.fromRGB(210, 205, 196)
+
+local function setSign(plot, text)
+	local sign = plot:FindFirstChild("Sign")
+	local label = sign and sign:FindFirstChild("Label")
+	local textLabel = label and label:FindFirstChild("Text")
+	if textLabel then
+		textLabel.Text = text
+	end
+end
+
+-- Tier 1 placeholder: a small broken altar with crumbling columns.
+local function buildRuinedShrine(plot)
+	local buildings = plot:FindFirstChild("Buildings")
+	local base = plot:FindFirstChild("Base")
+	if not buildings or not base then
+		return
+	end
+	buildings:ClearAllChildren()
+
+	local model = Instance.new("Model")
+	model.Name = "RuinedShrine"
+
+	local top = base.Position.Y + base.Size.Y / 2
+	local cx, cz = base.Position.X, base.Position.Z
+	local MP = WorldBuilder.MakePart
+
+	MP(model, {
+		Name = "Foundation",
+		Size = Vector3.new(22, 1, 22),
+		Position = Vector3.new(cx, top + 0.5, cz),
+		Material = Enum.Material.Slate,
+		Color = STONE,
+	})
+	local floorY = top + 1
+
+	MP(model, {
+		Name = "Altar",
+		Size = Vector3.new(6, 3, 3),
+		Position = Vector3.new(cx, floorY + 1.5, cz),
+		Material = Enum.Material.Slate,
+		Color = Color3.fromRGB(165, 160, 152),
+	})
+	MP(model, {
+		Name = "BrokenAltarTop",
+		Size = Vector3.new(4, 0.8, 3.2),
+		CFrame = CFrame.new(cx + 1.5, floorY + 3.3, cz) * CFrame.Angles(0, 0, math.rad(-14)),
+		Material = Enum.Material.Slate,
+		Color = Color3.fromRGB(150, 145, 138),
+	})
+
+	-- Column stumps: { x offset, z offset, height }
+	local stumps = { { -8, -8, 7 }, { 8, -8, 3.5 }, { -8, 8, 2 }, { 8, 8, 9 } }
+	for i, s in stumps do
+		local height = s[3]
+		MP(model, {
+			Name = "ColumnStump" .. i,
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(height, 2.6, 2.6),
+			CFrame = CFrame.new(cx + s[1], floorY + height / 2, cz + s[2]) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = WORN_MARBLE,
+		})
+	end
+
+	MP(model, {
+		Name = "FallenColumn",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(9, 2.4, 2.4),
+		CFrame = CFrame.new(cx - 2, floorY + 1.2, cz - 6) * CFrame.Angles(0, math.rad(25), 0),
+		Color = WORN_MARBLE,
+	})
+
+	-- Rubble: { x, z, size }
+	local rubble = { { 4, -3, 1.2 }, { -4, 3, 0.9 }, { 6, 5, 1.5 }, { -6, -2, 0.8 } }
+	for i, r in rubble do
+		MP(model, {
+			Name = "Rubble" .. i,
+			Size = Vector3.new(r[3], r[3] * 0.7, r[3]),
+			CFrame = CFrame.new(cx + r[1], floorY + r[3] * 0.35, cz + r[2]) * CFrame.Angles(0, math.rad(i * 37), 0),
+			Material = Enum.Material.Slate,
+			Color = STONE,
+		})
+	end
+
+	model.Parent = buildings
+end
+
+function PlotService.Init()
+	plotsFolder = Workspace:WaitForChild("TemplePlots")
+	for _, plot in plotsFolder:GetChildren() do
+		plot:SetAttribute("OwnerUserId", 0)
+	end
+end
+
+function PlotService.GetPlot(player)
+	return plotByPlayer[player]
+end
+
+-- Returns the plot, or nil if every plot is taken.
+function PlotService.AssignPlot(player)
+	if plotByPlayer[player] then
+		return plotByPlayer[player]
+	end
+	for i = 1, GameConfig.Plots.Count do
+		local plot = plotsFolder:FindFirstChild("Plot" .. i)
+		if plot and (plot:GetAttribute("OwnerUserId") or 0) == 0 then
+			plot:SetAttribute("OwnerUserId", player.UserId)
+			plot:SetAttribute("OwnerName", player.DisplayName)
+			plotByPlayer[player] = plot
+			player:SetAttribute("PlotName", plot.Name)
+			setSign(plot, player.DisplayName .. "'s Temple")
+			-- Phase 2 replaces this with a rebuild from the player's saved temple data.
+			buildRuinedShrine(plot)
+			return plot
+		end
+	end
+	warn("[PlotService] No free plot for " .. player.Name .. ". Is Max Players higher than GameConfig.Plots.Count?")
+	return nil
+end
+
+-- Visual reset only. The player's saved upgrades are untouched.
+function PlotService.ReleasePlot(player)
+	local plot = plotByPlayer[player]
+	if not plot then
+		return
+	end
+	plotByPlayer[player] = nil
+	local buildings = plot:FindFirstChild("Buildings")
+	if buildings then
+		buildings:ClearAllChildren()
+	end
+	plot:SetAttribute("OwnerUserId", 0)
+	plot:SetAttribute("OwnerName", nil)
+	setSign(plot, "Unclaimed Temple")
+end
+
+-- destination: "Temple" or "Plaza". Validated by the caller.
+function PlotService.TeleportPlayer(player, destination)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 or not character.PrimaryPart then
+		return false
+	end
+
+	local target
+	if destination == "Temple" then
+		local plot = plotByPlayer[player]
+		local base = plot and plot:FindFirstChild("Base")
+		if not base then
+			return false
+		end
+		local pos = Vector3.new(base.Position.X, base.Position.Y + base.Size.Y / 2 + 3, base.Position.Z - base.Size.Z / 2 + 8)
+		target = CFrame.lookAt(pos, pos + Vector3.new(0, 0, 1))
+	elseif destination == "Plaza" then
+		local hub = Workspace:FindFirstChild("Hub")
+		local spawn = hub and hub:FindFirstChild("PlazaSpawn")
+		if not spawn then
+			return false
+		end
+		local pos = spawn.Position + Vector3.new(0, 4, 0)
+		target = CFrame.lookAt(pos, pos + Vector3.new(0, 0, 1))
+	else
+		return false
+	end
+
+	humanoid.Sit = false
+	character:PivotTo(target)
+	return true
+end
+
+return PlotService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="9">
+        <Properties>
+          <string name="Name">ProgressionService</string>
+          <string name="Source"><![CDATA[-- ProgressionService (ModuleScript)
+-- Location: ServerScriptService > Services > ProgressionService
+--
+-- The ONLY place that changes XP, levels, ranks and currencies.
+-- Server-only: clients can never call these functions directly.
+-- Later systems (combat, arenas, temple, quests) will call:
+--   ProgressionService.AddXP(player, amount, source)
+--   ProgressionService.AddCurrency(player, "Gold", amount, source)
+--   ProgressionService.SpendCurrency(player, "Gold", amount) -> true/false
+--   ProgressionService.AdvanceRank(player, trialId) -> true/false, message
+--
+-- Values are shown to the client through Player Attributes (Level, XP,
+-- Gold, ...). Attributes set by the server replicate to the client, and a
+-- client changing its own copy does NOT affect the server.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local GameConfig = require(Shared:WaitForChild("GameConfig"))
+local Progression = require(Shared:WaitForChild("Progression"))
+
+local ProgressionService = {}
+
+local DataService = nil
+local notifyRemote = nil
+
+local VALID_CURRENCY = {}
+for _, name in GameConfig.Currencies do
+	VALID_CURRENCY[name] = true
+end
+
+--------------------------------------------------------------------------
+-- Helpers
+--------------------------------------------------------------------------
+
+-- Accepts only positive whole finite numbers.
+local function sanitizeAmount(amount)
+	if type(amount) ~= "number" or amount ~= amount or amount == math.huge or amount == -math.huge then
+		return nil
+	end
+	amount = math.floor(amount)
+	if amount <= 0 then
+		return nil
+	end
+	return amount
+end
+
+local function notify(player, kind, value)
+	if notifyRemote and player.Parent then
+		notifyRemote:FireClient(player, kind, value)
+	end
+end
+
+-- Converts stored XP into level-ups, respecting the rank cap.
+local function processLevels(data)
+	local cap = Progression.GetLevelCap(data.RankIndex)
+	while data.Level < cap do
+		local need = Progression.XPToNextLevel(data.Level)
+		if need <= 0 or data.XP < need then
+			break
+		end
+		data.XP -= need
+		data.Level += 1
+	end
+	if data.Level >= cap then
+		local need = Progression.XPToNextLevel(data.Level)
+		-- At the cap the bar stays full; extra XP is not banked.
+		data.XP = if need > 0 then math.min(data.XP, need) else 0
+	end
+end
+
+local function applyCharacterStats(player, character, healFully)
+	if not character then
+		return
+	end
+	local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid", 10)
+	local data = DataService.GetData(player)
+	if not humanoid or not data then
+		return
+	end
+	local maxHealth = Progression.GetMaxHealth(data.Level)
+	humanoid.MaxHealth = maxHealth
+	if healFully then
+		humanoid.Health = maxHealth
+	end
+end
+
+--------------------------------------------------------------------------
+-- Public API
+--------------------------------------------------------------------------
+function ProgressionService.Init(dataService, notifyRemoteEvent)
+	DataService = dataService
+	notifyRemote = notifyRemoteEvent
+end
+
+-- Pushes saved values to attributes + leaderboard so the client can display them.
+function ProgressionService.Refresh(player)
+	local data = DataService.GetData(player)
+	if not data then
+		return
+	end
+	local rank = Progression.GetRank(data.RankIndex)
+	local cap = Progression.GetLevelCap(data.RankIndex)
+
+	player:SetAttribute("Level", data.Level)
+	player:SetAttribute("XP", data.XP)
+	player:SetAttribute("XPToNext", Progression.XPToNextLevel(data.Level))
+	player:SetAttribute("RankIndex", data.RankIndex)
+	player:SetAttribute("RankName", rank.Name)
+	player:SetAttribute("LevelCap", cap)
+	player:SetAttribute("TrialReady", data.Level >= cap and data.RankIndex < #GameConfig.Ranks)
+	player:SetAttribute("BaseAttack", Progression.GetBaseAttack(data.Level))
+	for _, name in GameConfig.Currencies do
+		player:SetAttribute(name, data.Currencies[name] or 0)
+	end
+
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		leaderstats.Level.Value = data.Level
+		leaderstats.Rank.Value = rank.Name
+		leaderstats.Gold.Value = data.Currencies.Gold or 0
+	end
+end
+
+-- Call once after data has loaded.
+function ProgressionService.SetupPlayer(player)
+	local leaderstats = Instance.new("Folder")
+	leaderstats.Name = "leaderstats"
+
+	local level = Instance.new("IntValue")
+	level.Name = "Level"
+	level.Parent = leaderstats
+
+	local rank = Instance.new("StringValue")
+	rank.Name = "Rank"
+	rank.Parent = leaderstats
+
+	local gold = Instance.new("IntValue")
+	gold.Name = "Gold"
+	gold.Parent = leaderstats
+
+	leaderstats.Parent = player
+
+	ProgressionService.Refresh(player)
+
+	player.CharacterAdded:Connect(function(character)
+		applyCharacterStats(player, character, true)
+	end)
+	if player.Character then
+		task.spawn(applyCharacterStats, player, player.Character, true)
+	end
+end
+
+-- Refresh everything, including the character's health (used after a data reset).
+function ProgressionService.RefreshAll(player)
+	ProgressionService.Refresh(player)
+	task.spawn(applyCharacterStats, player, player.Character, true)
+end
+
+function ProgressionService.AddXP(player, amount, source)
+	local data = DataService.GetData(player)
+	amount = sanitizeAmount(amount)
+	if not data or not amount then
+		return false
+	end
+
+	local oldLevel = data.Level
+	data.XP += amount
+	processLevels(data)
+	ProgressionService.Refresh(player)
+
+	if data.Level > oldLevel then
+		task.spawn(applyCharacterStats, player, player.Character, true)
+		notify(player, "LevelUp", data.Level)
+
+		local cap = Progression.GetLevelCap(data.RankIndex)
+		if data.Level >= cap and data.RankIndex < #GameConfig.Ranks then
+			local nextRank = Progression.GetRank(data.RankIndex + 1)
+			notify(player, "Message", ("Level cap reached! Complete your trial to become a %s."):format(nextRank.Name))
+		end
+	end
+	return true
+end
+
+function ProgressionService.AddCurrency(player, currency, amount, source)
+	local data = DataService.GetData(player)
+	amount = sanitizeAmount(amount)
+	if not data or not amount or not VALID_CURRENCY[currency] then
+		return false
+	end
+	data.Currencies[currency] = (data.Currencies[currency] or 0) + amount
+	ProgressionService.Refresh(player)
+	return true
+end
+
+function ProgressionService.CanAfford(player, currency, amount)
+	local data = DataService.GetData(player)
+	amount = sanitizeAmount(amount)
+	if not data or not amount or not VALID_CURRENCY[currency] then
+		return false
+	end
+	return (data.Currencies[currency] or 0) >= amount
+end
+
+-- Check and subtract happen with no yield in between, so two purchases
+-- arriving at once cannot both spend the same Gold.
+function ProgressionService.SpendCurrency(player, currency, amount)
+	if not ProgressionService.CanAfford(player, currency, amount) then
+		return false
+	end
+	local data = DataService.GetData(player)
+	data.Currencies[currency] -= math.floor(amount)
+	ProgressionService.Refresh(player)
+	return true
+end
+
+-- Phase 6 will call this when a trial is won. Requires the level cap to be reached.
+function ProgressionService.AdvanceRank(player, trialId)
+	local data = DataService.GetData(player)
+	if not data then
+		return false, "Data not loaded."
+	end
+	if data.RankIndex >= #GameConfig.Ranks then
+		return false, "You are already an Elder God."
+	end
+	local cap = Progression.GetLevelCap(data.RankIndex)
+	if data.Level < cap then
+		return false, ("Reach level %d before attempting this trial."):format(cap)
+	end
+
+	data.RankIndex += 1
+	local newRank = Progression.GetRank(data.RankIndex)
+	if newRank.Trial ~= "" then
+		data.CompletedTrials[newRank.Trial] = true
+	end
+
+	local oldLevel = data.Level
+	processLevels(data) -- a full XP bar turns into the next level now the cap is lifted
+	ProgressionService.Refresh(player)
+	notify(player, "RankUp", newRank.Name)
+	if data.Level > oldLevel then
+		task.spawn(applyCharacterStats, player, player.Character, true)
+	end
+	return true, "You are now a " .. newRank.Name .. "!"
+end
+
+return ProgressionService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="10">
+        <Properties>
+          <string name="Name">WorldBuilder</string>
+          <string name="Source"><![CDATA[-- WorldBuilder (ModuleScript)
+-- Location: ServerScriptService > Services > WorldBuilder
+--
+-- Builds PLACEHOLDER world geometry when the game starts:
+--   Workspace > Hub          (Olympus Plaza, spawn, columns, area markers)
+--   Workspace > TemplePlots  (Plot1..Plot8)
+-- If you later build your own Hub or TemplePlots by hand with the same
+-- names, this script leaves them alone.
+
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GameConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("GameConfig"))
+
+local WorldBuilder = {}
+
+local MARBLE = Color3.fromRGB(236, 232, 224)
+local GOLD = Color3.fromRGB(212, 175, 55)
+
+-- Creates an anchored part. `props` is a table of property = value.
+function WorldBuilder.MakePart(parent, props)
+	local part = Instance.new("Part")
+	part.Anchored = true
+	part.TopSurface = Enum.SurfaceType.Smooth
+	part.BottomSurface = Enum.SurfaceType.Smooth
+	part.Material = Enum.Material.Marble
+	part.Color = MARBLE
+	if props.Shape then
+		part.Shape = props.Shape
+	end
+	for key, value in props do
+		if key ~= "Shape" then
+			part[key] = value
+		end
+	end
+	part.Parent = parent
+	return part
+end
+
+-- Floating text above a part. Returns the TextLabel (named "Text").
+function WorldBuilder.AddLabel(part, text, color, heightOffset)
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "Label"
+	billboard.Size = UDim2.fromOffset(240, 56)
+	billboard.StudsOffset = Vector3.new(0, heightOffset or 4, 0)
+	billboard.MaxDistance = 220
+	billboard.LightInfluence = 0
+
+	local label = Instance.new("TextLabel")
+	label.Name = "Text"
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBold
+	label.TextColor3 = color or Color3.new(1, 1, 1)
+	label.TextStrokeTransparency = 0.2
+	label.Parent = billboard
+
+	billboard.Parent = part
+	return label
+end
+
+local function buildHub()
+	local hub = Instance.new("Folder")
+	hub.Name = "Hub"
+
+	-- Plaza floor (top surface at Y = 1)
+	WorldBuilder.MakePart(hub, {
+		Name = "PlazaFloor",
+		Size = Vector3.new(140, 1, 140),
+		Position = Vector3.new(0, 0.5, 0),
+	})
+
+	-- Spawn
+	local spawn = Instance.new("SpawnLocation")
+	spawn.Name = "PlazaSpawn"
+	spawn.Anchored = true
+	spawn.Neutral = true
+	spawn.Duration = 0 -- no force field
+	spawn.Size = Vector3.new(12, 1, 12)
+	spawn.Position = Vector3.new(0, 1.5, -35)
+	spawn.Material = Enum.Material.Marble
+	spawn.Color = GOLD
+	spawn.TopSurface = Enum.SurfaceType.Smooth
+	spawn.Parent = hub
+
+	-- Central statue placeholder
+	WorldBuilder.MakePart(hub, {
+		Name = "StatuePedestal",
+		Size = Vector3.new(10, 6, 10),
+		Position = Vector3.new(0, 4, 0),
+	})
+	local statue = WorldBuilder.MakePart(hub, {
+		Name = "StatuePlaceholder",
+		Size = Vector3.new(4, 12, 4),
+		Position = Vector3.new(0, 13, 0),
+		Material = Enum.Material.Metal,
+		Color = GOLD,
+	})
+	WorldBuilder.AddLabel(statue, "Olympus Plaza", GOLD, 9)
+
+	-- Ring of columns (gap left at +Z for the path to the Temple District)
+	for i = 0, 11 do
+		local angle = math.rad(i * 30)
+		local x, z = math.cos(angle) * 62, math.sin(angle) * 62
+		if not (z > 55 and math.abs(x) < 20) then
+			WorldBuilder.MakePart(hub, {
+				Name = "Column",
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(24, 4, 4),
+				CFrame = CFrame.new(x, 13, z) * CFrame.Angles(0, 0, math.rad(90)),
+			})
+		end
+	end
+
+	-- Future area markers
+	local areas = {
+		{ "Hall of the Gods", "Phase 3", Vector3.new(-40, 1.2, -35), Color3.fromRGB(255, 220, 120) },
+		{ "Arena Gate", "Phase 5", Vector3.new(-40, 1.2, 0), Color3.fromRGB(220, 80, 60) },
+		{ "Titan Gate", "Phase 5", Vector3.new(-40, 1.2, 35), Color3.fromRGB(150, 70, 200) },
+		{ "Divine Forge", "Phase 7", Vector3.new(40, 1.2, -35), Color3.fromRGB(255, 140, 40) },
+		{ "Ascension Chamber", "Phase 6", Vector3.new(40, 1.2, 0), Color3.fromRGB(120, 200, 255) },
+		{ "Olympus Market", "Phase 7", Vector3.new(40, 1.2, 35), Color3.fromRGB(120, 220, 120) },
+	}
+	for _, area in areas do
+		local pad = WorldBuilder.MakePart(hub, {
+			Name = area[1],
+			Size = Vector3.new(14, 0.4, 14),
+			Position = area[3],
+			Material = Enum.Material.Neon,
+			Color = area[4],
+			Transparency = 0.35,
+			CanCollide = false,
+		})
+		WorldBuilder.AddLabel(pad, area[1] .. "\n(coming in " .. area[2] .. ")", area[4], 5)
+	end
+
+	-- Path to the Temple District
+	local path = WorldBuilder.MakePart(hub, {
+		Name = "DistrictPath",
+		Size = Vector3.new(16, 1, 100),
+		Position = Vector3.new(0, 0.5, 120),
+		Color = Color3.fromRGB(215, 205, 185),
+	})
+	WorldBuilder.AddLabel(path, "Temple District", GOLD, 6)
+
+	hub.Parent = Workspace
+end
+
+local function buildPlots()
+	local cfg = GameConfig.Plots
+	local folder = Instance.new("Folder")
+	folder.Name = "TemplePlots"
+
+	for i = 1, cfg.Count do
+		local row = math.floor((i - 1) / cfg.Columns)
+		local col = (i - 1) % cfg.Columns
+
+		local plot = Instance.new("Model")
+		plot.Name = "Plot" .. i
+
+		local base = WorldBuilder.MakePart(plot, {
+			Name = "Base",
+			Size = cfg.Size,
+			Position = cfg.Origin + Vector3.new(col * cfg.Spacing, 0, row * cfg.Spacing),
+			Material = Enum.Material.Sandstone,
+			Color = Color3.fromRGB(205, 192, 160),
+		})
+		plot.PrimaryPart = base
+
+		local sign = WorldBuilder.MakePart(plot, {
+			Name = "Sign",
+			Size = Vector3.new(1, 1, 1),
+			Position = base.Position + Vector3.new(0, 1, -cfg.Size.Z / 2 + 3),
+			Transparency = 1,
+			CanCollide = false,
+		})
+		WorldBuilder.AddLabel(sign, "Unclaimed Temple", Color3.new(1, 1, 1), 8)
+
+		local buildings = Instance.new("Folder")
+		buildings.Name = "Buildings"
+		buildings.Parent = plot
+
+		plot:SetAttribute("PlotIndex", i)
+		plot:SetAttribute("OwnerUserId", 0)
+		plot.Parent = folder
+	end
+
+	folder.Parent = Workspace
+end
+
+function WorldBuilder.Build()
+	if not Workspace:FindFirstChild("Hub") then
+		buildHub()
+	end
+	if not Workspace:FindFirstChild("TemplePlots") then
+		buildPlots()
+	end
+end
+
+return WorldBuilder
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="StarterPlayer" referent="11">
+    <Properties>
+      <string name="Name">StarterPlayer</string>
+    </Properties>
+    <Item class="StarterPlayerScripts" referent="12">
+      <Properties>
+        <string name="Name">StarterPlayerScripts</string>
+      </Properties>
+      <Item class="LocalScript" referent="13">
+        <Properties>
+          <string name="Name">HUDController</string>
+          <string name="Source"><![CDATA[-- HUDController (LocalScript)
+-- Location: StarterPlayer > StarterPlayerScripts > HUDController
+--
+-- Builds the Phase 1 interface in code: loading screen, level / rank / XP
+-- panel, currency panel, travel buttons, and pop-up notifications.
+-- Display only: it reads values the server publishes as Player Attributes
+-- and never changes any game data itself.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local GameConfig = require(Shared:WaitForChild("GameConfig"))
+local Progression = require(Shared:WaitForChild("Progression"))
+
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local notifyRemote = Remotes:WaitForChild("Notify")
+local teleportRemote = Remotes:WaitForChild("RequestTeleport")
+
+local THEME = {
+	Marble = Color3.fromRGB(246, 242, 232),
+	Gold = Color3.fromRGB(212, 175, 55),
+	Bronze = Color3.fromRGB(140, 92, 45),
+	Text = Color3.fromRGB(58, 44, 28),
+	BarBack = Color3.fromRGB(60, 52, 44),
+	Night = Color3.fromRGB(18, 22, 38),
+	White = Color3.new(1, 1, 1),
+	Warning = Color3.fromRGB(175, 55, 35),
+}
+local TITLE_FONT = Enum.Font.Garamond
+local BODY_FONT = Enum.Font.GothamBold
+
+--------------------------------------------------------------------------
+-- Small UI helpers
+--------------------------------------------------------------------------
+local function create(className, props, children)
+	local inst = Instance.new(className)
+	for key, value in props do
+		if key ~= "Parent" then
+			inst[key] = value
+		end
+	end
+	for _, child in children or {} do
+		child.Parent = inst
+	end
+	if props.Parent then
+		inst.Parent = props.Parent
+	end
+	return inst
+end
+
+local function corner(radius)
+	return create("UICorner", { CornerRadius = UDim.new(0, radius) })
+end
+
+local function stroke(color, thickness)
+	return create("UIStroke", { Color = color, Thickness = thickness, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+end
+
+local function padding(px)
+	return create("UIPadding", {
+		PaddingTop = UDim.new(0, px),
+		PaddingBottom = UDim.new(0, px),
+		PaddingLeft = UDim.new(0, px),
+		PaddingRight = UDim.new(0, px),
+	})
+end
+
+--------------------------------------------------------------------------
+-- Loading screen (hidden once the server says data is loaded)
+--------------------------------------------------------------------------
+local loadingGui = create("ScreenGui", {
+	Name = "LoadingScreen",
+	IgnoreGuiInset = true,
+	DisplayOrder = 100,
+	ResetOnSpawn = false,
+	Parent = playerGui,
+})
+local loadingFrame = create("Frame", {
+	Size = UDim2.fromScale(1, 1),
+	BackgroundColor3 = THEME.Night,
+	Parent = loadingGui,
+})
+create("TextLabel", {
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.42),
+	Size = UDim2.fromScale(0.8, 0.12),
+	BackgroundTransparency = 1,
+	Text = "MOUNT OLYMPUS",
+	Font = TITLE_FONT,
+	TextScaled = true,
+	TextColor3 = THEME.Gold,
+	Parent = loadingFrame,
+})
+create("TextLabel", {
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.52),
+	Size = UDim2.fromScale(0.6, 0.06),
+	BackgroundTransparency = 1,
+	Text = "Rise of the Gods",
+	Font = TITLE_FONT,
+	TextScaled = true,
+	TextColor3 = THEME.Marble,
+	Parent = loadingFrame,
+})
+create("TextLabel", {
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.64),
+	Size = UDim2.fromScale(0.6, 0.04),
+	BackgroundTransparency = 1,
+	Text = "Loading your progress...",
+	Font = BODY_FONT,
+	TextScaled = true,
+	TextColor3 = Color3.fromRGB(190, 190, 205),
+	Parent = loadingFrame,
+})
+
+local function updateLoading()
+	if player:GetAttribute("DataLoaded") == true then
+		loadingGui.Enabled = false
+	end
+end
+player:GetAttributeChangedSignal("DataLoaded"):Connect(updateLoading)
+updateLoading()
+
+--------------------------------------------------------------------------
+-- HUD
+--------------------------------------------------------------------------
+local hud = create("ScreenGui", {
+	Name = "HUD",
+	ResetOnSpawn = false,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	Parent = playerGui,
+})
+local uiScale = create("UIScale", { Parent = hud })
+
+-- Shrink/grow the whole HUD to fit phones, tablets and PCs.
+local function updateScale()
+	local camera = Workspace.CurrentCamera
+	local viewport = if camera then camera.ViewportSize else Vector2.new(1280, 720)
+	local scale = math.min(viewport.X / 1280, viewport.Y / 720)
+	uiScale.Scale = math.clamp(scale, 0.7, 1.2)
+end
+updateScale()
+if Workspace.CurrentCamera then
+	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+end
+
+-- Level / rank / XP panel (top-left)
+local statsPanel = create("Frame", {
+	Name = "StatsPanel",
+	Position = UDim2.fromOffset(12, 12),
+	Size = UDim2.fromOffset(290, 92),
+	BackgroundColor3 = THEME.Marble,
+	BackgroundTransparency = 0.05,
+	Parent = hud,
+}, { corner(10), stroke(THEME.Gold, 2), padding(10) })
+
+local levelLabel = create("TextLabel", {
+	Name = "Level",
+	Size = UDim2.fromOffset(80, 26),
+	BackgroundTransparency = 1,
+	Text = "Lv. 1",
+	Font = BODY_FONT,
+	TextSize = 22,
+	TextColor3 = THEME.Text,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	Parent = statsPanel,
+})
+
+local rankBadge = create("TextLabel", {
+	Name = "Rank",
+	Position = UDim2.fromOffset(84, 0),
+	Size = UDim2.new(1, -84, 0, 26),
+	BackgroundColor3 = GameConfig.Ranks[1].Color,
+	Text = "Mortal",
+	Font = TITLE_FONT,
+	TextSize = 22,
+	TextColor3 = THEME.White,
+	TextStrokeTransparency = 0.6,
+	Parent = statsPanel,
+}, { corner(6) })
+
+local xpBack = create("Frame", {
+	Name = "XPBar",
+	Position = UDim2.fromOffset(0, 32),
+	Size = UDim2.new(1, 0, 0, 20),
+	BackgroundColor3 = THEME.BarBack,
+	Parent = statsPanel,
+}, { corner(6) })
+
+local xpFill = create("Frame", {
+	Name = "Fill",
+	Size = UDim2.fromScale(0, 1),
+	BackgroundColor3 = THEME.Gold,
+	Parent = xpBack,
+}, { corner(6) })
+
+local xpText = create("TextLabel", {
+	Name = "XPText",
+	Size = UDim2.fromScale(1, 1),
+	BackgroundTransparency = 1,
+	Text = "0 / 100 XP",
+	Font = BODY_FONT,
+	TextSize = 14,
+	TextColor3 = THEME.White,
+	TextStrokeTransparency = 0.4,
+	ZIndex = 2,
+	Parent = xpBack,
+})
+
+local trialLabel = create("TextLabel", {
+	Name = "TrialReady",
+	Position = UDim2.fromOffset(0, 56),
+	Size = UDim2.new(1, 0, 0, 16),
+	BackgroundTransparency = 1,
+	Text = "Level cap reached! Your ascension trial awaits.",
+	Font = BODY_FONT,
+	TextScaled = true,
+	TextColor3 = THEME.Warning,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	Visible = false,
+	Parent = statsPanel,
+}, { create("UITextSizeConstraint", { MaxTextSize = 14 }) })
+
+-- Currency panel (top-right)
+local currencyPanel = create("Frame", {
+	Name = "CurrencyPanel",
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, -12, 0, 12),
+	Size = UDim2.fromOffset(200, 100),
+	BackgroundColor3 = THEME.Marble,
+	BackgroundTransparency = 0.05,
+	Parent = hud,
+}, {
+	corner(10),
+	stroke(THEME.Gold, 2),
+	padding(10),
+	create("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }),
+})
+
+local currencyLabels = {}
+for i, name in GameConfig.Currencies do
+	local info = GameConfig.CurrencyInfo[name]
+	local row = create("Frame", {
+		Name = name,
+		Size = UDim2.new(1, 0, 0, 24),
+		BackgroundTransparency = 1,
+		LayoutOrder = i,
+		Parent = currencyPanel,
+	})
+	create("Frame", {
+		Name = "Icon",
+		Position = UDim2.new(0, 0, 0.5, -8),
+		Size = UDim2.fromOffset(16, 16),
+		BackgroundColor3 = info.Color,
+		Parent = row,
+	}, { corner(8), stroke(THEME.Bronze, 1) })
+	create("TextLabel", {
+		Name = "Name",
+		Position = UDim2.fromOffset(24, 0),
+		Size = UDim2.new(0.55, -24, 1, 0),
+		BackgroundTransparency = 1,
+		Text = info.DisplayName,
+		Font = BODY_FONT,
+		TextSize = 15,
+		TextColor3 = THEME.Text,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Parent = row,
+	})
+	currencyLabels[name] = create("TextLabel", {
+		Name = "Amount",
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.fromScale(1, 0),
+		Size = UDim2.new(0.45, 0, 1, 0),
+		BackgroundTransparency = 1,
+		Text = "0",
+		Font = BODY_FONT,
+		TextSize = 18,
+		TextColor3 = THEME.Text,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		Parent = row,
+	})
+end
+
+-- Travel buttons (under the stats panel; clear of mobile thumbstick and jump button)
+local travelBar = create("Frame", {
+	Name = "TravelBar",
+	Position = UDim2.fromOffset(12, 112),
+	Size = UDim2.fromOffset(290, 42),
+	BackgroundTransparency = 1,
+	Parent = hud,
+}, {
+	create("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		Padding = UDim.new(0, 10),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+	}),
+})
+
+local function makeButton(text, order)
+	return create("TextButton", {
+		Name = text,
+		Size = UDim2.new(0.5, -5, 1, 0),
+		BackgroundColor3 = THEME.Bronze,
+		Text = text,
+		Font = BODY_FONT,
+		TextSize = 17,
+		TextColor3 = THEME.White,
+		LayoutOrder = order,
+		AutoButtonColor = true,
+		Parent = travelBar,
+	}, { corner(8), stroke(THEME.Gold, 2) })
+end
+local templeButton = makeButton("My Temple", 1)
+local plazaButton = makeButton("Plaza", 2)
+
+-- Pop-up notification (upper centre)
+local toast = create("Frame", {
+	Name = "Toast",
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0.2, 0),
+	Size = UDim2.fromOffset(380, 54),
+	BackgroundColor3 = THEME.Marble,
+	Visible = false,
+	Parent = hud,
+}, { corner(10), padding(8) })
+local toastStroke = stroke(THEME.Gold, 3)
+toastStroke.Parent = toast
+local toastLabel = create("TextLabel", {
+	Size = UDim2.fromScale(1, 1),
+	BackgroundTransparency = 1,
+	Text = "",
+	Font = BODY_FONT,
+	TextScaled = true,
+	TextColor3 = THEME.Text,
+	Parent = toast,
+}, { create("UITextSizeConstraint", { MaxTextSize = 20 }) })
+
+local toastToken = 0
+local function showToast(text, color)
+	toastToken += 1
+	local myToken = toastToken
+
+	toastLabel.Text = text
+	toastStroke.Color = color or THEME.Gold
+	toast.BackgroundTransparency = 1
+	toastLabel.TextTransparency = 1
+	toastStroke.Transparency = 1
+	toast.Position = UDim2.new(0.5, 0, 0.2, -20)
+	toast.Visible = true
+
+	local inInfo = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+	TweenService:Create(toast, inInfo, { Position = UDim2.new(0.5, 0, 0.2, 0), BackgroundTransparency = 0.05 }):Play()
+	TweenService:Create(toastLabel, inInfo, { TextTransparency = 0 }):Play()
+	TweenService:Create(toastStroke, inInfo, { Transparency = 0 }):Play()
+
+	task.delay(2.8, function()
+		if myToken ~= toastToken then
+			return
+		end
+		local outInfo = TweenInfo.new(0.4)
+		TweenService:Create(toast, outInfo, { BackgroundTransparency = 1 }):Play()
+		TweenService:Create(toastLabel, outInfo, { TextTransparency = 1 }):Play()
+		TweenService:Create(toastStroke, outInfo, { Transparency = 1 }):Play()
+		task.wait(0.4)
+		if myToken == toastToken then
+			toast.Visible = false
+		end
+	end)
+end
+
+--------------------------------------------------------------------------
+-- Keep the HUD in sync with the server's attributes
+--------------------------------------------------------------------------
+local function updateStats()
+	local level = player:GetAttribute("Level") or 1
+	local xp = player:GetAttribute("XP") or 0
+	local need = player:GetAttribute("XPToNext") or 0
+	local rankIndex = player:GetAttribute("RankIndex") or 1
+	local rank = Progression.GetRank(rankIndex)
+
+	levelLabel.Text = "Lv. " .. level
+	rankBadge.Text = rank.Name
+	rankBadge.BackgroundColor3 = rank.Color
+
+	local ratio = 1
+	if need > 0 then
+		ratio = math.clamp(xp / need, 0, 1)
+		xpText.Text = Progression.FormatNumber(xp) .. " / " .. Progression.FormatNumber(need) .. " XP"
+	else
+		xpText.Text = "MAX LEVEL"
+	end
+	TweenService:Create(xpFill, TweenInfo.new(0.25), { Size = UDim2.fromScale(ratio, 1) }):Play()
+
+	trialLabel.Visible = player:GetAttribute("TrialReady") == true
+end
+
+local function updateCurrency(name)
+	currencyLabels[name].Text = Progression.FormatNumber(player:GetAttribute(name) or 0)
+end
+
+for _, attribute in { "Level", "XP", "XPToNext", "RankIndex", "TrialReady" } do
+	player:GetAttributeChangedSignal(attribute):Connect(updateStats)
+end
+for _, name in GameConfig.Currencies do
+	player:GetAttributeChangedSignal(name):Connect(function()
+		updateCurrency(name)
+	end)
+	updateCurrency(name)
+end
+updateStats()
+
+--------------------------------------------------------------------------
+-- Server notifications
+--------------------------------------------------------------------------
+notifyRemote.OnClientEvent:Connect(function(kind, value)
+	if kind == "LevelUp" then
+		showToast("LEVEL UP! You reached level " .. tostring(value), THEME.Gold)
+	elseif kind == "RankUp" then
+		showToast("ASCENSION! Your new rank: " .. tostring(value), Color3.fromRGB(120, 200, 255))
+	elseif kind == "Message" then
+		showToast(tostring(value), THEME.Bronze)
+	end
+end)
+
+--------------------------------------------------------------------------
+-- Travel buttons
+--------------------------------------------------------------------------
+local lastTravel = 0
+local function requestTeleport(destination)
+	if os.clock() - lastTravel < GameConfig.Teleport.Cooldown then
+		showToast("The gods need a moment...", THEME.Bronze)
+		return
+	end
+	lastTravel = os.clock()
+	teleportRemote:FireServer(destination)
+end
+
+templeButton.Activated:Connect(function()
+	requestTeleport("Temple")
+end)
+plazaButton.Activated:Connect(function()
+	requestTeleport("Plaza")
+end)
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+</roblox>

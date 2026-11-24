@@ -1,0 +1,29 @@
+{
+  "name": "MountOlympus",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+
+    "ServerScriptService": {
+      "Main": {
+        "$path": "src/server/Main.server.luau"
+      },
+      "Services": {
+        "$path": "src/server/Services"
+      }
+    },
+
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "HUDController": {
+          "$path": "src/client/HUDController.client.luau"
+        }
+      }
+    }
+  }
+}
