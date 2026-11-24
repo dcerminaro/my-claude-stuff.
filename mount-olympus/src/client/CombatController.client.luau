@@ -27,6 +27,12 @@ local GodConfig = require(Shared:WaitForChild("GodConfig"))
 local SwordBuilder = require(Shared:WaitForChild("SwordBuilder"))
 local SwordPoses = require(Shared:WaitForChild("SwordPoses"))
 local SwordAnimator = require(Shared:WaitForChild("SwordAnimator"))
+local WeaponConfig = require(Shared:WaitForChild("WeaponConfig"))
+
+-- Phase 7C: the equipped weapon's type (sword, spear, trident, axe, bow).
+local function weaponType()
+	return WeaponConfig.Types[player:GetAttribute("WeaponType") or "Sword"] or WeaponConfig.Types.Sword
+end
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local attackRemote = Remotes:WaitForChild("CombatAttack")
@@ -120,6 +126,7 @@ local DAMAGE_COLORS = {
 	KnockedOut = Color3.fromRGB(255, 255, 255),
 	Heal = Color3.fromRGB(110, 255, 130),
 	Countered = Color3.fromRGB(255, 240, 200),
+	Crit = Color3.fromRGB(255, 150, 40),
 }
 
 local function floatingText(position, textValue, color, size, rise)
@@ -217,7 +224,10 @@ local function predictHits(root)
 	if not enemies then
 		return
 	end
-	local attack = CFG.BasicAttack
+	local attack = weaponType()
+	if attack.Ranged then
+		return -- arrows: the server draws the shot and the hits
+	end
 	local look = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z).Unit
 	for _, model in enemies:GetChildren() do
 		local enemyRoot = model:FindFirstChild("HumanoidRootPart")
@@ -269,6 +279,7 @@ fxRemote.OnClientEvent:Connect(function(kind, position, value, style)
 			elseif style == "KnockedOut" then "Knocked out!"
 			elseif style == "Heal" then "+" .. tostring(value)
 			elseif style == "Countered" then "Countered!"
+			elseif style == "Crit" then ("CRIT %d"):format(value)
 			elseif style == "Blocked" then ("%d (blocked)"):format(value)
 			else tostring(value)
 		floatingText(position + jitter, label, DAMAGE_COLORS[style] or DAMAGE_COLORS.Enemy, if style == "Enemy" then 26 else 22, 3)
@@ -303,7 +314,7 @@ local function attack()
 	if now < nextAttackAt then
 		return
 	end
-	nextAttackAt = now + CFG.BasicAttack.Cooldown
+	nextAttackAt = now + (player:GetAttribute("WeaponCooldown") or CFG.BasicAttack.Cooldown)
 	local _, _, root = getParts()
 
 	-- Combo: slash, slash, lunge. Starts over after a short pause.
@@ -312,7 +323,7 @@ local function attack()
 	end
 	lastAttackAt = now
 	comboIndex = comboIndex % 3 + 1
-	SwordAnimator.Play(player.Character, SwordPoses.ComboOrder[comboIndex])
+	SwordAnimator.Play(player.Character, weaponType().Combo[comboIndex] or SwordPoses.ComboOrder[comboIndex])
 	predictHits(root)
 	flashTrail()
 	attackRemote:FireServer(comboIndex)

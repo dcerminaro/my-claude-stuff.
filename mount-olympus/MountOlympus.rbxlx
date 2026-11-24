@@ -948,7 +948,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v35"
+GameConfig.BuildLabel = "v36"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -1951,21 +1951,75 @@ local function part(model, name, size, cframe, color, material, shape)
 	return p
 end
 
-function SwordBuilder.Build(glowColor)
+-- Phase 7C: `weapon` (a WeaponConfig entry) picks the type and colours.
+-- Without it you get the original sword. The model's name stays
+-- "DivineSword" so the animation and trail code work for every weapon.
+function SwordBuilder.Build(glowColor, weapon)
 	local model = Instance.new("Model")
 	model.Name = SwordBuilder.Name
+	model:SetAttribute("WeaponId", if weapon then weapon.Id else "")
 	local M = Enum.Material
+	local look = if weapon then weapon.Look or {} else {}
+	local kind = if weapon then weapon.Type else "Sword"
+	local metal = look.Blade or STEEL
+	local handleColor = look.Handle or Color3.fromRGB(110, 75, 45)
+	local glow = look.Glow or glowColor
+	local L = look.Length or 3.0
 
-	local grip = part(model, "Grip", Vector3.new(0.24, 1.0, 0.24), CFrame.new(), LEATHER, M.Fabric)
-	part(model, "Pommel", Vector3.new(0.42, 0.42, 0.42), CFrame.new(0, -0.62, 0), GOLD, M.Metal, Enum.PartType.Ball)
-	part(model, "Guard", Vector3.new(1.5, 0.2, 0.32), CFrame.new(0, 0.6, 0), GOLD, M.Metal)
-	part(model, "GuardEndL", Vector3.new(0.3, 0.3, 0.3), CFrame.new(-0.75, 0.6, 0), GOLD, M.Metal, Enum.PartType.Ball)
-	part(model, "GuardEndR", Vector3.new(0.3, 0.3, 0.3), CFrame.new(0.75, 0.6, 0), GOLD, M.Metal, Enum.PartType.Ball)
-	part(model, "Gem", Vector3.new(0.26, 0.26, 0.4), CFrame.new(0, 0.6, 0), glowColor, M.Neon, Enum.PartType.Ball)
-	local blade = part(model, "Blade", Vector3.new(0.4, 3.0, 0.09), CFrame.new(0, 2.2, 0), STEEL, M.Metal)
-	part(model, "Fuller", Vector3.new(0.1, 2.5, 0.12), CFrame.new(0, 2.05, 0), glowColor, M.Neon)
-	-- A small diamond turned 45 degrees makes the point of the blade.
-	part(model, "Tip", Vector3.new(0.283, 0.283, 0.09), CFrame.new(0, 3.7, 0) * CFrame.Angles(0, 0, math.rad(45)), STEEL, M.Metal)
+	local grip = part(model, "Grip", Vector3.new(0.24, 1.0, 0.24), CFrame.new(), if kind == "Sword" then LEATHER else handleColor, if kind == "Sword" then M.Fabric else M.Wood)
+	local blade
+
+	if kind == "Sword" then
+		part(model, "Pommel", Vector3.new(0.42, 0.42, 0.42), CFrame.new(0, -0.62, 0), GOLD, M.Metal, Enum.PartType.Ball)
+		part(model, "Guard", Vector3.new(1.5, 0.2, 0.32), CFrame.new(0, 0.6, 0), GOLD, M.Metal)
+		part(model, "GuardEndL", Vector3.new(0.3, 0.3, 0.3), CFrame.new(-0.75, 0.6, 0), GOLD, M.Metal, Enum.PartType.Ball)
+		part(model, "GuardEndR", Vector3.new(0.3, 0.3, 0.3), CFrame.new(0.75, 0.6, 0), GOLD, M.Metal, Enum.PartType.Ball)
+		part(model, "Gem", Vector3.new(0.26, 0.26, 0.4), CFrame.new(0, 0.6, 0), glow, M.Neon, Enum.PartType.Ball)
+		blade = part(model, "Blade", Vector3.new(0.4, L, 0.09), CFrame.new(0, 0.7 + L / 2, 0), metal, M.Metal)
+		part(model, "Fuller", Vector3.new(0.1, L - 0.5, 0.12), CFrame.new(0, 0.55 + L / 2, 0), glow, M.Neon)
+		-- A small diamond turned 45 degrees makes the point of the blade.
+		part(model, "Tip", Vector3.new(0.283, 0.283, 0.09), CFrame.new(0, 0.7 + L, 0) * CFrame.Angles(0, 0, math.rad(45)), metal, M.Metal)
+	elseif kind == "Axe" then
+		part(model, "Haft", Vector3.new(0.22, L, 0.22), CFrame.new(0, L / 2 - 0.4, 0), handleColor, M.Wood)
+		blade = part(model, "Blade", Vector3.new(0.3, 0.3, 0.3), CFrame.new(0, L - 0.9, 0), metal, M.Metal)
+		for _, side in { -1, 1 } do
+			part(model, "AxeHead", Vector3.new(1.1, 1.4, 0.12), CFrame.new(side * 0.6, L - 0.9, 0), metal, M.Metal)
+			part(model, "AxeEdge", Vector3.new(0.14, 1.6, 0.16), CFrame.new(side * 1.15, L - 0.9, 0), glow, M.Neon)
+		end
+	elseif kind == "Spear" or kind == "Trident" then
+		part(model, "Shaft", Vector3.new(0.2, L + 1.6, 0.2), CFrame.new(0, (L + 1.6) / 2 - 1.4, 0), handleColor, M.Wood)
+		if kind == "Spear" then
+			blade = part(model, "Blade", Vector3.new(0.55, 0.55, 0.1), CFrame.new(0, L, 0) * CFrame.Angles(0, 0, math.rad(45)), metal, M.Metal)
+			part(model, "Point", Vector3.new(0.12, 0.9, 0.14), CFrame.new(0, L + 0.5, 0), glow, M.Neon)
+		else
+			part(model, "Crossbar", Vector3.new(1.3, 0.16, 0.16), CFrame.new(0, L - 0.6, 0), metal, M.Metal)
+			for i, x in { -0.6, 0, 0.6 } do
+				local prong = part(model, "Prong" .. i, Vector3.new(0.14, 1.3, 0.14), CFrame.new(x, L + 0.05, 0), metal, M.Metal)
+				if i == 2 then
+					blade = prong
+				end
+				part(model, "ProngTip" .. i, Vector3.new(0.16, 0.3, 0.16), CFrame.new(x, L + 0.8, 0), glow, M.Neon)
+			end
+		end
+		part(model, "Band", Vector3.new(0.3, 0.25, 0.3), CFrame.new(0, L - 0.9, 0), glow, M.Neon)
+	else -- Bow: a curved stave and a glowing string
+		local half = L / 2
+		local points = {}
+		for i = 0, 6 do
+			local y = -half + (i / 6) * L
+			table.insert(points, Vector3.new(0, y, 0.55 * (y / half) ^ 2))
+		end
+		for i = 1, #points - 1 do
+			local a, b = points[i], points[i + 1]
+			local seg = part(model, "Limb" .. i, Vector3.new(0.22, (b - a).Magnitude + 0.05, 0.18),
+				CFrame.lookAt((a + b) / 2, b) * CFrame.Angles(math.rad(90), 0, 0), metal, M.Wood)
+			if i == 6 then
+				blade = seg
+			end
+		end
+		local top, bottom = points[#points], points[1]
+		part(model, "String", Vector3.new(0.05, (top - bottom).Magnitude, 0.05), CFrame.new((top + bottom) / 2 + Vector3.new(0, 0, 0.05)), glow, M.Neon)
+	end
 
 	for _, item in model:GetChildren() do
 		if item ~= grip then
@@ -1976,14 +2030,15 @@ function SwordBuilder.Build(glowColor)
 		end
 	end
 
-	-- Light trail from just above the guard to the tip, shown while swinging.
+	-- Light trail along the striking end, shown while swinging.
+	local reach = if kind == "Sword" then L / 2 + 0.1 else 0.6
 	local a0 = Instance.new("Attachment")
 	a0.Name = "TrailBase"
-	a0.Position = Vector3.new(0, -1.2, 0)
+	a0.Position = Vector3.new(0, -reach + 0.2, 0)
 	a0.Parent = blade
 	local a1 = Instance.new("Attachment")
 	a1.Name = "TrailTip"
-	a1.Position = Vector3.new(0, 1.6, 0)
+	a1.Position = Vector3.new(0, reach, 0)
 	a1.Parent = blade
 	local trail = Instance.new("Trail")
 	trail.Name = "SwingTrail"
@@ -1992,7 +2047,7 @@ function SwordBuilder.Build(glowColor)
 	trail.Lifetime = 0.18
 	trail.LightEmission = 1
 	trail.FaceCamera = true
-	trail.Color = ColorSequence.new(glowColor)
+	trail.Color = ColorSequence.new(glow)
 	trail.Transparency = NumberSequence.new(0.15, 1)
 	trail.Enabled = false
 	trail.Parent = blade
@@ -2001,10 +2056,15 @@ function SwordBuilder.Build(glowColor)
 	return model
 end
 
--- Welds a new sword into the character's right hand. Returns the sword.
-function SwordBuilder.Attach(character, glowColor)
+-- Welds a new weapon into the character's right hand. Returns it.
+-- A different weapon than the one held is swapped out.
+function SwordBuilder.Attach(character, glowColor, weapon)
 	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
 	local existing = character:FindFirstChild(SwordBuilder.Name)
+	if existing and existing:GetAttribute("WeaponId") ~= (if weapon then weapon.Id else "") then
+		existing:Destroy()
+		existing = nil
+	end
 	if existing then
 		-- Still properly held? (Avatar loading can replace the hand and break the weld.)
 		local grip = existing.PrimaryPart
@@ -2017,7 +2077,7 @@ function SwordBuilder.Attach(character, glowColor)
 	if not hand then
 		return nil
 	end
-	local sword = SwordBuilder.Build(glowColor)
+	local sword = SwordBuilder.Build(glowColor, weapon)
 	local gripPoint = hand:FindFirstChild("RightGripAttachment")
 	local offset = if gripPoint then CFrame.new(gripPoint.Position) else CFrame.new(0, -hand.Size.Y / 2, 0)
 	local c0 = offset * CFrame.Angles(math.rad(-90), 0, 0) -- blade (+Y) -> knuckle direction (-Z)
@@ -2034,6 +2094,10 @@ function SwordBuilder.Attach(character, glowColor)
 end
 
 function SwordBuilder.SetColor(sword, glowColor)
+	local weaponId = sword:GetAttribute("WeaponId")
+	if weaponId and weaponId ~= "" and weaponId ~= "BronzeSword" then
+		return -- weapons with their own glow keep it
+	end
 	for _, name in { "Gem", "Fuller" } do
 		local p = sword:FindFirstChild(name)
 		if p then
@@ -2382,13 +2446,152 @@ return TempleConfig
 ]]></string>
         </Properties>
       </Item>
+      <Item class="ModuleScript" referent="21">
+        <Properties>
+          <string name="Name">WeaponConfig</string>
+          <string name="Source"><![CDATA[-- WeaponConfig (ModuleScript)
+-- Location: ReplicatedStorage > Shared > WeaponConfig
+--
+-- Phase 7C: weapons, rarities, the Divine Forge and boss drops.
+-- Damage = a multiplier on your attack power (Bronze Sword = 1.0), raised by
+-- +6% per upgrade level. It applies to basic attacks AND god abilities.
+-- Speed = attack cooldown multiplier (lower = faster).
+-- Special: CritChance (0-1, double damage), LifeSteal (0-1), Pierce (extra
+-- enemies hit), ExtraTargets.
+-- Look: Blade / Handle / Glow colours and Length for the model in your hand.
+-- All numbers are PLACEHOLDERS, balanced in Phase 8.
+
+local WeaponConfig = {}
+
+WeaponConfig.Rarities = {
+	{ Name = "Common", Color = Color3.fromRGB(175, 175, 175), MaxLevel = 5, UpgradeGold = 200, UpgradeAmbrosia = 0, Salvage = 100 },
+	{ Name = "Uncommon", Color = Color3.fromRGB(90, 200, 90), MaxLevel = 6, UpgradeGold = 600, UpgradeAmbrosia = 0, Salvage = 400 },
+	{ Name = "Rare", Color = Color3.fromRGB(70, 140, 255), MaxLevel = 8, UpgradeGold = 2000, UpgradeAmbrosia = 0, Salvage = 1500 },
+	{ Name = "Epic", Color = Color3.fromRGB(175, 80, 240), MaxLevel = 10, UpgradeGold = 8000, UpgradeAmbrosia = 1, Salvage = 6000 },
+	{ Name = "Legendary", Color = Color3.fromRGB(255, 160, 40), MaxLevel = 12, UpgradeGold = 30000, UpgradeAmbrosia = 2, Salvage = 25000 },
+	{ Name = "Divine", Color = Color3.fromRGB(255, 225, 110), MaxLevel = 15, UpgradeGold = 100000, UpgradeAmbrosia = 3, Salvage = 80000 },
+}
+
+-- How each weapon type attacks. Combo = the three swing animations (SwordPoses).
+WeaponConfig.Types = {
+	Sword = { Range = 7.5, ArcDot = 0.2, MaxTargets = 3, Cooldown = 0.45, Combo = { "Slash1", "Slash2", "Lunge" } },
+	Axe = { Range = 7.5, ArcDot = 0.0, MaxTargets = 4, Cooldown = 0.6, Combo = { "Slash1", "Cleave", "Slash2" } },
+	Spear = { Range = 10.5, ArcDot = 0.6, MaxTargets = 2, Cooldown = 0.55, Combo = { "Lunge", "Slash1", "Lunge" } },
+	Trident = { Range = 9, ArcDot = 0.35, MaxTargets = 4, Cooldown = 0.55, Combo = { "Lunge", "Slash2", "Lunge" } },
+	Bow = { Range = 32, Width = 3, MaxTargets = 1, Cooldown = 0.6, Ranged = true, Combo = { "Lunge", "Lunge", "Lunge" } },
+}
+
+WeaponConfig.StarterWeapon = "BronzeSword"
+
+-- Cost = Gold (+ Ambrosia) to craft at the Divine Forge; nil = not craftable.
+-- Drop = { Boss = enemy type, Chance = 0-1 } when you win that boss's arena or trial.
+WeaponConfig.Weapons = {
+	BronzeSword = { Name = "Bronze Sword", Type = "Sword", Rarity = 1, Damage = 1.0, Speed = 1.0,
+		Look = { Blade = Color3.fromRGB(205, 140, 75), Glow = nil, Length = 3.0 } },
+	WoodenSpear = { Name = "Wooden Spear", Type = "Spear", Rarity = 1, Damage = 1.05, Speed = 1.0, Cost = { Gold = 300 },
+		Look = { Blade = Color3.fromRGB(170, 170, 175), Handle = Color3.fromRGB(120, 85, 55), Length = 5.5 } },
+	HuntingBow = { Name = "Hunting Bow", Type = "Bow", Rarity = 1, Damage = 0.95, Speed = 1.0, Cost = { Gold = 400 },
+		Look = { Blade = Color3.fromRGB(120, 85, 55), Length = 4 } },
+
+	IronSword = { Name = "Iron Sword", Type = "Sword", Rarity = 2, Damage = 1.2, Speed = 1.0, Cost = { Gold = 2000 },
+		Look = { Blade = Color3.fromRGB(190, 195, 205), Length = 3.2 } },
+	HopliteSpear = { Name = "Hoplite Spear", Type = "Spear", Rarity = 2, Damage = 1.25, Speed = 1.0, Cost = { Gold = 2500 },
+		Look = { Blade = Color3.fromRGB(205, 140, 75), Handle = Color3.fromRGB(110, 75, 45), Length = 6 } },
+	FishermansTrident = { Name = "Fisherman's Trident", Type = "Trident", Rarity = 2, Damage = 1.2, Speed = 1.0, Cost = { Gold = 2500 },
+		Look = { Blade = Color3.fromRGB(180, 190, 200), Handle = Color3.fromRGB(110, 80, 50), Length = 5.5 } },
+
+	ChampionsBlade = { Name = "Champion's Blade", Type = "Sword", Rarity = 3, Damage = 1.45, Speed = 0.95, Special = { CritChance = 0.1 },
+		Cost = { Gold = 8000, Ambrosia = 1 }, Drop = { Boss = "TrainingChampion", Chance = 0.3 },
+		Look = { Blade = Color3.fromRGB(230, 205, 120), Glow = Color3.fromRGB(255, 220, 120), Length = 3.4 } },
+	SilverLongbow = { Name = "Silver Longbow", Type = "Bow", Rarity = 3, Damage = 1.4, Speed = 0.95, Special = { Pierce = 1 },
+		Cost = { Gold = 12000, Ambrosia = 2 },
+		Look = { Blade = Color3.fromRGB(210, 215, 225), Glow = Color3.fromRGB(180, 220, 255), Length = 4.6 } },
+	SpartanBlade = { Name = "Spartan Blade", Type = "Sword", Rarity = 3, Damage = 1.55, Speed = 0.9, Special = { CritChance = 0.15 },
+		Drop = { Boss = "SpartanWarlord", Chance = 0.3 },
+		Look = { Blade = Color3.fromRGB(200, 60, 45), Glow = Color3.fromRGB(255, 90, 60), Length = 3.2 } },
+
+	MinotaursLabrys = { Name = "Minotaur's Labrys", Type = "Axe", Rarity = 4, Damage = 1.9, Speed = 1.1, Special = { ExtraTargets = 2 },
+		Drop = { Boss = "Minotaur", Chance = 0.25 },
+		Look = { Blade = Color3.fromRGB(150, 140, 130), Handle = Color3.fromRGB(95, 60, 38), Glow = Color3.fromRGB(255, 160, 80), Length = 4.2 } },
+	GorgonSpear = { Name = "Gorgon Spear", Type = "Spear", Rarity = 4, Damage = 1.8, Speed = 0.95, Special = { LifeSteal = 0.05 },
+		Drop = { Boss = "Medusa", Chance = 0.25 },
+		Look = { Blade = Color3.fromRGB(110, 200, 100), Handle = Color3.fromRGB(60, 90, 60), Glow = Color3.fromRGB(120, 255, 130), Length = 6.5 } },
+	TridentOfTheDeep = { Name = "Trident of the Deep", Type = "Trident", Rarity = 4, Damage = 1.75, Speed = 0.95, Special = { ExtraTargets = 1 },
+		Cost = { Gold = 60000, Ambrosia = 6 },
+		Look = { Blade = Color3.fromRGB(60, 200, 220), Handle = Color3.fromRGB(40, 90, 120), Glow = Color3.fromRGB(80, 230, 255), Length = 6 } },
+
+	HellfireBlade = { Name = "Hellfire Blade", Type = "Sword", Rarity = 5, Damage = 2.2, Speed = 0.9, Special = { CritChance = 0.2 },
+		Drop = { Boss = "Cerberus", Chance = 0.2 },
+		Look = { Blade = Color3.fromRGB(60, 30, 30), Glow = Color3.fromRGB(255, 100, 30), Length = 3.6 } },
+	SunlightBow = { Name = "Sunlight Bow", Type = "Bow", Rarity = 5, Damage = 2.1, Speed = 0.9, Special = { Pierce = 3 },
+		Cost = { Gold = 250000, Ambrosia = 15 },
+		Look = { Blade = Color3.fromRGB(245, 200, 80), Glow = Color3.fromRGB(255, 220, 90), Length = 5 } },
+	AegisSpear = { Name = "Aegis Spear", Type = "Spear", Rarity = 5, Damage = 2.15, Speed = 0.9, Special = { LifeSteal = 0.08 },
+		Cost = { Gold = 250000, Ambrosia = 15 },
+		Look = { Blade = Color3.fromRGB(230, 230, 240), Handle = Color3.fromRGB(212, 175, 55), Glow = Color3.fromRGB(255, 240, 200), Length = 7 } },
+
+	ThunderboltBlade = { Name = "Thunderbolt Blade", Type = "Sword", Rarity = 6, Damage = 2.8, Speed = 0.85, Special = { CritChance = 0.25, LifeSteal = 0.05 },
+		Drop = { Boss = "TitanKing", Chance = 0.15 },
+		Look = { Blade = Color3.fromRGB(240, 240, 255), Glow = Color3.fromRGB(110, 190, 255), Length = 3.8 } },
+	TridentOfPoseidon = { Name = "Trident of Poseidon", Type = "Trident", Rarity = 6, Damage = 2.7, Speed = 0.85, Special = { ExtraTargets = 2, LifeSteal = 0.04 },
+		Cost = { Gold = 1000000, Ambrosia = 50 },
+		Look = { Blade = Color3.fromRGB(255, 225, 110), Handle = Color3.fromRGB(40, 150, 200), Glow = Color3.fromRGB(80, 230, 255), Length = 7 } },
+	BowOfApollo = { Name = "Bow of Apollo", Type = "Bow", Rarity = 6, Damage = 2.6, Speed = 0.85, Special = { Pierce = 5, CritChance = 0.15 },
+		Cost = { Gold = 1000000, Ambrosia = 50 },
+		Look = { Blade = Color3.fromRGB(255, 225, 110), Glow = Color3.fromRGB(255, 240, 160), Length = 5.4 } },
+}
+
+for id, weapon in WeaponConfig.Weapons do
+	weapon.Id = id
+end
+
+-- Display order (forge list): by rarity, then name.
+WeaponConfig.Order = {}
+for id in WeaponConfig.Weapons do
+	table.insert(WeaponConfig.Order, id)
+end
+table.sort(WeaponConfig.Order, function(a, b)
+	local wa, wb = WeaponConfig.Weapons[a], WeaponConfig.Weapons[b]
+	if wa.Rarity ~= wb.Rarity then
+		return wa.Rarity < wb.Rarity
+	end
+	return wa.Name < wb.Name
+end)
+
+WeaponConfig.DamagePerLevel = 0.06      -- +6% per upgrade level
+WeaponConfig.UpgradeDiscountPerTrainingLevel = 0.04 -- Training Grounds: -4% upgrade cost per level
+WeaponConfig.ForgeRange = 22            -- crafting/upgrading needs you at the Divine Forge
+
+-- Attack power multiplier of a weapon at a level.
+function WeaponConfig.Power(weaponId, level)
+	local w = WeaponConfig.Weapons[weaponId]
+	return (if w then w.Damage else 1) * (1 + WeaponConfig.DamagePerLevel * (level or 0))
+end
+
+-- Cost of the next upgrade: gold, ambrosia (nil if maxed).
+function WeaponConfig.UpgradeCost(weaponId, level, trainingLevel)
+	local w = WeaponConfig.Weapons[weaponId]
+	local rarity = w and WeaponConfig.Rarities[w.Rarity]
+	if not rarity or level >= rarity.MaxLevel then
+		return nil
+	end
+	local discount = 1 - WeaponConfig.UpgradeDiscountPerTrainingLevel * (trainingLevel or 0)
+	local gold = math.floor(rarity.UpgradeGold * (level + 1) ^ 1.5 * discount)
+	local ambrosia = rarity.UpgradeAmbrosia * (if level >= 3 then 2 else 1)
+	return gold, ambrosia
+end
+
+return WeaponConfig
+]]></string>
+        </Properties>
+      </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="21">
+  <Item class="ServerScriptService" referent="22">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Script" referent="22">
+    <Item class="Script" referent="23">
       <Properties>
         <string name="Name">Main</string>
         <token name="RunContext">0</token>
@@ -2421,6 +2624,7 @@ local DiagnosticsService = require(Services:WaitForChild("DiagnosticsService"))
 local AbilityService = require(Services:WaitForChild("AbilityService"))
 local ArenaService = require(Services:WaitForChild("ArenaService"))
 local AscensionService = require(Services:WaitForChild("AscensionService"))
+local InventoryService = require(Services:WaitForChild("InventoryService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -2461,6 +2665,7 @@ local abilityRemote = newRemote("UseAbility") -- client -> server "use my Q / E 
 local arenaActionRemote = newRemote("ArenaAction") -- client -> server arena menu requests
 local arenaEventRemote = newRemote("ArenaEvent") -- server -> client party queue and results
 local ascensionRemote = newRemote("AscensionAction") -- client -> server "start my ascension trial"
+local weaponRemote = newRemote("WeaponAction") -- client -> server equip / craft / upgrade a weapon
 
 remotes.Parent = ReplicatedStorage
 
@@ -2485,6 +2690,14 @@ ArenaService.Init(DataService, ProgressionService, PlotService, EnemyService, no
 ArenaService.BuildGate()
 AscensionService.Init(DataService, ProgressionService, ArenaService, notifyRemote, fxRemote, ascensionRemote, if GameConfig.Debug.Diagnostics then DiagnosticsService else nil)
 AscensionService.BuildChamber()
+InventoryService.Init(DataService, ProgressionService, notifyRemote, weaponRemote)
+InventoryService.BuildForge()
+CombatService.SetWeaponProvider(InventoryService.GetEquipped)
+AbilityService.SetPowerProvider(function(player)
+	return InventoryService.GetEquipped(player).Power
+end)
+InventoryService.SetWeaponChangedHandler(CombatService.RefreshWeapon)
+ArenaService.SetDropHandler(InventoryService.RollBossDrops)
 if GameConfig.Debug.Diagnostics then
 	DiagnosticsService.Init(reportRemote)
 end
@@ -2592,6 +2805,7 @@ local function onPlayerAdded(player)
 	ProgressionService.SetupPlayer(player)
 	GodService.SetupPlayer(player)
 	TempleService.SetupPlayer(player, plot)
+	InventoryService.SetupPlayer(player) -- before combat, so the right weapon is in hand
 	CombatService.SetupPlayer(player)
 	AbilityService.SetupPlayer(player)
 	AscensionService.SetupPlayer(player)
@@ -2664,11 +2878,11 @@ end)
 ]]></string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="23">
+    <Item class="Folder" referent="24">
       <Properties>
         <string name="Name">Services</string>
       </Properties>
-      <Item class="ModuleScript" referent="24">
+      <Item class="ModuleScript" referent="25">
         <Properties>
           <string name="Name">AbilityService</string>
           <string name="Source"><![CDATA[-- AbilityService (ModuleScript)
@@ -2765,11 +2979,14 @@ local function activeBuffs(player)
 end
 
 -- Damage one point of "ability damage" is worth for this player.
+local powerProvider = nil -- Phase 7C: function(player) -> equipped weapon power multiplier
+
 local function baseDamage(player)
 	local baseAttack = player:GetAttribute("BaseAttack") or 10
 	local combatBonus = TempleService.GetEffect(player, "CombatBonusPercent") / 100
 	local buff = activeBuffs(player).AttackPercent / 100
-	return baseAttack * (1 + combatBonus) * (1 + buff)
+	local power = if powerProvider then powerProvider(player) else 1
+	return baseAttack * power * (1 + combatBonus) * (1 + buff)
 end
 
 -- Everyone in the server, always including the caster.
@@ -3262,6 +3479,10 @@ function AbilityService.Init(dataService, progressionService, templeService, ene
 	end
 end
 
+function AbilityService.SetPowerProvider(provider)
+	powerProvider = provider
+end
+
 function AbilityService.SetupPlayer(player)
 	state[player] = { ReadyAt = {}, Buffs = {} }
 	for _, slot in { "Q", "E", "R", "Form", "Dash" } do
@@ -3277,7 +3498,7 @@ return AbilityService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="25">
+      <Item class="ModuleScript" referent="26">
         <Properties>
           <string name="Name">ArenaService</string>
           <string name="Source"><![CDATA[-- ArenaService (ModuleScript)
@@ -3318,6 +3539,7 @@ local playerRun = {} -- [Player] = run
 local queues = {}    -- [arenaId] = { Player, ... }
 local slotUsed = {}  -- [slot] = true
 local nextRunId = 0
+local dropHandler = nil -- Phase 7C: function(player, bossTypes) -> { weapon names won }
 local arenasFolder = nil
 
 local ATTRIBUTES = { "ArenaRunId", "ArenaName", "ArenaState", "ArenaWave", "ArenaWaves", "ArenaEnemiesLeft", "ArenaTimerEnd" }
@@ -3548,6 +3770,9 @@ local function spawnEnemy(run, enemyType, position, isBoss)
 	if model then
 		run.Enemies[model] = true
 		run.Remaining += 1
+		if isBoss then
+			run.BossTypes[enemyType] = true
+		end
 	end
 	return model
 end
@@ -3643,7 +3868,9 @@ finish = function(run, victory)
 					paid[currency] = value
 				end
 			end
+			local weapons = if victory and dropHandler then dropHandler(player, run.BossTypes) else {}
 			arenaEvent:FireClient(player, "Result", {
+				Weapons = weapons,
 				Victory = victory,
 				Arena = run.Arena.DisplayName,
 				WavesCleared = run.Cleared,
@@ -3721,6 +3948,7 @@ local function startRun(arena, members, onVictory)
 		StartedAt = os.clock(),
 		Connections = {},
 		OnVictory = onVictory,
+		BossTypes = {},
 	}
 	runs[run.Id] = run
 	run.Model = buildArena(center, arena)
@@ -3839,6 +4067,10 @@ function ArenaService.Leave(player)
 	return true
 end
 
+function ArenaService.SetDropHandler(handler)
+	dropHandler = handler
+end
+
 function ArenaService.IsInRun(player)
 	return playerRun[player] ~= nil
 end
@@ -3955,7 +4187,7 @@ return ArenaService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="26">
+      <Item class="ModuleScript" referent="27">
         <Properties>
           <string name="Name">AscensionService</string>
           <string name="Source"><![CDATA[-- AscensionService (ModuleScript)
@@ -4305,7 +4537,7 @@ return AscensionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="27">
+      <Item class="ModuleScript" referent="28">
         <Properties>
           <string name="Name">CombatService</string>
           <string name="Source"><![CDATA[-- CombatService (ModuleScript)
@@ -4346,6 +4578,7 @@ local fxRemote = nil
 local modifierProvider = nil -- Phase 4B: function(player) -> { AttackPercent, DamageTaken }
 local dashHandler = nil      -- Phase 4B: function(player, direction) for god dash abilities
 local counterHandler = nil   -- Phase 7A: function(player, attackerModel) -> true if the hit was parried
+local weaponProvider = nil   -- Phase 7C: function(player) -> equipped weapon stats (InventoryService.GetEquipped)
 
 local function modifiers(player)
 	return if modifierProvider then modifierProvider(player) else { AttackPercent = 0, DamageTaken = 1 }
@@ -4454,7 +4687,8 @@ end
 
 local function giveSword(player, character)
 	if character.Parent and character:FindFirstChildOfClass("Humanoid") then
-		SwordBuilder.Attach(character, swordColor(player))
+		local weapon = if weaponProvider then weaponProvider(player).Weapon else nil
+		SwordBuilder.Attach(character, swordColor(player), weapon)
 	end
 end
 
@@ -4484,11 +4718,18 @@ function CombatService.BasicAttack(player, combo)
 		return 0
 	end
 	local attack = CFG.BasicAttack
-	st.NextAttackAt = now + attack.Cooldown * 0.9 -- small tolerance for network timing
+	-- Phase 7C: the equipped weapon decides reach, swing, speed and damage.
+	local weapon = if weaponProvider then weaponProvider(player) else nil
+	local range = if weapon then weapon.Range else attack.Range
+	local arcDot = if weapon and weapon.ArcDot then weapon.ArcDot else attack.ArcDot
+	local maxTargets = if weapon then weapon.MaxTargets else attack.MaxTargets
+	local cooldown = if weapon then weapon.Cooldown else attack.Cooldown
+	st.NextAttackAt = now + cooldown * 0.9 -- small tolerance for network timing
 	flashTrail(player)
 
 	-- Let everyone else's screen play the same swing.
-	local moveName = SwordPoses.ComboOrder[if type(combo) == "number" then math.clamp(math.floor(combo), 1, 3) else 1]
+	local index = if type(combo) == "number" then math.clamp(math.floor(combo), 1, 3) else 1
+	local moveName = if weapon and weapon.Combo then weapon.Combo[index] else SwordPoses.ComboOrder[index]
 	for _, other in Players:GetPlayers() do
 		if other ~= player then
 			fxRemote:FireClient(other, "Swing", player, moveName)
@@ -4497,17 +4738,33 @@ function CombatService.BasicAttack(player, combo)
 
 	local baseAttack = player:GetAttribute("BaseAttack") or 10
 	local combatBonus = TempleService.GetEffect(player, "CombatBonusPercent") / 100
-	local buffBonus = modifiers(player).AttackPercent / 100
+	local mods = modifiers(player)
+	local buffBonus = mods.AttackPercent / 100
+	local power = if weapon then weapon.Power else 1
 	local look = flat(root.CFrame.LookVector).Unit
 
-	-- Enemies in front of the player, closest first.
+	-- Targets: in front (melee), or along a line (bows), closest first.
 	local candidates = {}
-	for _, record in EnemyService.GetEnemiesInRange(root.Position, attack.Range + 4) do
-		local offset = flat(record.Root.Position - root.Position)
-		-- +1.5 studs allows for internet delay (positions on the server lag a little).
-		local reach = attack.Range + record.Root.Size.X / 2 + 1.5
-		if offset.Magnitude <= reach and (offset.Magnitude < 1.5 or look:Dot(offset.Unit) >= attack.ArcDot) then
-			table.insert(candidates, { Record = record, Distance = offset.Magnitude })
+	if weapon and weapon.Ranged then
+		local finish = root.Position + look * range
+		for _, record in EnemyService.GetEnemiesInRange(root.Position, range + 4) do
+			local offset = flat(record.Root.Position - root.Position)
+			local along = offset:Dot(look)
+			local side = (offset - look * along).Magnitude
+			if along >= -1 and along <= range + 1.5 and side <= (weapon.Width or 3) / 2 + record.Root.Size.X / 2 + 1 then
+				table.insert(candidates, { Record = record, Distance = along })
+			end
+		end
+		local color = weapon.Weapon.Look.Glow or weapon.Weapon.Look.Blade or Color3.new(1, 1, 1)
+		fxRemote:FireAllClients("Beam", root.Position + Vector3.new(0, 1.5, 0), color, finish + Vector3.new(0, 1.5, 0), 0.6)
+	else
+		for _, record in EnemyService.GetEnemiesInRange(root.Position, range + 4) do
+			local offset = flat(record.Root.Position - root.Position)
+			-- +1.5 studs allows for internet delay (positions on the server lag a little).
+			local reach = range + record.Root.Size.X / 2 + 1.5
+			if offset.Magnitude <= reach and (offset.Magnitude < 1.5 or look:Dot(offset.Unit) >= arcDot) then
+				table.insert(candidates, { Record = record, Distance = offset.Magnitude })
+			end
 		end
 	end
 	table.sort(candidates, function(a, b)
@@ -4515,13 +4772,14 @@ function CombatService.BasicAttack(player, combo)
 	end)
 
 	local hits = 0
-	for i = 1, math.min(#candidates, attack.MaxTargets) do
+	local lifeSteal = (mods.LifeSteal or 0) + (if weapon then weapon.LifeSteal else 0)
+	for i = 1, math.min(#candidates, maxTargets) do
 		local record = candidates[i].Record
 		local spread = 1 + random:NextNumber(-attack.RandomSpread, attack.RandomSpread)
-		local damage = baseAttack * attack.DamageMultiplier * (1 + combatBonus) * (1 + buffBonus) * spread
-		if EnemyService.DamageEnemy(record.Model, damage, player) then
+		local crit = weapon ~= nil and random:NextNumber() < weapon.CritChance
+		local damage = baseAttack * attack.DamageMultiplier * power * (1 + combatBonus) * (1 + buffBonus) * spread * (if crit then 2 else 1)
+		if EnemyService.DamageEnemy(record.Model, damage, player, { Crit = crit }) then
 			hits += 1
-			local lifeSteal = modifiers(player).LifeSteal or 0
 			local _, humanoid = getParts(player)
 			if lifeSteal > 0 and humanoid then
 				humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + damage * lifeSteal)
@@ -4656,6 +4914,18 @@ function CombatService.SetCounterHandler(handler)
 	counterHandler = handler
 end
 
+function CombatService.SetWeaponProvider(provider)
+	weaponProvider = provider
+end
+
+-- Swaps the weapon in the player's hand right away (after equipping).
+function CombatService.RefreshWeapon(player)
+	local character = getParts(player)
+	if character then
+		giveSword(player, character)
+	end
+end
+
 function CombatService.SetupPlayer(player)
 	state[player] = {
 		NextAttackAt = 0,
@@ -4713,7 +4983,7 @@ return CombatService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="28">
+      <Item class="ModuleScript" referent="29">
         <Properties>
           <string name="Name">DataService</string>
           <string name="Source"><![CDATA[-- DataService (ModuleScript)
@@ -5093,7 +5363,7 @@ return DataService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="29">
+      <Item class="ModuleScript" referent="30">
         <Properties>
           <string name="Name">DiagnosticsService</string>
           <string name="Source"><![CDATA[-- DiagnosticsService (ModuleScript)
@@ -5201,7 +5471,7 @@ return DiagnosticsService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="30">
+      <Item class="ModuleScript" referent="31">
         <Properties>
           <string name="Name">EnemyService</string>
           <string name="Source"><![CDATA[-- EnemyService (ModuleScript)
@@ -6223,7 +6493,7 @@ function EnemyService.DamageEnemy(model, amount, player, options)
 		record.Contributors[player] = info
 	end
 	local head = model:FindFirstChild("Head") or record.Root
-	fxRemote:FireAllClients("Damage", head.Position + Vector3.new(0, 1.5, 0), amount, "Enemy")
+	fxRemote:FireAllClients("Damage", head.Position + Vector3.new(0, 1.5, 0), amount, if options and options.Crit then "Crit" else "Enemy")
 
 	if record.Config.Immortal then
 		-- Training dummies never die: a "knockout" pops them straight back up.
@@ -6376,7 +6646,7 @@ return EnemyService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="31">
+      <Item class="ModuleScript" referent="32">
         <Properties>
           <string name="Name">GodService</string>
           <string name="Source"><![CDATA[-- GodService (ModuleScript)
@@ -6832,7 +7102,350 @@ return GodService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="32">
+      <Item class="ModuleScript" referent="33">
+        <Properties>
+          <string name="Name">InventoryService</string>
+          <string name="Source"><![CDATA[-- InventoryService (ModuleScript)
+-- Location: ServerScriptService > Services > InventoryService
+--
+-- Phase 7C: weapons, all decided on the server.
+--   * Saved in data.Inventory.Items = { { Uid, Id, Level }, ... } and
+--     data.Inventory.EquippedWeapon = Uid. Uids are made here (never by the
+--     client) and each weapon Id can only be owned once, so items can't be
+--     duplicated. A duplicate drop is salvaged into Gold instead.
+--   * Everyone owns the Bronze Sword.
+--   * Equip anywhere; craft and upgrade at the Divine Forge (distance checked).
+--   * Boss drops are rolled when an arena or trial with that boss is won.
+-- The client sees: attribute "WeaponsJson" (owned weapons) and
+-- "EquippedWeaponId", "EquippedWeaponLevel", "WeaponType", "WeaponCooldown",
+-- "WeaponRange" (for the attack buttons and the forge screen).
+
+local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+local Workspace = game:GetService("Workspace")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local WeaponConfig = require(Shared:WaitForChild("WeaponConfig"))
+local WorldBuilder = require(ServerScriptService:WaitForChild("Services"):WaitForChild("WorldBuilder"))
+
+local InventoryService = {}
+
+local DataService = nil
+local ProgressionService = nil
+local notifyRemote = nil
+local weaponChanged = nil -- callback(player) so CombatService can swap the model in hand
+
+local FORGE_POSITION = Vector3.new(42, 1, -36)
+
+local function message(player, text)
+	if notifyRemote and player.Parent then
+		notifyRemote:FireClient(player, "Message", text)
+	end
+end
+
+local function findItem(data, key, value)
+	for _, item in data.Inventory.Items do
+		if item[key] == value then
+			return item
+		end
+	end
+	return nil
+end
+
+local function newItem(weaponId)
+	return { Uid = HttpService:GenerateGUID(false), Id = weaponId, Level = 0 }
+end
+
+-- Keeps saved inventories valid: known weapons only, one of each, levels in range.
+local function sanitize(data)
+	local inventory = data.Inventory
+	if type(inventory.Items) ~= "table" then
+		inventory.Items = {}
+	end
+	local seen = {}
+	local clean = {}
+	for _, item in inventory.Items do
+		local weapon = type(item) == "table" and WeaponConfig.Weapons[item.Id]
+		if weapon and not seen[item.Id] and type(item.Uid) == "string" then
+			seen[item.Id] = true
+			local maxLevel = WeaponConfig.Rarities[weapon.Rarity].MaxLevel
+			item.Level = math.clamp(math.floor(tonumber(item.Level) or 0), 0, maxLevel)
+			table.insert(clean, item)
+		end
+	end
+	inventory.Items = clean
+	if not seen[WeaponConfig.StarterWeapon] then
+		table.insert(inventory.Items, 1, newItem(WeaponConfig.StarterWeapon))
+	end
+	if not findItem(data, "Uid", inventory.EquippedWeapon) then
+		inventory.EquippedWeapon = findItem(data, "Id", WeaponConfig.StarterWeapon).Uid
+	end
+end
+
+local function push(player, data)
+	local list = {}
+	for _, item in data.Inventory.Items do
+		table.insert(list, { Uid = item.Uid, Id = item.Id, Level = item.Level })
+	end
+	player:SetAttribute("WeaponsJson", HttpService:JSONEncode(list))
+	local equipped = findItem(data, "Uid", data.Inventory.EquippedWeapon)
+	local weapon = WeaponConfig.Weapons[equipped.Id]
+	local kind = WeaponConfig.Types[weapon.Type]
+	player:SetAttribute("EquippedWeaponId", equipped.Id)
+	player:SetAttribute("EquippedWeaponUid", equipped.Uid)
+	player:SetAttribute("EquippedWeaponLevel", equipped.Level)
+	player:SetAttribute("WeaponType", weapon.Type)
+	player:SetAttribute("WeaponCooldown", kind.Cooldown * weapon.Speed)
+	player:SetAttribute("WeaponRange", kind.Range)
+end
+
+local function nearForge(player)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	return root ~= nil and (root.Position - FORGE_POSITION).Magnitude <= WeaponConfig.ForgeRange
+end
+
+--------------------------------------------------------------------------
+-- Public API
+--------------------------------------------------------------------------
+
+-- Everything combat needs about the equipped weapon.
+function InventoryService.GetEquipped(player)
+	local data = DataService.GetData(player)
+	local item = data and findItem(data, "Uid", data.Inventory.EquippedWeapon)
+	local weapon = item and WeaponConfig.Weapons[item.Id] or WeaponConfig.Weapons[WeaponConfig.StarterWeapon]
+	local level = item and item.Level or 0
+	local kind = WeaponConfig.Types[weapon.Type]
+	local special = weapon.Special or {}
+	return {
+		Weapon = weapon,
+		Level = level,
+		Power = WeaponConfig.Power(weapon.Id, level),
+		Type = weapon.Type,
+		Range = kind.Range,
+		ArcDot = kind.ArcDot,
+		Width = kind.Width,
+		Ranged = kind.Ranged == true,
+		Cooldown = kind.Cooldown * weapon.Speed,
+		MaxTargets = kind.MaxTargets + (special.ExtraTargets or 0) + (special.Pierce or 0),
+		CritChance = special.CritChance or 0,
+		LifeSteal = special.LifeSteal or 0,
+		Combo = kind.Combo,
+	}
+end
+
+-- Adds a weapon (or salvages a duplicate into Gold). Returns "New" or "Salvaged".
+function InventoryService.GiveWeapon(player, weaponId)
+	local data = DataService.GetData(player)
+	local weapon = WeaponConfig.Weapons[weaponId]
+	if not data or not weapon then
+		return nil
+	end
+	if findItem(data, "Id", weaponId) then
+		local gold = WeaponConfig.Rarities[weapon.Rarity].Salvage
+		ProgressionService.AddCurrency(player, "Gold", gold, "Salvage")
+		message(player, ("You already own the %s: salvaged for %d Gold."):format(weapon.Name, gold))
+		return "Salvaged"
+	end
+	table.insert(data.Inventory.Items, newItem(weaponId))
+	push(player, data)
+	message(player, ("New weapon: %s (%s)!"):format(weapon.Name, WeaponConfig.Rarities[weapon.Rarity].Name))
+	return "New"
+end
+
+function InventoryService.Equip(player, uid)
+	local data = DataService.GetData(player)
+	local item = data and type(uid) == "string" and findItem(data, "Uid", uid)
+	if not item then
+		return false
+	end
+	data.Inventory.EquippedWeapon = uid
+	push(player, data)
+	if weaponChanged then
+		weaponChanged(player)
+	end
+	message(player, "Equipped " .. WeaponConfig.Weapons[item.Id].Name .. ".")
+	return true
+end
+
+function InventoryService.Craft(player, weaponId)
+	local data = DataService.GetData(player)
+	local weapon = WeaponConfig.Weapons[weaponId]
+	if not data or not weapon or not weapon.Cost then
+		return false
+	end
+	if not nearForge(player) then
+		message(player, "Crafting happens at the Divine Forge.")
+		return false
+	end
+	if findItem(data, "Id", weaponId) then
+		message(player, "You already own the " .. weapon.Name .. ".")
+		return false
+	end
+	local gold, ambrosia = weapon.Cost.Gold or 0, weapon.Cost.Ambrosia or 0
+	if (data.Currencies.Gold or 0) < gold or (data.Currencies.Ambrosia or 0) < ambrosia then
+		message(player, ("You need %d Gold%s."):format(gold, if ambrosia > 0 then (" and %d Ambrosia"):format(ambrosia) else ""))
+		return false
+	end
+	-- Both checked above with no yield in between, then both spent.
+	if gold > 0 then
+		ProgressionService.SpendCurrency(player, "Gold", gold)
+	end
+	if ambrosia > 0 then
+		ProgressionService.SpendCurrency(player, "Ambrosia", ambrosia)
+	end
+	return InventoryService.GiveWeapon(player, weaponId) == "New"
+end
+
+function InventoryService.Upgrade(player, uid)
+	local data = DataService.GetData(player)
+	local item = data and type(uid) == "string" and findItem(data, "Uid", uid)
+	if not item then
+		return false
+	end
+	if not nearForge(player) then
+		message(player, "Upgrades happen at the Divine Forge.")
+		return false
+	end
+	local weapon = WeaponConfig.Weapons[item.Id]
+	local training = tonumber(data.Temple.Buildings.TrainingGrounds) or 0
+	local gold, ambrosia = WeaponConfig.UpgradeCost(item.Id, item.Level, training)
+	if not gold then
+		message(player, weapon.Name .. " is fully upgraded.")
+		return false
+	end
+	if (data.Currencies.Gold or 0) < gold or (data.Currencies.Ambrosia or 0) < ambrosia then
+		message(player, ("Upgrading needs %d Gold%s."):format(gold, if ambrosia > 0 then (" and %d Ambrosia"):format(ambrosia) else ""))
+		return false
+	end
+	ProgressionService.SpendCurrency(player, "Gold", gold)
+	if ambrosia > 0 then
+		ProgressionService.SpendCurrency(player, "Ambrosia", ambrosia)
+	end
+	item.Level += 1
+	push(player, data)
+	message(player, ("%s upgraded to +%d!"):format(weapon.Name, item.Level))
+	return true
+end
+
+-- Rolls the weapon drops for bosses beaten in a won arena/trial. Returns the names won.
+function InventoryService.RollBossDrops(player, bossTypes)
+	local won = {}
+	for bossType in bossTypes do
+		for id, weapon in WeaponConfig.Weapons do
+			if weapon.Drop and weapon.Drop.Boss == bossType and math.random() < weapon.Drop.Chance then
+				local result = InventoryService.GiveWeapon(player, id)
+				if result then
+					table.insert(won, weapon.Name .. (if result == "Salvaged" then " (salvaged)" else ""))
+				end
+			end
+		end
+	end
+	return won
+end
+
+--------------------------------------------------------------------------
+-- The Divine Forge (placeholder build in Olympus Plaza)
+--------------------------------------------------------------------------
+function InventoryService.BuildForge()
+	local hub = Workspace:WaitForChild("Hub")
+	local marker = hub:FindFirstChild("Divine Forge")
+	if marker then
+		marker:Destroy() -- the old "coming in Phase 7" marker
+	end
+	if hub:FindFirstChild("DivineForge") then
+		return
+	end
+	local forge = Instance.new("Model")
+	forge.Name = "DivineForge"
+	local MP = WorldBuilder.MakePart
+	local c = FORGE_POSITION
+	MP(forge, { Name = "Floor", Size = Vector3.new(16, 0.6, 14), Position = c + Vector3.new(0, 0.3, 0), Material = Enum.Material.Slate, Color = Color3.fromRGB(90, 80, 75) })
+	-- Furnace
+	MP(forge, { Name = "Furnace", Size = Vector3.new(6, 6, 4), Position = c + Vector3.new(0, 3.6, 4), Material = Enum.Material.Brick, Color = Color3.fromRGB(120, 60, 45) })
+	local mouth = MP(forge, { Name = "FurnaceFire", Size = Vector3.new(3, 2, 0.4), Position = c + Vector3.new(0, 2.6, 1.9), Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 120, 30) })
+	local fire = Instance.new("Fire")
+	fire.Size = 6
+	fire.Heat = 12
+	fire.Parent = mouth
+	local light = Instance.new("PointLight")
+	light.Color = Color3.fromRGB(255, 140, 60)
+	light.Range = 18
+	light.Brightness = 2
+	light.Parent = mouth
+	MP(forge, { Name = "Chimney", Size = Vector3.new(2, 8, 2), Position = c + Vector3.new(0, 10.6, 5), Material = Enum.Material.Brick, Color = Color3.fromRGB(110, 55, 42) })
+	-- Anvil
+	MP(forge, { Name = "AnvilBase", Size = Vector3.new(1.6, 1.6, 1.4), Position = c + Vector3.new(0, 1.4, -2) , Material = Enum.Material.Metal, Color = Color3.fromRGB(60, 60, 65) })
+	local anvil = MP(forge, { Name = "Anvil", Size = Vector3.new(3.4, 0.9, 1.6), Position = c + Vector3.new(0, 2.6, -2), Material = Enum.Material.Metal, Color = Color3.fromRGB(70, 70, 78) })
+	WorldBuilder.AddLabel(anvil, "Divine Forge", Color3.fromRGB(255, 160, 60), 5)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = "Forge"
+	prompt.ObjectText = "Divine Forge"
+	prompt.HoldDuration = 0.2
+	prompt.MaxActivationDistance = 12
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = anvil
+	prompt.Triggered:Connect(function(player)
+		notifyRemote:FireClient(player, "OpenWeapons", "Forge")
+	end)
+	forge.Parent = hub
+end
+
+--------------------------------------------------------------------------
+-- Setup
+--------------------------------------------------------------------------
+function InventoryService.Init(dataService, progressionService, notifyRemoteEvent, weaponRemote)
+	DataService = dataService
+	ProgressionService = progressionService
+	notifyRemote = notifyRemoteEvent
+
+	if weaponRemote then
+		local last = {}
+		weaponRemote.OnServerEvent:Connect(function(player, action, arg)
+			local t = os.clock()
+			if last[player] and t - last[player] < 0.4 then
+				return
+			end
+			last[player] = t
+			if type(arg) ~= "string" then
+				return
+			end
+			if action == "Equip" then
+				InventoryService.Equip(player, arg)
+			elseif action == "Craft" then
+				InventoryService.Craft(player, arg)
+			elseif action == "Upgrade" then
+				InventoryService.Upgrade(player, arg)
+			end
+		end)
+	end
+end
+
+-- CombatService registers this to swap the weapon model when you equip.
+function InventoryService.SetWeaponChangedHandler(handler)
+	weaponChanged = handler
+end
+
+function InventoryService.SetupPlayer(player)
+	local data = DataService.GetData(player)
+	if not data then
+		return
+	end
+	sanitize(data)
+	push(player, data)
+end
+
+-- Test helper
+function InventoryService._ForgePosition()
+	return FORGE_POSITION
+end
+
+return InventoryService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="34">
         <Properties>
           <string name="Name">PlotService</string>
           <string name="Source"><![CDATA[-- PlotService (ModuleScript)
@@ -6960,7 +7573,7 @@ return PlotService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="33">
+      <Item class="ModuleScript" referent="35">
         <Properties>
           <string name="Name">ProgressionService</string>
           <string name="Source"><![CDATA[-- ProgressionService (ModuleScript)
@@ -7235,7 +7848,7 @@ return ProgressionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="34">
+      <Item class="ModuleScript" referent="36">
         <Properties>
           <string name="Name">TempleModels</string>
           <string name="Source"><![CDATA[-- TempleModels (ModuleScript)
@@ -7717,7 +8330,7 @@ return TempleModels
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="35">
+      <Item class="ModuleScript" referent="37">
         <Properties>
           <string name="Name">TempleService</string>
           <string name="Source"><![CDATA[-- TempleService (ModuleScript)
@@ -8124,7 +8737,7 @@ return TempleService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="36">
+      <Item class="ModuleScript" referent="38">
         <Properties>
           <string name="Name">WorldBuilder</string>
           <string name="Source"><![CDATA[-- WorldBuilder (ModuleScript)
@@ -8364,16 +8977,16 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="37">
+  <Item class="StarterPlayer" referent="39">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <token name="AvatarJointUpgrade_SerializedRollout">1</token>
     </Properties>
-    <Item class="StarterCharacterScripts" referent="38">
+    <Item class="StarterCharacterScripts" referent="40">
       <Properties>
         <string name="Name">StarterCharacterScripts</string>
       </Properties>
-      <Item class="Script" referent="39">
+      <Item class="Script" referent="41">
         <Properties>
           <string name="Name">Health</string>
           <token name="RunContext">0</token>
@@ -8387,11 +9000,11 @@ return WorldBuilder
         </Properties>
       </Item>
     </Item>
-    <Item class="StarterPlayerScripts" referent="40">
+    <Item class="StarterPlayerScripts" referent="42">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="41">
+      <Item class="LocalScript" referent="43">
         <Properties>
           <string name="Name">AbilityController</string>
           <string name="Source"><![CDATA[-- AbilityController (LocalScript)
@@ -8937,7 +9550,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="42">
+      <Item class="LocalScript" referent="44">
         <Properties>
           <string name="Name">ArenaUI</string>
           <string name="Source"><![CDATA[-- ArenaUI (LocalScript)
@@ -9272,6 +9885,11 @@ eventRemote.OnClientEvent:Connect(function(kind, a, b)
 				table.insert(lines, ("+%s %s"):format(Progression.FormatNumber(value), REWARD_NAMES[key]))
 			end
 		end
+		if type(a.Weapons) == "table" then
+			for _, name in a.Weapons do
+				table.insert(lines, "Weapon: " .. tostring(name))
+			end
+		end
 		resultsRewards.Text = if #lines > 0 then table.concat(lines, "\n") else "No rewards this time.\nClear more waves for a bigger share!"
 		results.Visible = true
 		task.delay(ArenaConfig.ReturnDelay + 1, function()
@@ -9289,7 +9907,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="43">
+      <Item class="LocalScript" referent="45">
         <Properties>
           <string name="Name">AscensionUI</string>
           <string name="Source"><![CDATA[-- AscensionUI (LocalScript)
@@ -9601,7 +10219,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="44">
+      <Item class="LocalScript" referent="46">
         <Properties>
           <string name="Name">CombatController</string>
           <string name="Source"><![CDATA[-- CombatController (LocalScript)
@@ -9633,6 +10251,12 @@ local GodConfig = require(Shared:WaitForChild("GodConfig"))
 local SwordBuilder = require(Shared:WaitForChild("SwordBuilder"))
 local SwordPoses = require(Shared:WaitForChild("SwordPoses"))
 local SwordAnimator = require(Shared:WaitForChild("SwordAnimator"))
+local WeaponConfig = require(Shared:WaitForChild("WeaponConfig"))
+
+-- Phase 7C: the equipped weapon's type (sword, spear, trident, axe, bow).
+local function weaponType()
+	return WeaponConfig.Types[player:GetAttribute("WeaponType") or "Sword"] or WeaponConfig.Types.Sword
+end
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local attackRemote = Remotes:WaitForChild("CombatAttack")
@@ -9726,6 +10350,7 @@ local DAMAGE_COLORS = {
 	KnockedOut = Color3.fromRGB(255, 255, 255),
 	Heal = Color3.fromRGB(110, 255, 130),
 	Countered = Color3.fromRGB(255, 240, 200),
+	Crit = Color3.fromRGB(255, 150, 40),
 }
 
 local function floatingText(position, textValue, color, size, rise)
@@ -9823,7 +10448,10 @@ local function predictHits(root)
 	if not enemies then
 		return
 	end
-	local attack = CFG.BasicAttack
+	local attack = weaponType()
+	if attack.Ranged then
+		return -- arrows: the server draws the shot and the hits
+	end
 	local look = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z).Unit
 	for _, model in enemies:GetChildren() do
 		local enemyRoot = model:FindFirstChild("HumanoidRootPart")
@@ -9875,6 +10503,7 @@ fxRemote.OnClientEvent:Connect(function(kind, position, value, style)
 			elseif style == "KnockedOut" then "Knocked out!"
 			elseif style == "Heal" then "+" .. tostring(value)
 			elseif style == "Countered" then "Countered!"
+			elseif style == "Crit" then ("CRIT %d"):format(value)
 			elseif style == "Blocked" then ("%d (blocked)"):format(value)
 			else tostring(value)
 		floatingText(position + jitter, label, DAMAGE_COLORS[style] or DAMAGE_COLORS.Enemy, if style == "Enemy" then 26 else 22, 3)
@@ -9909,7 +10538,7 @@ local function attack()
 	if now < nextAttackAt then
 		return
 	end
-	nextAttackAt = now + CFG.BasicAttack.Cooldown
+	nextAttackAt = now + (player:GetAttribute("WeaponCooldown") or CFG.BasicAttack.Cooldown)
 	local _, _, root = getParts()
 
 	-- Combo: slash, slash, lunge. Starts over after a short pause.
@@ -9918,7 +10547,7 @@ local function attack()
 	end
 	lastAttackAt = now
 	comboIndex = comboIndex % 3 + 1
-	SwordAnimator.Play(player.Character, SwordPoses.ComboOrder[comboIndex])
+	SwordAnimator.Play(player.Character, weaponType().Combo[comboIndex] or SwordPoses.ComboOrder[comboIndex])
 	predictHits(root)
 	flashTrail()
 	attackRemote:FireServer(comboIndex)
@@ -10232,7 +10861,7 @@ updateEnabled()
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="45">
+      <Item class="LocalScript" referent="47">
         <Properties>
           <string name="Name">Diagnostics</string>
           <string name="Source"><![CDATA[-- Diagnostics (LocalScript)
@@ -10333,7 +10962,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="46">
+      <Item class="LocalScript" referent="48">
         <Properties>
           <string name="Name">GodUI</string>
           <string name="Source"><![CDATA[-- GodUI (LocalScript)
@@ -10912,7 +11541,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="47">
+      <Item class="LocalScript" referent="49">
         <Properties>
           <string name="Name">HUDController</string>
           <string name="Source"><![CDATA[-- HUDController (LocalScript)
@@ -11389,7 +12018,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="48">
+      <Item class="LocalScript" referent="50">
         <Properties>
           <string name="Name">TempleUI</string>
           <string name="Source"><![CDATA[-- TempleUI (LocalScript)
@@ -11740,6 +12369,290 @@ openButton.Activated:Connect(function()
 end)
 closeButton.Activated:Connect(function()
 	panel.Visible = false
+end)
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="LocalScript" referent="51">
+        <Properties>
+          <string name="Name">WeaponUI</string>
+          <string name="Source"><![CDATA[-- WeaponUI (LocalScript)
+-- Location: StarterPlayer > StarterPlayerScripts > WeaponUI
+--
+-- Phase 7C: the "Weapons" button and the weapons screen.
+--   * My Weapons: everything you own, with stats; Equip (anywhere) and
+--     Upgrade (at the Divine Forge).
+--   * Forge: every weapon, its stats and where it comes from (craft cost or
+--     boss drop); Craft at the Divine Forge.
+-- Display only: the server checks costs, ownership and the forge distance.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local WeaponConfig = require(Shared:WaitForChild("WeaponConfig"))
+local Progression = require(Shared:WaitForChild("Progression"))
+local CombatConfig = require(Shared:WaitForChild("CombatConfig"))
+
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local weaponRemote = Remotes:WaitForChild("WeaponAction")
+local notifyRemote = Remotes:WaitForChild("Notify")
+
+local THEME = {
+	Marble = Color3.fromRGB(246, 242, 232),
+	MarbleDark = Color3.fromRGB(228, 220, 204),
+	Gold = Color3.fromRGB(212, 175, 55),
+	Bronze = Color3.fromRGB(140, 92, 45),
+	Text = Color3.fromRGB(58, 44, 28),
+	SubText = Color3.fromRGB(110, 95, 75),
+	White = Color3.new(1, 1, 1),
+	Ready = Color3.fromRGB(70, 150, 70),
+	Locked = Color3.fromRGB(130, 130, 140),
+	Forge = Color3.fromRGB(210, 110, 40),
+}
+
+local function create(className, props, children)
+	local inst = Instance.new(className)
+	for key, value in props do
+		if key ~= "Parent" then
+			inst[key] = value
+		end
+	end
+	for _, child in children or {} do
+		child.Parent = inst
+	end
+	if props.Parent then
+		inst.Parent = props.Parent
+	end
+	return inst
+end
+local function corner(r)
+	return create("UICorner", { CornerRadius = UDim.new(0, r) })
+end
+local function stroke(color, t)
+	return create("UIStroke", { Color = color, Thickness = t, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+end
+local function padding(px)
+	return create("UIPadding", { PaddingTop = UDim.new(0, px), PaddingBottom = UDim.new(0, px), PaddingLeft = UDim.new(0, px), PaddingRight = UDim.new(0, px) })
+end
+local function text(props)
+	props.BackgroundTransparency = 1
+	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
+	props.TextColor3 = props.TextColor3 or THEME.Text
+	props.Font = props.Font or Enum.Font.Gotham
+	return create("TextLabel", props)
+end
+local function button(props)
+	props.AutoButtonColor = true
+	props.Font = props.Font or Enum.Font.GothamBold
+	props.TextColor3 = props.TextColor3 or THEME.White
+	props.TextSize = props.TextSize or 14
+	return create("TextButton", props, { corner(8) })
+end
+
+local gui = create("ScreenGui", { Name = "WeaponUI", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, DisplayOrder = 9, Enabled = false, Parent = playerGui })
+local uiScale = create("UIScale", { Parent = gui })
+local function updateScale()
+	local camera = Workspace.CurrentCamera
+	local viewport = if camera then camera.ViewportSize else Vector2.new(1280, 720)
+	uiScale.Scale = math.clamp(math.min(viewport.X / 1280, viewport.Y / 720), 0.7, 1.2)
+end
+updateScale()
+if Workspace.CurrentCamera then
+	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+end
+local function updateEnabled()
+	gui.Enabled = player:GetAttribute("DataLoaded") == true
+end
+player:GetAttributeChangedSignal("DataLoaded"):Connect(updateEnabled)
+updateEnabled()
+
+-- Button under "Temple Upgrades"
+local openButton = button({
+	Position = UDim2.fromOffset(12, 210), Size = UDim2.fromOffset(290, 40),
+	BackgroundColor3 = THEME.Forge, Text = "Weapons", TextSize = 17, Parent = gui,
+})
+stroke(THEME.Bronze, 2).Parent = openButton
+
+local panel = create("Frame", {
+	AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(700, 520),
+	BackgroundColor3 = THEME.Marble, Visible = false, Parent = gui,
+}, { corner(12), stroke(THEME.Forge, 3), padding(14) })
+text({ Size = UDim2.new(1, -50, 0, 36), Font = Enum.Font.Garamond, TextSize = 34, Text = "Weapons", Parent = panel })
+local closeButton = button({ AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.fromOffset(40, 40), BackgroundColor3 = THEME.Bronze, Text = "X", TextSize = 20, Parent = panel })
+local myTab = button({ Position = UDim2.fromOffset(0, 42), Size = UDim2.fromOffset(160, 34), BackgroundColor3 = THEME.Forge, Text = "My Weapons", Parent = panel })
+local forgeTab = button({ Position = UDim2.fromOffset(170, 42), Size = UDim2.fromOffset(160, 34), BackgroundColor3 = THEME.Locked, Text = "Forge", Parent = panel })
+text({ Position = UDim2.fromOffset(340, 46), Size = UDim2.new(1, -340, 0, 28), TextSize = 13, TextColor3 = THEME.SubText, TextWrapped = true, Text = "Crafting and upgrading happen at the Divine Forge (east of the plaza).", Parent = panel })
+
+local list = create("ScrollingFrame", {
+	Position = UDim2.fromOffset(0, 84), Size = UDim2.new(1, 0, 1, -84), BackgroundTransparency = 1, BorderSizePixel = 0,
+	ScrollBarThickness = 6, ScrollBarImageColor3 = THEME.Bronze, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, Parent = panel,
+}, { create("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }), create("UIPadding", { PaddingRight = UDim.new(0, 10) }) })
+
+local currentTab = "Mine"
+
+local function owned()
+	local ok, items = pcall(function()
+		return HttpService:JSONDecode(player:GetAttribute("WeaponsJson") or "[]")
+	end)
+	return if ok then items else {}
+end
+
+local function statsLine(weapon, level)
+	local kind = WeaponConfig.Types[weapon.Type]
+	local parts = {
+		weapon.Type,
+		("Power x%.2f"):format(WeaponConfig.Power(weapon.Id, level)),
+		("Speed %.2fs"):format(kind.Cooldown * weapon.Speed),
+		("Reach %d"):format(kind.Range),
+	}
+	local special = weapon.Special or {}
+	if special.CritChance then
+		table.insert(parts, ("Crit %d%%"):format(special.CritChance * 100))
+	end
+	if special.LifeSteal then
+		table.insert(parts, ("Life steal %d%%"):format(special.LifeSteal * 100))
+	end
+	if special.Pierce then
+		table.insert(parts, ("Pierces %d"):format(special.Pierce))
+	end
+	if special.ExtraTargets then
+		table.insert(parts, ("+%d targets"):format(special.ExtraTargets))
+	end
+	return table.concat(parts, " · ")
+end
+
+local function costText(gold, ambrosia)
+	local t = Progression.FormatNumber(gold) .. " Gold"
+	if ambrosia and ambrosia > 0 then
+		t ..= " + " .. ambrosia .. " Ambrosia"
+	end
+	return t
+end
+
+local function row(order, weapon, level, subtitle)
+	local rarity = WeaponConfig.Rarities[weapon.Rarity]
+	local frame = create("Frame", { Size = UDim2.new(1, 0, 0, 70), BackgroundColor3 = THEME.MarbleDark, LayoutOrder = order, Parent = list }, { corner(8), padding(8), stroke(rarity.Color, 2) })
+	text({ Size = UDim2.new(1, -250, 0, 22), Font = Enum.Font.GothamBold, TextSize = 17, TextColor3 = rarity.Color,
+		Text = weapon.Name .. (if level and level > 0 then (" +%d"):format(level) else "") .. "   (" .. rarity.Name .. ")", Parent = frame })
+	text({ Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, -250, 0, 18), TextSize = 13, Text = statsLine(weapon, level or 0), Parent = frame })
+	text({ Position = UDim2.fromOffset(0, 40), Size = UDim2.new(1, -250, 0, 16), TextSize = 12, TextColor3 = THEME.SubText, Text = subtitle or "", Parent = frame })
+	return frame
+end
+
+local function refresh()
+	for _, child in list:GetChildren() do
+		if child:IsA("Frame") then
+			child:Destroy()
+		end
+	end
+	myTab.BackgroundColor3 = if currentTab == "Mine" then THEME.Forge else THEME.Locked
+	forgeTab.BackgroundColor3 = if currentTab == "Forge" then THEME.Forge else THEME.Locked
+	local items = owned()
+	local equippedUid = player:GetAttribute("EquippedWeaponUid")
+	local gold = player:GetAttribute("Gold") or 0
+	local ambrosia = player:GetAttribute("Ambrosia") or 0
+	local training = player:GetAttribute("Temple_TrainingGrounds") or 0
+
+	if currentTab == "Mine" then
+		table.sort(items, function(a, b)
+			local wa, wb = WeaponConfig.Weapons[a.Id], WeaponConfig.Weapons[b.Id]
+			return (wa and wa.Rarity or 0) > (wb and wb.Rarity or 0)
+		end)
+		for i, item in items do
+			local weapon = WeaponConfig.Weapons[item.Id]
+			if weapon then
+				local maxLevel = WeaponConfig.Rarities[weapon.Rarity].MaxLevel
+				local upGold, upAmbrosia = WeaponConfig.UpgradeCost(item.Id, item.Level, training)
+				local frame = row(i, weapon, item.Level, if upGold then ("Next upgrade: %s (level %d/%d)"):format(costText(upGold, upAmbrosia), item.Level, maxLevel) else "Fully upgraded")
+				local isEquipped = item.Uid == equippedUid
+				local equip = button({ AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -124, 0.5, 0), Size = UDim2.fromOffset(110, 44),
+					BackgroundColor3 = if isEquipped then THEME.Gold else THEME.Ready, Text = if isEquipped then "Equipped" else "Equip", Parent = frame })
+				equip.Activated:Connect(function()
+					if not isEquipped then
+						weaponRemote:FireServer("Equip", item.Uid)
+					end
+				end)
+				local canAfford = upGold ~= nil and gold >= upGold and ambrosia >= (upAmbrosia or 0)
+				local upgrade = button({ AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(116, 44),
+					BackgroundColor3 = if canAfford then THEME.Forge else THEME.Locked, Text = if upGold then "Upgrade" else "MAX", Parent = frame })
+				upgrade.Activated:Connect(function()
+					if upGold then
+						weaponRemote:FireServer("Upgrade", item.Uid)
+					end
+				end)
+			end
+		end
+	else
+		local ownedIds = {}
+		for _, item in items do
+			ownedIds[item.Id] = true
+		end
+		for i, id in WeaponConfig.Order do
+			local weapon = WeaponConfig.Weapons[id]
+			local source
+			if id == WeaponConfig.StarterWeapon then
+				source = "Everyone starts with this."
+			elseif weapon.Cost then
+				source = "Craft: " .. costText(weapon.Cost.Gold or 0, weapon.Cost.Ambrosia)
+			elseif weapon.Drop then
+				local boss = CombatConfig.Enemies[weapon.Drop.Boss]
+				source = ("Dropped by %s (%d%% when you win)"):format(boss and boss.DisplayName or weapon.Drop.Boss, weapon.Drop.Chance * 100)
+			end
+			local frame = row(i, weapon, 0, source)
+			local have = ownedIds[id] == true
+			if have then
+				button({ AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(116, 44), BackgroundColor3 = THEME.Gold, Text = "Owned", AutoButtonColor = false, Parent = frame })
+			elseif weapon.Cost then
+				local canAfford = gold >= (weapon.Cost.Gold or 0) and ambrosia >= (weapon.Cost.Ambrosia or 0)
+				local craft = button({ AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(116, 44),
+					BackgroundColor3 = if canAfford then THEME.Forge else THEME.Locked, Text = "Craft", Parent = frame })
+				craft.Activated:Connect(function()
+					weaponRemote:FireServer("Craft", id)
+				end)
+			end
+		end
+	end
+end
+
+for _, attribute in { "WeaponsJson", "EquippedWeaponUid", "Gold", "Ambrosia", "Temple_TrainingGrounds" } do
+	player:GetAttributeChangedSignal(attribute):Connect(function()
+		if panel.Visible then
+			refresh()
+		end
+	end)
+end
+
+local function open(tab)
+	currentTab = tab
+	refresh()
+	panel.Visible = true
+end
+openButton.Activated:Connect(function()
+	if panel.Visible then
+		panel.Visible = false
+	else
+		open("Mine")
+	end
+end)
+closeButton.Activated:Connect(function()
+	panel.Visible = false
+end)
+myTab.Activated:Connect(function()
+	open("Mine")
+end)
+forgeTab.Activated:Connect(function()
+	open("Forge")
+end)
+notifyRemote.OnClientEvent:Connect(function(kind, tab)
+	if kind == "OpenWeapons" then
+		open(if tab == "Forge" then "Forge" else "Mine")
+	end
 end)
 ]]></string>
         </Properties>

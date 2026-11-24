@@ -51,7 +51,7 @@ Follow the master specification in **Part C** exactly, including its section 19
 | 4B. God abilities | **Confirmed** ("Phase 4 confirmed") |
 | 5. Arenas | **Accepted** — developer said "move on to phase 6" (v25) |
 | 6. Ascension | **Accepted** — developer: "we can work on how it looks later, next phase" (v30) |
-| 7. Content Expansion | In progress: 7A gods (v33) · **7B arenas/bosses/trials built and server-tested, live (v35)** · 7C weapons/forge · 7D quests · 7E endgame |
+| 7. Content Expansion | In progress: 7A gods (v33) · 7B arenas/bosses/trials (v35) · **7C weapons/forge built and server-tested, live (v36)** · 7D quests · 7E endgame |
 | 5–8 | Not started |
 
 ### How to set up Phase 1 on a Mac (or Windows PC)
@@ -403,6 +403,30 @@ environment, so a session can `rojo build` and publish via
    Lesser God = Cerberus; Olympian = Gauntlet (Minotaur → Medusa → Cerberus,
    +20% boss health); Elder God = Titan King.
 5. Not yet: the hub's "Titan Gate" (boss challenges) belongs to 7E endgame.
+
+### Design decisions made in Phase 7C (weapons, inventory, Divine Forge)
+1. **Types** (`Shared/WeaponConfig.Types`): Sword (7.5 reach, 3 targets,
+   0.45 s), Axe (wide, 4 targets, 0.6 s), Spear (10.5 reach, narrow, 0.55 s),
+   Trident (9 reach, 4 targets), Bow (32-stud line, 1 target + Pierce).
+   Each has its own 3-move combo from SwordPoses.
+2. **Rarities** Common → Divine (colours, max upgrade level 5/6/8/10/12/15).
+   17 weapons; Power multiplies BOTH basic attacks and god abilities; +6%
+   per upgrade level. Specials: CritChance (×2, orange "CRIT" numbers),
+   LifeSteal, Pierce, ExtraTargets.
+3. **Getting them:** everyone has the Bronze Sword; craft at the **Divine
+   Forge** (east of the plaza, replaces the marker; Gold + Ambrosia for Rare+);
+   boss drops on winning an arena/trial (Training Champion → Champion's Blade
+   30%, Spartan Warlord → Spartan Blade 30%, Minotaur → Labrys 25%, Medusa →
+   Gorgon Spear 25%, Cerberus → Hellfire Blade 20%, Titan King → Thunderbolt
+   Blade 15%). Shown on the arena results screen.
+4. **Duplicate-proof:** items `{Uid, Id, Level}` with server-made GUIDs, one
+   per Id; duplicates are salvaged into Gold. Upgrades and crafting need you
+   within 22 studs of the forge (server-checked); Training Grounds level gives
+   −4% upgrade cost per level.
+5. **UI:** "Weapons" button (left, under Temple Upgrades) → My Weapons
+   (equip/upgrade) and Forge (all weapons, sources, craft). The weapon model in
+   hand changes on equip (SwordBuilder builds every type; model name stays
+   "DivineSword"). Preview: `docs/weapons-preview.png`.
 
 ### Ideas from the developer for later (not built yet)
 - **Rank outfits and physique (Phase 6, Ascension):** each ascension rank gets

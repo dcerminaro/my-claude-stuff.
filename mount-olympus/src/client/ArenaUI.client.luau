@@ -330,6 +330,11 @@ eventRemote.OnClientEvent:Connect(function(kind, a, b)
 				table.insert(lines, ("+%s %s"):format(Progression.FormatNumber(value), REWARD_NAMES[key]))
 			end
 		end
+		if type(a.Weapons) == "table" then
+			for _, name in a.Weapons do
+				table.insert(lines, "Weapon: " .. tostring(name))
+			end
+		end
 		resultsRewards.Text = if #lines > 0 then table.concat(lines, "\n") else "No rewards this time.\nClear more waves for a bigger share!"
 		results.Visible = true
 		task.delay(ArenaConfig.ReturnDelay + 1, function()

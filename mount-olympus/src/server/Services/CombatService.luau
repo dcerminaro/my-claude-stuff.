@@ -36,6 +36,7 @@ local fxRemote = nil
 local modifierProvider = nil -- Phase 4B: function(player) -> { AttackPercent, DamageTaken }
 local dashHandler = nil      -- Phase 4B: function(player, direction) for god dash abilities
 local counterHandler = nil   -- Phase 7A: function(player, attackerModel) -> true if the hit was parried
+local weaponProvider = nil   -- Phase 7C: function(player) -> equipped weapon stats (InventoryService.GetEquipped)
 
 local function modifiers(player)
 	return if modifierProvider then modifierProvider(player) else { AttackPercent = 0, DamageTaken = 1 }
@@ -144,7 +145,8 @@ end
 
 local function giveSword(player, character)
 	if character.Parent and character:FindFirstChildOfClass("Humanoid") then
-		SwordBuilder.Attach(character, swordColor(player))
+		local weapon = if weaponProvider then weaponProvider(player).Weapon else nil
+		SwordBuilder.Attach(character, swordColor(player), weapon)
 	end
 end
 
@@ -174,11 +176,18 @@ function CombatService.BasicAttack(player, combo)
 		return 0
 	end
 	local attack = CFG.BasicAttack
-	st.NextAttackAt = now + attack.Cooldown * 0.9 -- small tolerance for network timing
+	-- Phase 7C: the equipped weapon decides reach, swing, speed and damage.
+	local weapon = if weaponProvider then weaponProvider(player) else nil
+	local range = if weapon then weapon.Range else attack.Range
+	local arcDot = if weapon and weapon.ArcDot then weapon.ArcDot else attack.ArcDot
+	local maxTargets = if weapon then weapon.MaxTargets else attack.MaxTargets
+	local cooldown = if weapon then weapon.Cooldown else attack.Cooldown
+	st.NextAttackAt = now + cooldown * 0.9 -- small tolerance for network timing
 	flashTrail(player)
 
 	-- Let everyone else's screen play the same swing.
-	local moveName = SwordPoses.ComboOrder[if type(combo) == "number" then math.clamp(math.floor(combo), 1, 3) else 1]
+	local index = if type(combo) == "number" then math.clamp(math.floor(combo), 1, 3) else 1
+	local moveName = if weapon and weapon.Combo then weapon.Combo[index] else SwordPoses.ComboOrder[index]
 	for _, other in Players:GetPlayers() do
 		if other ~= player then
 			fxRemote:FireClient(other, "Swing", player, moveName)
@@ -187,17 +196,33 @@ function CombatService.BasicAttack(player, combo)
 
 	local baseAttack = player:GetAttribute("BaseAttack") or 10
 	local combatBonus = TempleService.GetEffect(player, "CombatBonusPercent") / 100
-	local buffBonus = modifiers(player).AttackPercent / 100
+	local mods = modifiers(player)
+	local buffBonus = mods.AttackPercent / 100
+	local power = if weapon then weapon.Power else 1
 	local look = flat(root.CFrame.LookVector).Unit
 
-	-- Enemies in front of the player, closest first.
+	-- Targets: in front (melee), or along a line (bows), closest first.
 	local candidates = {}
-	for _, record in EnemyService.GetEnemiesInRange(root.Position, attack.Range + 4) do
-		local offset = flat(record.Root.Position - root.Position)
-		-- +1.5 studs allows for internet delay (positions on the server lag a little).
-		local reach = attack.Range + record.Root.Size.X / 2 + 1.5
-		if offset.Magnitude <= reach and (offset.Magnitude < 1.5 or look:Dot(offset.Unit) >= attack.ArcDot) then
-			table.insert(candidates, { Record = record, Distance = offset.Magnitude })
+	if weapon and weapon.Ranged then
+		local finish = root.Position + look * range
+		for _, record in EnemyService.GetEnemiesInRange(root.Position, range + 4) do
+			local offset = flat(record.Root.Position - root.Position)
+			local along = offset:Dot(look)
+			local side = (offset - look * along).Magnitude
+			if along >= -1 and along <= range + 1.5 and side <= (weapon.Width or 3) / 2 + record.Root.Size.X / 2 + 1 then
+				table.insert(candidates, { Record = record, Distance = along })
+			end
+		end
+		local color = weapon.Weapon.Look.Glow or weapon.Weapon.Look.Blade or Color3.new(1, 1, 1)
+		fxRemote:FireAllClients("Beam", root.Position + Vector3.new(0, 1.5, 0), color, finish + Vector3.new(0, 1.5, 0), 0.6)
+	else
+		for _, record in EnemyService.GetEnemiesInRange(root.Position, range + 4) do
+			local offset = flat(record.Root.Position - root.Position)
+			-- +1.5 studs allows for internet delay (positions on the server lag a little).
+			local reach = range + record.Root.Size.X / 2 + 1.5
+			if offset.Magnitude <= reach and (offset.Magnitude < 1.5 or look:Dot(offset.Unit) >= arcDot) then
+				table.insert(candidates, { Record = record, Distance = offset.Magnitude })
+			end
 		end
 	end
 	table.sort(candidates, function(a, b)
@@ -205,13 +230,14 @@ function CombatService.BasicAttack(player, combo)
 	end)
 
 	local hits = 0
-	for i = 1, math.min(#candidates, attack.MaxTargets) do
+	local lifeSteal = (mods.LifeSteal or 0) + (if weapon then weapon.LifeSteal else 0)
+	for i = 1, math.min(#candidates, maxTargets) do
 		local record = candidates[i].Record
 		local spread = 1 + random:NextNumber(-attack.RandomSpread, attack.RandomSpread)
-		local damage = baseAttack * attack.DamageMultiplier * (1 + combatBonus) * (1 + buffBonus) * spread
-		if EnemyService.DamageEnemy(record.Model, damage, player) then
+		local crit = weapon ~= nil and random:NextNumber() < weapon.CritChance
+		local damage = baseAttack * attack.DamageMultiplier * power * (1 + combatBonus) * (1 + buffBonus) * spread * (if crit then 2 else 1)
+		if EnemyService.DamageEnemy(record.Model, damage, player, { Crit = crit }) then
 			hits += 1
-			local lifeSteal = modifiers(player).LifeSteal or 0
 			local _, humanoid = getParts(player)
 			if lifeSteal > 0 and humanoid then
 				humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + damage * lifeSteal)
@@ -344,6 +370,18 @@ end
 
 function CombatService.SetCounterHandler(handler)
 	counterHandler = handler
+end
+
+function CombatService.SetWeaponProvider(provider)
+	weaponProvider = provider
+end
+
+-- Swaps the weapon in the player's hand right away (after equipping).
+function CombatService.RefreshWeapon(player)
+	local character = getParts(player)
+	if character then
+		giveSword(player, character)
+	end
 end
 
 function CombatService.SetupPlayer(player)

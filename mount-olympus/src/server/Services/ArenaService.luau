@@ -36,6 +36,7 @@ local playerRun = {} -- [Player] = run
 local queues = {}    -- [arenaId] = { Player, ... }
 local slotUsed = {}  -- [slot] = true
 local nextRunId = 0
+local dropHandler = nil -- Phase 7C: function(player, bossTypes) -> { weapon names won }
 local arenasFolder = nil
 
 local ATTRIBUTES = { "ArenaRunId", "ArenaName", "ArenaState", "ArenaWave", "ArenaWaves", "ArenaEnemiesLeft", "ArenaTimerEnd" }
@@ -266,6 +267,9 @@ local function spawnEnemy(run, enemyType, position, isBoss)
 	if model then
 		run.Enemies[model] = true
 		run.Remaining += 1
+		if isBoss then
+			run.BossTypes[enemyType] = true
+		end
 	end
 	return model
 end
@@ -361,7 +365,9 @@ finish = function(run, victory)
 					paid[currency] = value
 				end
 			end
+			local weapons = if victory and dropHandler then dropHandler(player, run.BossTypes) else {}
 			arenaEvent:FireClient(player, "Result", {
+				Weapons = weapons,
 				Victory = victory,
 				Arena = run.Arena.DisplayName,
 				WavesCleared = run.Cleared,
@@ -439,6 +445,7 @@ local function startRun(arena, members, onVictory)
 		StartedAt = os.clock(),
 		Connections = {},
 		OnVictory = onVictory,
+		BossTypes = {},
 	}
 	runs[run.Id] = run
 	run.Model = buildArena(center, arena)
@@ -555,6 +562,10 @@ function ArenaService.Leave(player)
 	playerOut(run, player)
 	returnHome(player)
 	return true
+end
+
+function ArenaService.SetDropHandler(handler)
+	dropHandler = handler
 end
 
 function ArenaService.IsInRun(player)

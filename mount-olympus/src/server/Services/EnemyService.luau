@@ -1017,7 +1017,7 @@ function EnemyService.DamageEnemy(model, amount, player, options)
 		record.Contributors[player] = info
 	end
 	local head = model:FindFirstChild("Head") or record.Root
-	fxRemote:FireAllClients("Damage", head.Position + Vector3.new(0, 1.5, 0), amount, "Enemy")
+	fxRemote:FireAllClients("Damage", head.Position + Vector3.new(0, 1.5, 0), amount, if options and options.Crit then "Crit" else "Enemy")
 
 	if record.Config.Immortal then
 		-- Training dummies never die: a "knockout" pops them straight back up.

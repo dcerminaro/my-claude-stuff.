@@ -27,6 +27,7 @@ local DiagnosticsService = require(Services:WaitForChild("DiagnosticsService"))
 local AbilityService = require(Services:WaitForChild("AbilityService"))
 local ArenaService = require(Services:WaitForChild("ArenaService"))
 local AscensionService = require(Services:WaitForChild("AscensionService"))
+local InventoryService = require(Services:WaitForChild("InventoryService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -67,6 +68,7 @@ local abilityRemote = newRemote("UseAbility") -- client -> server "use my Q / E 
 local arenaActionRemote = newRemote("ArenaAction") -- client -> server arena menu requests
 local arenaEventRemote = newRemote("ArenaEvent") -- server -> client party queue and results
 local ascensionRemote = newRemote("AscensionAction") -- client -> server "start my ascension trial"
+local weaponRemote = newRemote("WeaponAction") -- client -> server equip / craft / upgrade a weapon
 
 remotes.Parent = ReplicatedStorage
 
@@ -91,6 +93,14 @@ ArenaService.Init(DataService, ProgressionService, PlotService, EnemyService, no
 ArenaService.BuildGate()
 AscensionService.Init(DataService, ProgressionService, ArenaService, notifyRemote, fxRemote, ascensionRemote, if GameConfig.Debug.Diagnostics then DiagnosticsService else nil)
 AscensionService.BuildChamber()
+InventoryService.Init(DataService, ProgressionService, notifyRemote, weaponRemote)
+InventoryService.BuildForge()
+CombatService.SetWeaponProvider(InventoryService.GetEquipped)
+AbilityService.SetPowerProvider(function(player)
+	return InventoryService.GetEquipped(player).Power
+end)
+InventoryService.SetWeaponChangedHandler(CombatService.RefreshWeapon)
+ArenaService.SetDropHandler(InventoryService.RollBossDrops)
 if GameConfig.Debug.Diagnostics then
 	DiagnosticsService.Init(reportRemote)
 end
@@ -198,6 +208,7 @@ local function onPlayerAdded(player)
 	ProgressionService.SetupPlayer(player)
 	GodService.SetupPlayer(player)
 	TempleService.SetupPlayer(player, plot)
+	InventoryService.SetupPlayer(player) -- before combat, so the right weapon is in hand
 	CombatService.SetupPlayer(player)
 	AbilityService.SetupPlayer(player)
 	AscensionService.SetupPlayer(player)

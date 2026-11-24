@@ -40,6 +40,9 @@
         },
         "AscensionUI": {
           "$path": "src/client/AscensionUI.client.luau"
+        },
+        "WeaponUI": {
+          "$path": "src/client/WeaponUI.client.luau"
         }
       },
       "StarterCharacterScripts": {

@@ -92,11 +92,14 @@ local function activeBuffs(player)
 end
 
 -- Damage one point of "ability damage" is worth for this player.
+local powerProvider = nil -- Phase 7C: function(player) -> equipped weapon power multiplier
+
 local function baseDamage(player)
 	local baseAttack = player:GetAttribute("BaseAttack") or 10
 	local combatBonus = TempleService.GetEffect(player, "CombatBonusPercent") / 100
 	local buff = activeBuffs(player).AttackPercent / 100
-	return baseAttack * (1 + combatBonus) * (1 + buff)
+	local power = if powerProvider then powerProvider(player) else 1
+	return baseAttack * power * (1 + combatBonus) * (1 + buff)
 end
 
 -- Everyone in the server, always including the caster.
@@ -587,6 +590,10 @@ function AbilityService.Init(dataService, progressionService, templeService, ene
 			end
 		end)
 	end
+end
+
+function AbilityService.SetPowerProvider(provider)
+	powerProvider = provider
 end
 
 function AbilityService.SetupPlayer(player)
