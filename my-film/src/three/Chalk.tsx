@@ -60,3 +60,31 @@ export const ChalkLine: React.FC<{
     </group>
   );
 };
+
+/** a chalk arrow from `a` to `b` (board pixels), drawn as `p` goes 0 -> 1 */
+export const ChalkArrow: React.FC<{
+  a: [number, number];
+  b: [number, number];
+  p: number;
+  color?: string;
+  head?: number; // arrowhead length in board pixels
+}> = ({ a, b, p, color, head = 4 }) => {
+  const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+  const h1: [number, number] = [
+    b[0] - head * Math.cos(ang - 0.6),
+    b[1] - head * Math.sin(ang - 0.6),
+  ];
+  const h2: [number, number] = [
+    b[0] - head * Math.cos(ang + 0.6),
+    b[1] - head * Math.sin(ang + 0.6),
+  ];
+  const shaft = Math.min(1, p / 0.8);
+  const tip = Math.max(0, (p - 0.8) / 0.2);
+  return (
+    <group>
+      <ChalkLine pts={[a, b]} p={shaft} color={color} />
+      <ChalkLine pts={[b, h1]} p={tip} color={color} />
+      <ChalkLine pts={[b, h2]} p={tip} color={color} />
+    </group>
+  );
+};

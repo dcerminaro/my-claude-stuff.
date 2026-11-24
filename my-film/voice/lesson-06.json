@@ -1,0 +1,42 @@
+{
+  "film": "lesson-06",
+  "engine": "kokoro",
+  "kokoroVoice": "bm_george",
+  "kokoroSpeed": 0.95,
+  "lines": [
+    {
+      "id": "l1",
+      "text": "Lesson six, you reckless barbarians.",
+      "say": "Lesson six, you reckless barbarians!"
+    },
+    {
+      "id": "l2",
+      "text": "At the battle of Pharsalus, I kept a line of soldiers in reserve.",
+      "say": "At the battle of Farsaylus, I kept a line of soldiers in reserve."
+    },
+    {
+      "id": "l3",
+      "text": "When Pompey's cavalry charged, my reserve crushed them."
+    },
+    {
+      "id": "l4",
+      "text": "Your emergency fund is your reserve."
+    },
+    {
+      "id": "l5",
+      "text": "Three to six months of expenses, in cash, ready to fight."
+    },
+    {
+      "id": "l6",
+      "text": "Your car breaks. You lose your job. Life charges at you."
+    },
+    {
+      "id": "l7",
+      "text": "No reserve? You sell your investments at the worst time, or grab a credit card, you fucking idiot."
+    },
+    {
+      "id": "l8",
+      "text": "Build your reserve first. Then conquer."
+    }
+  ]
+}
