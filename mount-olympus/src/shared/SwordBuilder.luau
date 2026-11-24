@@ -89,11 +89,17 @@ end
 
 -- Welds a new sword into the character's right hand. Returns the sword.
 function SwordBuilder.Attach(character, glowColor)
+	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
 	local existing = character:FindFirstChild(SwordBuilder.Name)
 	if existing then
-		return existing
+		-- Still properly held? (Avatar loading can replace the hand and break the weld.)
+		local grip = existing.PrimaryPart
+		local weld = grip and grip:FindFirstChild("SwordGrip")
+		if weld and weld.Part0 == hand and hand ~= nil and hand.Parent == character then
+			return existing
+		end
+		existing:Destroy()
 	end
-	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
 	if not hand then
 		return nil
 	end

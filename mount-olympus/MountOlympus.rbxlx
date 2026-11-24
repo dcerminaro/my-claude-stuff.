@@ -247,6 +247,10 @@ GameConfig.Teleport = {
 	Cooldown = 3, -- seconds between teleport requests
 }
 
+-- Shown small in the corner so you can tell which update a server is running.
+-- Bump this with every publish.
+GameConfig.BuildLabel = "v13"
+
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
 	-- never in the live game, even if this is left true.
@@ -931,11 +935,17 @@ end
 
 -- Welds a new sword into the character's right hand. Returns the sword.
 function SwordBuilder.Attach(character, glowColor)
+	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
 	local existing = character:FindFirstChild(SwordBuilder.Name)
 	if existing then
-		return existing
+		-- Still properly held? (Avatar loading can replace the hand and break the weld.)
+		local grip = existing.PrimaryPart
+		local weld = grip and grip:FindFirstChild("SwordGrip")
+		if weld and weld.Part0 == hand and hand ~= nil and hand.Parent == character then
+			return existing
+		end
+		existing:Destroy()
 	end
-	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
 	if not hand then
 		return nil
 	end
@@ -1285,6 +1295,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
+local MessagingService = game:GetService("MessagingService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("GameConfig"))
@@ -1469,6 +1480,29 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 --------------------------------------------------------------------------
+-- 4b. Update restarts: when a new version is published, a message on the
+-- "OlympusUpdate" topic (sent with Open Cloud) asks every OLD server to send
+-- its players back in, so nobody stays on an outdated version.
+--------------------------------------------------------------------------
+if not RunService:IsStudio() then
+	task.spawn(function()
+		local ok, err = pcall(function()
+			MessagingService:SubscribeAsync("OlympusUpdate", function(message)
+				local newVersion = tonumber(message.Data)
+				if newVersion and newVersion > game.PlaceVersion then
+					for _, player in Players:GetPlayers() do
+						player:Kick("Mount Olympus was just updated! Please rejoin to play the new version.")
+					end
+				end
+			end)
+		end)
+		if not ok then
+			warn("[Main] Could not listen for updates: " .. tostring(err))
+		end
+	end)
+end
+
+--------------------------------------------------------------------------
 -- 5. Teleport requests (validated: never trust what the client sends)
 --------------------------------------------------------------------------
 teleportRemote.OnServerEvent:Connect(function(player, destination)
@@ -1605,7 +1639,9 @@ local function swordColor(player)
 end
 
 local function giveSword(player, character)
-	SwordBuilder.Attach(character, swordColor(player))
+	if character.Parent and character:FindFirstChildOfClass("Humanoid") then
+		SwordBuilder.Attach(character, swordColor(player))
+	end
 end
 
 local function flashTrail(player)
@@ -1738,12 +1774,17 @@ function CombatService.Init(templeService, enemyService, fxRemoteEvent, remotes)
 		end)
 	end
 
-	-- Health regeneration, once per second.
+	-- Health regeneration, once per second. Also makes sure everyone is
+	-- still holding their sword (avatar loading can replace the hand).
 	task.spawn(function()
 		while true do
 			task.wait(1)
 			local now = os.clock()
 			for player, st in state do
+				local character = getParts(player)
+				if character then
+					giveSword(player, character)
+				end
 				local _, humanoid = getParts(player)
 				if humanoid and humanoid.Health < humanoid.MaxHealth and now - st.LastDamagedAt >= CFG.Regen.DelayAfterDamage then
 					local bonus = 1 + TempleService.GetEffect(player, "RegenBonusPercent") / 100
@@ -1775,12 +1816,16 @@ function CombatService.SetupPlayer(player)
 	if player.Character then
 		task.spawn(giveSword, player, player.Character)
 	end
+	-- Fires once the avatar's own body parts and clothes have been applied.
+	if typeof(player) == "Instance" then
+		player.CharacterAppearanceLoaded:Connect(function(character)
+			giveSword(player, character)
+		end)
+	end
 	player.CharacterAdded:Connect(function(character)
 		task.spawn(function()
 			character:WaitForChild("Humanoid", 10)
-			if character.Parent then
-				giveSword(player, character)
-			end
+			giveSword(player, character)
 		end)
 		local st = state[player]
 		if st then
@@ -2611,8 +2656,12 @@ local function think(record, now)
 	elseif now >= record.NextAttackAt then
 		startAttack(record, target)
 	else
-		humanoid:MoveTo(record.Root.Position)
-		face(record, targetRoot.Position)
+		-- Waiting to attack again: take a tiny step toward the target so the
+		-- enemy turns to face it smoothly (snapping its rotation looked jerky).
+		local toward = flat(targetRoot.Position - record.Root.Position)
+		if toward.Magnitude > 0.5 then
+			humanoid:MoveTo(record.Root.Position + toward.Unit * 0.5)
+		end
 	end
 end
 
@@ -2813,8 +2862,19 @@ function EnemyService.DamageEnemy(model, amount, player)
 	if attackerRoot and not record.Root.Anchored then
 		local away = flat(record.Root.Position - attackerRoot.Position)
 		if away.Magnitude > 0.1 then
-			record.Root.AssemblyLinearVelocity = away.Unit * KNOCKBACK_SPEED + Vector3.new(0, 6, 0)
+			-- A short push that the enemy's own walking can't cancel.
+			local attachment = Instance.new("Attachment")
+			attachment.Parent = record.Root
+			local push = Instance.new("LinearVelocity")
+			push.Attachment0 = attachment
+			push.RelativeTo = Enum.ActuatorRelativeTo.World
+			push.VectorVelocity = away.Unit * KNOCKBACK_SPEED + Vector3.new(0, 4, 0)
+			push.MaxForce = 40000
+			push.Parent = record.Root
+			Debris:AddItem(push, 0.15)
+			Debris:AddItem(attachment, 0.15)
 		end
+		record.Humanoid:MoveTo(record.Root.Position)
 		record.StaggerUntil = now + STAGGER_TIME
 	end
 	return true
@@ -5011,31 +5071,26 @@ end
 --------------------------------------------------------------------------
 -- Hit reactions (drawn on this device only)
 --------------------------------------------------------------------------
-local originalColors = setmetatable({}, { __mode = "k" }) -- [BasePart] = Color3
 local flashing = setmetatable({}, { __mode = "k" })
 local wobbleBase = setmetatable({}, { __mode = "k" }) -- [dummy Model] = upright pivot
 local wobbleToken = setmetatable({}, { __mode = "k" })
 
--- Enemy turns white for a moment.
+-- Enemy glows white for a moment (only while hit, so it stays cheap).
 local function flash(model)
 	if flashing[model] then
 		return
 	end
 	flashing[model] = true
-	local parts = {}
-	for _, item in model:GetDescendants() do
-		if item:IsA("BasePart") and item.Transparency < 1 and item.Name ~= "Weapon" then
-			originalColors[item] = originalColors[item] or item.Color
-			item.Color = Color3.new(1, 1, 1)
-			table.insert(parts, item)
-		end
-	end
-	task.delay(0.08, function()
-		for _, item in parts do
-			if item.Parent and originalColors[item] then
-				item.Color = originalColors[item]
-			end
-		end
+	local glow = Instance.new("Highlight")
+	glow.FillColor = Color3.new(1, 1, 1)
+	glow.FillTransparency = 0.15
+	glow.OutlineTransparency = 1
+	glow.DepthMode = Enum.HighlightDepthMode.Occluded
+	glow.Adornee = model
+	glow.Parent = fxFolder
+	TweenService:Create(glow, TweenInfo.new(0.18), { FillTransparency = 1 }):Play()
+	task.delay(0.18, function()
+		glow:Destroy()
 		flashing[model] = nil
 	end)
 end
@@ -6408,6 +6463,23 @@ end
 local templeButton = makeButton("My Temple", 1)
 local plazaButton = makeButton("Plaza", 2)
 local practiceButton = makeButton("Practice", 3)
+
+-- Build label (bottom-left), to check which update this server is running
+create("TextLabel", {
+	Name = "BuildLabel",
+	AnchorPoint = Vector2.new(0, 1),
+	Position = UDim2.new(0, 8, 1, -4),
+	Size = UDim2.fromOffset(120, 16),
+	BackgroundTransparency = 1,
+	Text = "Mount Olympus " .. GameConfig.BuildLabel,
+	Font = BODY_FONT,
+	TextSize = 12,
+	TextColor3 = THEME.White,
+	TextTransparency = 0.3,
+	TextStrokeTransparency = 0.6,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	Parent = hud,
+})
 
 -- Pop-up notification (upper centre)
 local toast = create("Frame", {

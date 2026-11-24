@@ -146,31 +146,26 @@ end
 --------------------------------------------------------------------------
 -- Hit reactions (drawn on this device only)
 --------------------------------------------------------------------------
-local originalColors = setmetatable({}, { __mode = "k" }) -- [BasePart] = Color3
 local flashing = setmetatable({}, { __mode = "k" })
 local wobbleBase = setmetatable({}, { __mode = "k" }) -- [dummy Model] = upright pivot
 local wobbleToken = setmetatable({}, { __mode = "k" })
 
--- Enemy turns white for a moment.
+-- Enemy glows white for a moment (only while hit, so it stays cheap).
 local function flash(model)
 	if flashing[model] then
 		return
 	end
 	flashing[model] = true
-	local parts = {}
-	for _, item in model:GetDescendants() do
-		if item:IsA("BasePart") and item.Transparency < 1 and item.Name ~= "Weapon" then
-			originalColors[item] = originalColors[item] or item.Color
-			item.Color = Color3.new(1, 1, 1)
-			table.insert(parts, item)
-		end
-	end
-	task.delay(0.08, function()
-		for _, item in parts do
-			if item.Parent and originalColors[item] then
-				item.Color = originalColors[item]
-			end
-		end
+	local glow = Instance.new("Highlight")
+	glow.FillColor = Color3.new(1, 1, 1)
+	glow.FillTransparency = 0.15
+	glow.OutlineTransparency = 1
+	glow.DepthMode = Enum.HighlightDepthMode.Occluded
+	glow.Adornee = model
+	glow.Parent = fxFolder
+	TweenService:Create(glow, TweenInfo.new(0.18), { FillTransparency = 1 }):Play()
+	task.delay(0.18, function()
+		glow:Destroy()
 		flashing[model] = nil
 	end)
 end

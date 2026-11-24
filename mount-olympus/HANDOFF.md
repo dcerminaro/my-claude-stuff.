@@ -200,8 +200,24 @@ environment, so a session can `rojo build` and publish via
      Preview: `docs/sword-poses-preview.png` (rendered from the real rig).
    - Lag fixes: no `Highlight` on attacking enemies (weapon turns neon red
      instead); dummy wobble moved from the server to each device.
-   - Hit reactions: enemies flash white, get knocked back and stagger 0.3 s;
-     dummies wobble. Your own hits react instantly (predicted locally).
+   - Hit reactions: enemies flash white (a 0.18 s client Highlight), get
+     knocked back (a 0.15 s LinearVelocity push) and stagger 0.3 s; dummies
+     wobble. Your own hits react instantly (predicted locally).
+   - Second fix round: real avatars replace their body parts when their
+     appearance loads, which destroyed the hand the sword was welded to. The
+     server now (re)attaches the sword on `CharacterAppearanceLoaded` and
+     checks every second that it is still held. Enemies no longer snap their
+     rotation while waiting to attack (looked jerky / laggy).
+
+### Build label and update restarts
+- `GameConfig.BuildLabel` (e.g. "v13") is shown bottom-left. **Bump it to the
+  Roblox version number with every publish.**
+- Servers listen on the MessagingService topic `OlympusUpdate`; a message whose
+  data is a version number newer than the server's `game.PlaceVersion` kicks
+  everyone with "please rejoin". Send it after publishing:
+  `POST https://apis.roblox.com/messaging-service/v1/universes/6686565007/topics/OlympusUpdate`
+  body `{"message":"<new version>"}` (needs the API key permission
+  `universe-messaging-service` → publish).
 
 ### Ideas from the developer for later (not built yet)
 - **Rank outfits and physique (Phase 6, Ascension):** each ascension rank gets

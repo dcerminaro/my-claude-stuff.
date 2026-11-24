@@ -94,6 +94,10 @@ GameConfig.Teleport = {
 	Cooldown = 3, -- seconds between teleport requests
 }
 
+-- Shown small in the corner so you can tell which update a server is running.
+-- Bump this with every publish.
+GameConfig.BuildLabel = "v13"
+
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
 	-- never in the live game, even if this is left true.

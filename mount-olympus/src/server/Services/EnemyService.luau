@@ -420,8 +420,12 @@ local function think(record, now)
 	elseif now >= record.NextAttackAt then
 		startAttack(record, target)
 	else
-		humanoid:MoveTo(record.Root.Position)
-		face(record, targetRoot.Position)
+		-- Waiting to attack again: take a tiny step toward the target so the
+		-- enemy turns to face it smoothly (snapping its rotation looked jerky).
+		local toward = flat(targetRoot.Position - record.Root.Position)
+		if toward.Magnitude > 0.5 then
+			humanoid:MoveTo(record.Root.Position + toward.Unit * 0.5)
+		end
 	end
 end
 
@@ -622,8 +626,19 @@ function EnemyService.DamageEnemy(model, amount, player)
 	if attackerRoot and not record.Root.Anchored then
 		local away = flat(record.Root.Position - attackerRoot.Position)
 		if away.Magnitude > 0.1 then
-			record.Root.AssemblyLinearVelocity = away.Unit * KNOCKBACK_SPEED + Vector3.new(0, 6, 0)
+			-- A short push that the enemy's own walking can't cancel.
+			local attachment = Instance.new("Attachment")
+			attachment.Parent = record.Root
+			local push = Instance.new("LinearVelocity")
+			push.Attachment0 = attachment
+			push.RelativeTo = Enum.ActuatorRelativeTo.World
+			push.VectorVelocity = away.Unit * KNOCKBACK_SPEED + Vector3.new(0, 4, 0)
+			push.MaxForce = 40000
+			push.Parent = record.Root
+			Debris:AddItem(push, 0.15)
+			Debris:AddItem(attachment, 0.15)
 		end
+		record.Humanoid:MoveTo(record.Root.Position)
 		record.StaggerUntil = now + STAGGER_TIME
 	end
 	return true

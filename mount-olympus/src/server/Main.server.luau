@@ -9,6 +9,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
+local MessagingService = game:GetService("MessagingService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("GameConfig"))
@@ -191,6 +192,29 @@ Players.PlayerRemoving:Connect(function(player)
 	PlotService.ReleasePlot(player)
 	DataService.ReleasePlayer(player) -- yields while saving
 end)
+
+--------------------------------------------------------------------------
+-- 4b. Update restarts: when a new version is published, a message on the
+-- "OlympusUpdate" topic (sent with Open Cloud) asks every OLD server to send
+-- its players back in, so nobody stays on an outdated version.
+--------------------------------------------------------------------------
+if not RunService:IsStudio() then
+	task.spawn(function()
+		local ok, err = pcall(function()
+			MessagingService:SubscribeAsync("OlympusUpdate", function(message)
+				local newVersion = tonumber(message.Data)
+				if newVersion and newVersion > game.PlaceVersion then
+					for _, player in Players:GetPlayers() do
+						player:Kick("Mount Olympus was just updated! Please rejoin to play the new version.")
+					end
+				end
+			end)
+		end)
+		if not ok then
+			warn("[Main] Could not listen for updates: " .. tostring(err))
+		end
+	end)
+end
 
 --------------------------------------------------------------------------
 -- 5. Teleport requests (validated: never trust what the client sends)

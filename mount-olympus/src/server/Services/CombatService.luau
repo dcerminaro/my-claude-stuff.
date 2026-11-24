@@ -108,7 +108,9 @@ local function swordColor(player)
 end
 
 local function giveSword(player, character)
-	SwordBuilder.Attach(character, swordColor(player))
+	if character.Parent and character:FindFirstChildOfClass("Humanoid") then
+		SwordBuilder.Attach(character, swordColor(player))
+	end
 end
 
 local function flashTrail(player)
@@ -241,12 +243,17 @@ function CombatService.Init(templeService, enemyService, fxRemoteEvent, remotes)
 		end)
 	end
 
-	-- Health regeneration, once per second.
+	-- Health regeneration, once per second. Also makes sure everyone is
+	-- still holding their sword (avatar loading can replace the hand).
 	task.spawn(function()
 		while true do
 			task.wait(1)
 			local now = os.clock()
 			for player, st in state do
+				local character = getParts(player)
+				if character then
+					giveSword(player, character)
+				end
 				local _, humanoid = getParts(player)
 				if humanoid and humanoid.Health < humanoid.MaxHealth and now - st.LastDamagedAt >= CFG.Regen.DelayAfterDamage then
 					local bonus = 1 + TempleService.GetEffect(player, "RegenBonusPercent") / 100
@@ -278,12 +285,16 @@ function CombatService.SetupPlayer(player)
 	if player.Character then
 		task.spawn(giveSword, player, player.Character)
 	end
+	-- Fires once the avatar's own body parts and clothes have been applied.
+	if typeof(player) == "Instance" then
+		player.CharacterAppearanceLoaded:Connect(function(character)
+			giveSword(player, character)
+		end)
+	end
 	player.CharacterAdded:Connect(function(character)
 		task.spawn(function()
 			character:WaitForChild("Humanoid", 10)
-			if character.Parent then
-				giveSword(player, character)
-			end
+			giveSword(player, character)
 		end)
 		local st = state[player]
 		if st then

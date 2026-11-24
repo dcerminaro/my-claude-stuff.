@@ -321,6 +321,23 @@ local templeButton = makeButton("My Temple", 1)
 local plazaButton = makeButton("Plaza", 2)
 local practiceButton = makeButton("Practice", 3)
 
+-- Build label (bottom-left), to check which update this server is running
+create("TextLabel", {
+	Name = "BuildLabel",
+	AnchorPoint = Vector2.new(0, 1),
+	Position = UDim2.new(0, 8, 1, -4),
+	Size = UDim2.fromOffset(120, 16),
+	BackgroundTransparency = 1,
+	Text = "Mount Olympus " .. GameConfig.BuildLabel,
+	Font = BODY_FONT,
+	TextSize = 12,
+	TextColor3 = THEME.White,
+	TextTransparency = 0.3,
+	TextStrokeTransparency = 0.6,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	Parent = hud,
+})
+
 -- Pop-up notification (upper centre)
 local toast = create("Frame", {
 	Name = "Toast",
