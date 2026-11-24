@@ -3,9 +3,15 @@
 --
 -- Plays our own sword animations (SwordPoses) on R15 joints every frame.
 -- Roblox's Animator owns each joint's Transform (walk, idle...), so writing
--- there loses the race. Instead we set the joint's C0, which the Animator
--- never touches, and cancel the Animator's current Transform on the joints
--- we drive. That keeps the sword arm steady and the swings visible.
+-- there loses the race. Instead we move the joint's own offset, which the
+-- Animator never touches, and cancel the Animator's current Transform on the
+-- joints we drive. That keeps the sword arm steady and the swings visible.
+-- Two joint types are supported:
+--   * Motor6D (classic joints): we change C0.
+--   * AnimationConstraint (Roblox's newer avatar joints): we change the CFrame
+--     of its Attachment0, which plays the same role as C0.
+-- (The game sets StarterPlayer.AvatarJointUpgrade = Disabled so characters
+-- normally use Motor6D; the second path is a safety net.)
 -- It runs on every player's device for every nearby sword-holder: you,
 -- other players (when the server tells us they swung) and enemies.
 --   * Holding a weapon: the ready stance (right arm only, legs still walk).
@@ -35,28 +41,47 @@ local BLEND_SPEED = 18   -- how fast the stance changes (hold <-> block)
 local active = setmetatable({}, { __mode = "k" })  -- [Model] = { Keys, Start, Duration, Joints }
 local current = setmetatable({}, { __mode = "k" }) -- [Model] = { [joint] = CFrame currently applied }
 local motorCache = setmetatable({}, { __mode = "k" })
-local baseC0 = setmetatable({}, { __mode = "k" }) -- [Motor6D] = its original C0
+local baseC0 = setmetatable({}, { __mode = "k" }) -- [joint] = its original C0 / Attachment0 CFrame
+local RETRY_MISSING = 2 -- seconds before looking again for a joint that wasn't found
 
 -- Numbers for the diagnostics report.
-local debugInfo = { Frames = 0, Updates = 0, JointsSet = 0, Errors = 0, LastError = "", MissingJoints = {} }
+local debugInfo = { Frames = 0, Updates = 0, JointsSet = 0, Errors = 0, LastError = "", MissingJoints = {}, JointKinds = {} }
 
--- Pose a joint: C0 * pose * Transform^-1 * Transform = C0 * pose, whatever
--- the Animator writes into Transform.
-local function setJoint(motor, pose)
-	local base = baseC0[motor]
-	if not base then
-		base = motor.C0
-		baseC0[motor] = base
+-- Pose a joint: offset * pose * Transform^-1 * Transform = offset * pose,
+-- whatever the Animator writes into Transform.
+local function setJoint(joint, pose)
+	if joint:IsA("Motor6D") then
+		local base = baseC0[joint]
+		if not base then
+			base = joint.C0
+			baseC0[joint] = base
+		end
+		joint.C0 = base * pose * joint.Transform:Inverse()
+	else -- AnimationConstraint
+		local attachment = joint.Attachment0
+		if not attachment then
+			return
+		end
+		local base = baseC0[joint]
+		if not base then
+			base = attachment.CFrame
+			baseC0[joint] = base
+		end
+		attachment.CFrame = base * pose * joint.Transform:Inverse()
 	end
-	motor.C0 = base * pose * motor.Transform:Inverse()
 end
 
-local function releaseJoint(motor)
-	local base = baseC0[motor]
-	if base then
-		motor.C0 = base
-		baseC0[motor] = nil
+local function releaseJoint(joint)
+	local base = baseC0[joint]
+	if not base then
+		return
 	end
+	if joint:IsA("Motor6D") then
+		joint.C0 = base
+	elseif joint.Attachment0 then
+		joint.Attachment0.CFrame = base
+	end
+	baseC0[joint] = nil
 end
 
 local function toCFrame(e)
@@ -69,16 +94,31 @@ local function getMotor(model, joint)
 		cache = {}
 		motorCache[model] = cache
 	end
-	local motor = cache[joint]
-	if motor and motor.Parent then
-		return motor
+	local found = cache[joint]
+	if typeof(found) == "Instance" and found.Parent then
+		return found
 	end
+	if typeof(found) == "number" and os.clock() < found then
+		return nil -- looked recently and it wasn't there
+	end
+	-- Usual place first, then anywhere in the model.
 	local part = model:FindFirstChild(JOINT_PARTS[joint])
-	motor = part and part:FindFirstChild(joint)
-	if motor and motor:IsA("Motor6D") then
-		cache[joint] = motor
-		return motor
+	local candidate = part and part:FindFirstChild(joint)
+	if not (candidate and (candidate:IsA("Motor6D") or candidate:IsA("AnimationConstraint"))) then
+		candidate = nil
+		for _, d in model:GetDescendants() do
+			if d.Name == joint and (d:IsA("Motor6D") or d:IsA("AnimationConstraint")) then
+				candidate = d
+				break
+			end
+		end
 	end
+	if candidate then
+		cache[joint] = candidate
+		debugInfo.JointKinds[candidate.ClassName] = true
+		return candidate
+	end
+	cache[joint] = os.clock() + RETRY_MISSING
 	debugInfo.MissingJoints[model.Name .. "." .. joint] = true
 	return nil
 end
@@ -217,14 +257,19 @@ function SwordAnimator.GetDebugInfo()
 		table.insert(missing, name)
 	end
 	info.MissingJoints = table.concat(missing, ",")
+	local kinds = {}
+	for name in debugInfo.JointKinds do
+		table.insert(kinds, name)
+	end
+	info.JointKinds = table.concat(kinds, ",")
 	local character = Players.LocalPlayer and Players.LocalPlayer.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	info.RigType = humanoid and humanoid.RigType.Name or "?"
-	local motor = character and getMotor(character, "RightShoulder")
-	if motor then
-		local base = baseC0[motor]
-		info.ShoulderC0Changed = base ~= nil and (motor.C0.Position - base.Position).Magnitude < 1 and motor.C0 ~= base
-		local x, y, z = motor.Transform:ToEulerAnglesXYZ()
+	local joint = character and getMotor(character, "RightShoulder")
+	if joint then
+		info.ShoulderJointType = joint.ClassName
+		info.ShoulderPosed = baseC0[joint] ~= nil
+		local x, y, z = joint.Transform:ToEulerAnglesXYZ()
 		info.ShoulderTransformDeg = ("%d,%d,%d"):format(math.deg(x), math.deg(y), math.deg(z))
 	end
 	local joints = {}

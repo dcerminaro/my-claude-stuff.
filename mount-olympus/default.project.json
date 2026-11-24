@@ -37,6 +37,9 @@
         "Health": {
           "$path": "src/character/Health.server.luau"
         }
+      },
+      "$properties": {
+        "AvatarJointUpgrade": "Disabled"
       }
     }
   }

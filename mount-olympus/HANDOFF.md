@@ -234,6 +234,18 @@ environment, so a session can `rojo build` and publish via
   "did nothing"), server reach +1.5 studs for latency, hit flash switched
   from Highlight to a cheap colour/Neon swap.
 
+### Avatar joints (important for any animation work)
+- The diagnostics showed that, by default, characters and
+  `CreateHumanoidModelFromDescription` rigs use Roblox's newer
+  **AnimationConstraint** joints instead of `Motor6D` (so `JointsSet` was 0 and
+  no pose ever applied; physics-driven joints also made the sword wobble).
+- `default.project.json` sets `StarterPlayer.AvatarJointUpgrade = "Disabled"`
+  (serialized as `AvatarJointUpgrade_SerializedRollout = 1`). Verified with a
+  Luau Execution task: rigs went from 15 AnimationConstraints to 15 Motor6Ds.
+  Scripts cannot read this property (RobloxScript capability).
+- `SwordAnimator` also handles AnimationConstraint joints (it moves the
+  constraint's `Attachment0`, the equivalent of `C0`) as a safety net.
+
 ### Build label and update restarts
 - `GameConfig.BuildLabel` (e.g. "v13") is shown bottom-left. **Bump it to the
   Roblox version number with every publish.**
