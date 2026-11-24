@@ -166,6 +166,13 @@ function AscensionService.StartTrial(player)
 		message(player, reason)
 		return false
 	end
+	if trial.Divine then
+		-- The Divine Trial's boss is the Avatar of the player's own god.
+		local data = DataService.GetData(player)
+		local god = data and GodConfig.Gods[data.SelectedGod]
+		trial = table.clone(trial)
+		trial.BossDisplayName = "Avatar of " .. (if god then god.DisplayName else "Olympus")
+	end
 	local ok = ArenaService.StartTrial(player, trial, function(run)
 		if not run.Players[player] or not player.Parent then
 			return

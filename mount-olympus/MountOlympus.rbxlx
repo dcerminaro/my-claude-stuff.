@@ -247,11 +247,91 @@ ArenaConfig.Arenas = {
 		Rewards = { XP = 250, Gold = 200, DivineFavor = 15, Ambrosia = 1 },
 	},
 	-- RequiredRank (Phase 6): the ascension rank needed to enter (2 = Warrior ...).
-	{ Id = "SpartanBattleground", DisplayName = "Spartan Battleground", Description = "Armored soldiers and beasts.", MinLevel = 16, MaxLevel = 35, RequiredRank = 2, Available = false },
-	{ Id = "LabyrinthOfCrete", DisplayName = "Labyrinth of Crete", Description = "Minotaurs and guardians.", MinLevel = 36, MaxLevel = 60, RequiredRank = 3, Available = false },
-	{ Id = "CursedTemple", DisplayName = "Cursed Temple", Description = "Gorgons and cursed warriors.", MinLevel = 61, MaxLevel = 90, RequiredRank = 4, Available = false },
-	{ Id = "GatesOfTheUnderworld", DisplayName = "Gates of the Underworld", Description = "Undead and underworld monsters.", MinLevel = 91, MaxLevel = 135, RequiredRank = 5, Available = false },
-	{ Id = "TitansColosseum", DisplayName = "Titan's Colosseum", Description = "Titan warriors and divine monsters.", MinLevel = 136, MaxLevel = 200, RequiredRank = 6, Available = false },
+	-- Theme (Phase 7B): floor, wall and torch-fire colours. Radius: arena size.
+	{
+		Id = "SpartanBattleground", DisplayName = "Spartan Battleground", Description = "Spartan soldiers and war hounds. Defeat the Spartan Warlord!",
+		MinLevel = 16, MaxLevel = 35, RequiredRank = 2, Available = true, Color = Color3.fromRGB(190, 60, 45),
+		Theme = { Floor = Color3.fromRGB(170, 140, 100), Wall = Color3.fromRGB(150, 110, 75), Fire = Color3.fromRGB(255, 120, 40) },
+		Waves = {
+			{ SpartanSoldier = 3 },
+			{ SpartanSoldier = 3, WarHound = 2 },
+			{ SpartanSoldier = 4, WarHound = 3 },
+			{ SpartanSoldier = 5, WarHound = 4 },
+			{ Boss = "SpartanWarlord", SpartanSoldier = 2 },
+		},
+		WaveHealth = { 0.7, 0.9, 1.15, 1.4, 1.7 },
+		WaveDamage = { 0.6, 0.8, 1.0, 1.2, 1.4 },
+		WaveSpeed = { 0.9, 1.0, 1.1, 1.2, 1.3 },
+		Rewards = { XP = 1500, Gold = 1200, DivineFavor = 60, Ambrosia = 2 },
+	},
+	{
+		Id = "LabyrinthOfCrete", DisplayName = "Labyrinth of Crete", Description = "Stone guardians and minotaur brutes. Defeat the Minotaur!",
+		MinLevel = 36, MaxLevel = 60, RequiredRank = 3, Available = true, Color = Color3.fromRGB(150, 120, 90),
+		Theme = { Floor = Color3.fromRGB(120, 115, 105), Wall = Color3.fromRGB(95, 90, 82), Fire = Color3.fromRGB(255, 160, 60) },
+		Radius = 50,
+		Waves = {
+			{ LabyrinthGuardian = 3 },
+			{ LabyrinthGuardian = 2, MinotaurBrute = 2 },
+			{ LabyrinthGuardian = 3, MinotaurBrute = 3 },
+			{ LabyrinthGuardian = 4, MinotaurBrute = 4 },
+			{ Boss = "Minotaur", MinotaurBrute = 2 },
+		},
+		WaveHealth = { 0.7, 0.9, 1.15, 1.4, 1.7 },
+		WaveDamage = { 0.6, 0.8, 1.0, 1.2, 1.4 },
+		WaveSpeed = { 0.9, 1.0, 1.1, 1.2, 1.3 },
+		Rewards = { XP = 6000, Gold = 5000, DivineFavor = 150, Ambrosia = 3 },
+	},
+	{
+		Id = "CursedTemple", DisplayName = "Cursed Temple", Description = "Cursed warriors and gorgons. Defeat Medusa!",
+		MinLevel = 61, MaxLevel = 90, RequiredRank = 4, Available = true, Color = Color3.fromRGB(80, 170, 90),
+		Theme = { Floor = Color3.fromRGB(80, 95, 80), Wall = Color3.fromRGB(55, 70, 58), Fire = Color3.fromRGB(110, 255, 120) },
+		Radius = 50,
+		Waves = {
+			{ CursedWarrior = 3 },
+			{ CursedWarrior = 2, Gorgon = 2 },
+			{ CursedWarrior = 3, Gorgon = 3 },
+			{ CursedWarrior = 4, Gorgon = 4 },
+			{ Boss = "Medusa", Gorgon = 2 },
+		},
+		WaveHealth = { 0.7, 0.9, 1.15, 1.4, 1.7 },
+		WaveDamage = { 0.6, 0.8, 1.0, 1.2, 1.4 },
+		WaveSpeed = { 0.9, 1.0, 1.1, 1.2, 1.3 },
+		Rewards = { XP = 20000, Gold = 15000, DivineFavor = 400, Ambrosia = 5 },
+	},
+	{
+		Id = "GatesOfTheUnderworld", DisplayName = "Gates of the Underworld", Description = "Undead soldiers and hellhounds. Defeat Cerberus!",
+		MinLevel = 91, MaxLevel = 135, RequiredRank = 5, Available = true, Color = Color3.fromRGB(150, 80, 230),
+		Theme = { Floor = Color3.fromRGB(50, 40, 55), Wall = Color3.fromRGB(35, 28, 40), Fire = Color3.fromRGB(160, 80, 255) },
+		Radius = 55,
+		Waves = {
+			{ UndeadSoldier = 3 },
+			{ UndeadSoldier = 3, HellHound = 2 },
+			{ UndeadSoldier = 3, HellHound = 3 },
+			{ UndeadSoldier = 4, HellHound = 4 },
+			{ Boss = "Cerberus", HellHound = 2 },
+		},
+		WaveHealth = { 0.7, 0.9, 1.15, 1.4, 1.7 },
+		WaveDamage = { 0.6, 0.8, 1.0, 1.2, 1.4 },
+		WaveSpeed = { 0.9, 1.0, 1.1, 1.2, 1.3 },
+		Rewards = { XP = 60000, Gold = 40000, DivineFavor = 900, Ambrosia = 8 },
+	},
+	{
+		Id = "TitansColosseum", DisplayName = "Titan's Colosseum", Description = "Titan warriors and cyclopes. Defeat the Titan King!",
+		MinLevel = 136, MaxLevel = 200, RequiredRank = 6, Available = true, Color = Color3.fromRGB(230, 170, 60),
+		Theme = { Floor = Color3.fromRGB(200, 185, 150), Wall = Color3.fromRGB(170, 150, 110), Fire = Color3.fromRGB(255, 200, 80) },
+		Radius = 65,
+		Waves = {
+			{ TitanWarrior = 2 },
+			{ TitanWarrior = 2, Cyclops = 1 },
+			{ TitanWarrior = 3, Cyclops = 2 },
+			{ TitanWarrior = 3, Cyclops = 3 },
+			{ Boss = "TitanKing", TitanWarrior = 2 },
+		},
+		WaveHealth = { 0.7, 0.9, 1.15, 1.4, 1.7 },
+		WaveDamage = { 0.6, 0.8, 1.0, 1.2, 1.4 },
+		WaveSpeed = { 0.9, 1.0, 1.1, 1.2, 1.3 },
+		Rewards = { XP = 150000, Gold = 100000, DivineFavor = 2000, Ambrosia = 15 },
+	},
 }
 
 ArenaConfig.ById = {}
@@ -326,24 +406,76 @@ AscensionConfig.Trials = {
 	[3] = {
 		Id = "SpartanArena",
 		Name = "Complete the Spartan Arena trial",
-		Description = "Three brutal waves, then a champion at full strength. (Placeholder enemies until Phase 7.)",
+		Description = "Survive the Spartan phalanx, then defeat the Spartan Warlord.",
 		Available = true,
 		Color = Color3.fromRGB(180, 55, 45),
+		Theme = { Floor = Color3.fromRGB(170, 140, 100), Wall = Color3.fromRGB(150, 110, 75), Fire = Color3.fromRGB(255, 120, 40) },
 		Waves = {
-			{ Bandit = 4, Skeleton = 2 },
-			{ Bandit = 5, Skeleton = 4 },
-			{ Boss = "TrainingChampion", Skeleton = 3 },
+			{ SpartanSoldier = 4, WarHound = 2 },
+			{ SpartanSoldier = 5, WarHound = 3 },
+			{ Boss = "SpartanWarlord", SpartanSoldier = 2 },
 		},
-		WaveHealth = { 3, 3.5, 4 },
-		WaveDamage = { 2, 2.2, 2.5 },
-		WaveSpeed = { 1.2, 1.25, 1.3 },
-		BossHealth = 2, -- the champion has double health here
+		WaveHealth = { 1.2, 1.4, 1.5 },
+		WaveDamage = { 1.1, 1.2, 1.3 },
 	},
-	[4] = { Id = "Minotaur", Name = "Defeat the Minotaur", Description = "The Minotaur arrives in Phase 7.", Available = false },
-	[5] = { Id = "DivineTrial", Name = "Complete your god's Divine Trial", Description = "Divine Trials arrive in Phase 7.", Available = false },
-	[6] = { Id = "Cerberus", Name = "Defeat Cerberus", Description = "Cerberus arrives in Phase 7.", Available = false },
-	[7] = { Id = "OlympianGauntlet", Name = "Complete the Olympian Gauntlet", Description = "The Gauntlet arrives in Phase 7.", Available = false },
-	[8] = { Id = "TitanKing", Name = "Defeat the Titan King", Description = "The Titan King arrives in Phase 7.", Available = false },
+	[4] = {
+		Id = "Minotaur",
+		Name = "Defeat the Minotaur",
+		Description = "Face the Minotaur alone in its labyrinth.",
+		Available = true,
+		Color = Color3.fromRGB(150, 120, 90),
+		Theme = { Floor = Color3.fromRGB(120, 115, 105), Wall = Color3.fromRGB(95, 90, 82), Fire = Color3.fromRGB(255, 160, 60) },
+		Radius = 50,
+		Waves = { { Boss = "Minotaur" } },
+	},
+	[5] = {
+		Id = "DivineTrial",
+		Name = "Complete your god's Divine Trial",
+		Description = "Prove yourself to your god: two waves of cursed foes, then your god's own Avatar.",
+		Available = true,
+		Divine = true, -- the boss is named "Avatar of <your god>"
+		Color = Color3.fromRGB(255, 220, 120),
+		Theme = { Floor = Color3.fromRGB(235, 230, 215), Wall = Color3.fromRGB(212, 175, 55), Fire = Color3.fromRGB(255, 240, 180) },
+		Radius = 50,
+		Waves = {
+			{ CursedWarrior = 3, Gorgon = 2 },
+			{ UndeadSoldier = 3, HellHound = 2 },
+			{ Boss = "DivineAvatar" },
+		},
+		WaveHealth = { 0.8, 0.8, 1 },
+		WaveDamage = { 0.8, 0.8, 1 },
+	},
+	[6] = {
+		Id = "Cerberus",
+		Name = "Defeat Cerberus",
+		Description = "Slay the three-headed guardian of the Underworld.",
+		Available = true,
+		Color = Color3.fromRGB(150, 80, 230),
+		Theme = { Floor = Color3.fromRGB(50, 40, 55), Wall = Color3.fromRGB(35, 28, 40), Fire = Color3.fromRGB(160, 80, 255) },
+		Radius = 55,
+		Waves = { { Boss = "Cerberus" } },
+	},
+	[7] = {
+		Id = "OlympianGauntlet",
+		Name = "Complete the Olympian Gauntlet",
+		Description = "Three legends in a row: the Minotaur, Medusa and Cerberus.",
+		Available = true,
+		Color = Color3.fromRGB(200, 150, 20),
+		Theme = { Floor = Color3.fromRGB(235, 230, 215), Wall = Color3.fromRGB(200, 170, 90), Fire = Color3.fromRGB(255, 220, 120) },
+		Radius = 55,
+		Waves = { { Boss = "Minotaur" }, { Boss = "Medusa" }, { Boss = "Cerberus" } },
+		BossHealth = 1.2,
+	},
+	[8] = {
+		Id = "TitanKing",
+		Name = "Defeat the Titan King",
+		Description = "The final trial: overthrow the Titan King.",
+		Available = true,
+		Color = Color3.fromRGB(230, 120, 20),
+		Theme = { Floor = Color3.fromRGB(200, 185, 150), Wall = Color3.fromRGB(170, 150, 110), Fire = Color3.fromRGB(255, 200, 80) },
+		Radius = 65,
+		Waves = { { Boss = "TitanKing" } },
+	},
 }
 
 -- Body size per rank, multiplying the player's own avatar proportions.
@@ -513,6 +645,164 @@ CombatConfig.Enemies = {
 			Message = "The Training Champion is enraged!",
 		},
 	},
+	------------------------------------------------------------------
+	-- Phase 7B: arena 2-6 enemies and bosses.
+	-- Appearance.Extras: Helmet, Shield, Horns, Snakes, Eye, Crown (parts on
+	-- the body). Appearance.Scale: grows the whole model (giants).
+	-- Builder = "Beast": a four-legged animal (Size, Heads, Fire).
+	-- Special attack kinds: Slam (circle), Charge (lane), Cone (fan in front,
+	-- can slow you), Meteors (several circles around players).
+	------------------------------------------------------------------
+	SpartanSoldier = {
+		DisplayName = "Spartan Soldier", MaxHealth = 160, Damage = 20, WalkSpeed = 13,
+		AttackRange = 5.5, Windup = 0.45, AttackCooldown = 1.0, AggroRange = 30, LeashRange = 60,
+		XP = 120, Gold = 60, RespawnTime = 0,
+		Appearance = { Skin = Color3.fromRGB(204, 160, 120), Shirt = Color3.fromRGB(170, 40, 35), Pants = Color3.fromRGB(150, 100, 50),
+			Width = 1.1, Weapon = Color3.fromRGB(180, 180, 185), WeaponLength = 4.4, Extras = { "Helmet", "Shield" }, ExtraColor = Color3.fromRGB(176, 112, 56) },
+	},
+	WarHound = {
+		DisplayName = "War Hound", Builder = "Beast", MaxHealth = 90, Damage = 14, WalkSpeed = 20,
+		AttackRange = 5, Windup = 0.35, AttackCooldown = 0.9, AggroRange = 35, LeashRange = 60,
+		XP = 90, Gold = 40, RespawnTime = 0,
+		Appearance = { Body = Color3.fromRGB(110, 80, 55), Accent = Color3.fromRGB(70, 50, 35), Eye = Color3.fromRGB(255, 200, 80), Size = 0.8, Heads = 1 },
+	},
+	SpartanWarlord = {
+		DisplayName = "Spartan Warlord", Boss = true, MaxHealth = 7000, Damage = 40, WalkSpeed = 14,
+		AttackRange = 7, Windup = 0.45, AttackCooldown = 0.9, AggroRange = 90, LeashRange = 200,
+		XP = 900, Gold = 500, RespawnTime = 0,
+		Appearance = { Skin = Color3.fromRGB(204, 160, 120), Shirt = Color3.fromRGB(150, 25, 25), Pants = Color3.fromRGB(176, 112, 56),
+			Width = 1.4, Height = 1.5, Weapon = Color3.fromRGB(230, 200, 120), WeaponLength = 6, Extras = { "Helmet", "Shield" }, ExtraColor = Color3.fromRGB(212, 175, 55) },
+		Attacks = {
+			{ Name = "Slam", Kind = "Slam", Windup = 0.9, Cooldown = 6, Range = 11, Radius = 14, Damage = 55 },
+			{ Name = "Charge", Kind = "Charge", Windup = 0.75, Cooldown = 7, Range = 32, MinRange = 9, Length = 30, Width = 7, Damage = 50 },
+		},
+		Phase2 = { At = 0.5, CooldownMultiplier = 0.65, SpeedMultiplier = 1.2, Summon = { SpartanSoldier = 2 }, Message = "The Spartan Warlord calls his phalanx!" },
+	},
+
+	LabyrinthGuardian = {
+		DisplayName = "Labyrinth Guardian", MaxHealth = 450, Damage = 34, WalkSpeed = 12,
+		AttackRange = 6.5, Windup = 0.5, AttackCooldown = 1.1, AggroRange = 30, LeashRange = 60,
+		XP = 400, Gold = 180, RespawnTime = 0,
+		Appearance = { Skin = Color3.fromRGB(150, 145, 135), Shirt = Color3.fromRGB(120, 115, 105), Pants = Color3.fromRGB(100, 95, 88),
+			Width = 1.3, Height = 1.25, Weapon = Color3.fromRGB(90, 90, 95), WeaponLength = 5, Extras = { "Helmet" }, ExtraColor = Color3.fromRGB(110, 105, 98) },
+	},
+	MinotaurBrute = {
+		DisplayName = "Minotaur Brute", MaxHealth = 380, Damage = 38, WalkSpeed = 15,
+		AttackRange = 6.5, Windup = 0.45, AttackCooldown = 1.0, AggroRange = 32, LeashRange = 60,
+		XP = 420, Gold = 200, RespawnTime = 0,
+		Appearance = { Skin = Color3.fromRGB(105, 70, 45), Shirt = Color3.fromRGB(90, 60, 40), Pants = Color3.fromRGB(70, 50, 35),
+			Width = 1.35, Height = 1.2, Weapon = Color3.fromRGB(120, 110, 100), WeaponLength = 4.5, Extras = { "Horns" }, ExtraColor = Color3.fromRGB(235, 225, 200) },
+	},
+	Minotaur = {
+		DisplayName = "The Minotaur", Boss = true, MaxHealth = 15000, Damage = 70, WalkSpeed = 15,
+		AttackRange = 9, Windup = 0.5, AttackCooldown = 1.0, AggroRange = 120, LeashRange = 250,
+		XP = 3000, Gold = 1500, RespawnTime = 0,
+		Appearance = { Skin = Color3.fromRGB(95, 60, 38), Shirt = Color3.fromRGB(80, 52, 34), Pants = Color3.fromRGB(60, 42, 30),
+			Width = 1.3, Scale = 2.0, Weapon = Color3.fromRGB(150, 140, 130), WeaponLength = 5, Extras = { "Horns" }, ExtraColor = Color3.fromRGB(240, 230, 205) },
+		Attacks = {
+			{ Name = "Charge", Kind = "Charge", Windup = 0.9, Cooldown = 6, Range = 45, MinRange = 10, Length = 42, Width = 10, Damage = 95 },
+			{ Name = "Slam", Kind = "Slam", Windup = 0.9, Cooldown = 7, Range = 14, Radius = 18, Damage = 85 },
+		},
+		Phase2 = { At = 0.5, CooldownMultiplier = 0.6, SpeedMultiplier = 1.3, Summon = { MinotaurBrute = 2 }, Message = "The Minotaur roars with rage!" },
+	},
+
+	CursedWarrior = {
+		DisplayName = "Cursed Warrior", MaxHealth = 750, Damage = 50, WalkSpeed = 14,
+		AttackRange = 6, Windup = 0.45, AttackCooldown = 1.0, AggroRange = 32, LeashRange = 60,
+		XP = 1100, Gold = 450, RespawnTime = 0,
+		Appearance = { Skin = Color3.fromRGB(120, 140, 110), Shirt = Color3.fromRGB(50, 70, 55), Pants = Color3.fromRGB(40, 45, 40),
+			Width = 1.15, Weapon = Color3.fromRGB(120, 255, 150), WeaponLength = 4.5, Extras = { "Helmet" }, ExtraColor = Color3.fromRGB(60, 80, 65) },
+	},
+	Gorgon = {
+		DisplayName = "Gorgon", MaxHealth = 600, Damage = 44, WalkSpeed = 13,
+		AttackRange = 5.5, Windup = 0.45, AttackCooldown = 1.1, AggroRange = 34, LeashRange = 60,
+		XP = 1200, Gold = 480, RespawnTime = 0,
+		Appearance = { Skin = Color3.fromRGB(120, 170, 110), Shirt = Color3.fromRGB(70, 110, 70), Pants = Color3.fromRGB(60, 90, 60),
+			Width = 0.95, Weapon = Color3.fromRGB(200, 200, 160), WeaponLength = 3.6, Extras = { "Snakes" }, ExtraColor = Color3.fromRGB(70, 160, 60) },
+		Attacks = {
+			{ Name = "Gaze", Kind = "Cone", Windup = 0.7, Cooldown = 6, Range = 20, MinRange = 4, Arc = 30, Damage = 35, Slow = 0.6, SlowTime = 2 },
+		},
+	},
+	Medusa = {
+		DisplayName = "Medusa", Boss = true, MaxHealth = 26000, Damage = 80, WalkSpeed = 13,
+		AttackRange = 8, Windup = 0.45, AttackCooldown = 1.0, AggroRange = 120, LeashRange = 250,
+		XP = 7000, Gold = 3500, RespawnTime = 0,
+		Appearance = { Skin = Color3.fromRGB(110, 165, 105), Shirt = Color3.fromRGB(60, 100, 60), Pants = Color3.fromRGB(50, 85, 50),
+			Width = 1.1, Scale = 1.8, Weapon = Color3.fromRGB(220, 220, 170), WeaponLength = 4.5, Extras = { "Snakes", "Crown" }, ExtraColor = Color3.fromRGB(80, 180, 60) },
+		Attacks = {
+			{ Name = "Gaze", Kind = "Cone", Windup = 0.9, Cooldown = 7, Range = 32, MinRange = 5, Arc = 35, Damage = 90, Slow = 0.4, SlowTime = 3 },
+			{ Name = "TailSweep", Kind = "Slam", Windup = 0.8, Cooldown = 6, Range = 12, Radius = 16, Damage = 85 },
+		},
+		Phase2 = { At = 0.5, CooldownMultiplier = 0.6, SpeedMultiplier = 1.2, Summon = { Gorgon = 2 }, Message = "Medusa's sisters answer her call!" },
+	},
+
+	UndeadSoldier = {
+		DisplayName = "Undead Soldier", MaxHealth = 1200, Damage = 70, WalkSpeed = 14,
+		AttackRange = 6, Windup = 0.45, AttackCooldown = 1.0, AggroRange = 32, LeashRange = 60,
+		XP = 2800, Gold = 1000, RespawnTime = 0,
+		Appearance = { Skin = Color3.fromRGB(200, 195, 180), Shirt = Color3.fromRGB(60, 50, 70), Pants = Color3.fromRGB(45, 40, 55),
+			Width = 0.85, Weapon = Color3.fromRGB(160, 90, 255), WeaponLength = 4.5, Extras = { "Helmet" }, ExtraColor = Color3.fromRGB(55, 50, 65) },
+	},
+	HellHound = {
+		DisplayName = "Hellhound", Builder = "Beast", MaxHealth = 900, Damage = 65, WalkSpeed = 22,
+		AttackRange = 5.5, Windup = 0.35, AttackCooldown = 0.9, AggroRange = 38, LeashRange = 60,
+		XP = 2600, Gold = 950, RespawnTime = 0,
+		Appearance = { Body = Color3.fromRGB(45, 30, 30), Accent = Color3.fromRGB(120, 30, 20), Eye = Color3.fromRGB(255, 120, 30), Size = 1.0, Heads = 1, Fire = true },
+	},
+	Cerberus = {
+		DisplayName = "Cerberus", Boss = true, Builder = "Beast", MaxHealth = 45000, Damage = 100, WalkSpeed = 17,
+		AttackRange = 11, Windup = 0.45, AttackCooldown = 1.0, AggroRange = 120, LeashRange = 250,
+		XP = 16000, Gold = 7000, RespawnTime = 0,
+		Appearance = { Body = Color3.fromRGB(40, 28, 28), Accent = Color3.fromRGB(110, 25, 20), Eye = Color3.fromRGB(255, 90, 20), Size = 2.6, Heads = 3, Fire = true },
+		Attacks = {
+			{ Name = "FireBreath", Kind = "Cone", Windup = 0.8, Cooldown = 6, Range = 28, MinRange = 4, Arc = 40, Damage = 115 },
+			{ Name = "Pounce", Kind = "Slam", Windup = 0.8, Cooldown = 7, Range = 16, Radius = 18, Damage = 120 },
+			{ Name = "Charge", Kind = "Charge", Windup = 0.8, Cooldown = 8, Range = 45, MinRange = 14, Length = 38, Width = 12, Damage = 105 },
+		},
+		Phase2 = { At = 0.5, CooldownMultiplier = 0.6, SpeedMultiplier = 1.25, Summon = { HellHound = 3 }, Message = "Cerberus howls for the hounds of the Underworld!" },
+	},
+
+	TitanWarrior = {
+		DisplayName = "Titan Warrior", MaxHealth = 1900, Damage = 100, WalkSpeed = 13,
+		AttackRange = 8, Windup = 0.5, AttackCooldown = 1.1, AggroRange = 34, LeashRange = 70,
+		XP = 6000, Gold = 2200, RespawnTime = 0,
+		Appearance = { Skin = Color3.fromRGB(170, 140, 120), Shirt = Color3.fromRGB(90, 90, 110), Pants = Color3.fromRGB(70, 70, 85),
+			Width = 1.2, Scale = 1.5, Weapon = Color3.fromRGB(200, 200, 210), WeaponLength = 5, Extras = { "Helmet" }, ExtraColor = Color3.fromRGB(120, 120, 140) },
+	},
+	Cyclops = {
+		DisplayName = "Cyclops", MaxHealth = 2300, Damage = 115, WalkSpeed = 12,
+		AttackRange = 8.5, Windup = 0.55, AttackCooldown = 1.2, AggroRange = 34, LeashRange = 70,
+		XP = 6800, Gold = 2500, RespawnTime = 0,
+		Appearance = { Skin = Color3.fromRGB(150, 165, 130), Shirt = Color3.fromRGB(110, 90, 60), Pants = Color3.fromRGB(90, 70, 50),
+			Width = 1.4, Scale = 1.6, Weapon = Color3.fromRGB(110, 85, 60), WeaponLength = 4.5, Extras = { "Eye" }, ExtraColor = Color3.fromRGB(255, 255, 255) },
+	},
+	TitanKing = {
+		DisplayName = "The Titan King", Boss = true, MaxHealth = 90000, Damage = 150, WalkSpeed = 14,
+		AttackRange = 15, Windup = 0.55, AttackCooldown = 1.1, AggroRange = 150, LeashRange = 300,
+		XP = 40000, Gold = 15000, RespawnTime = 0,
+		Appearance = { Skin = Color3.fromRGB(180, 150, 120), Shirt = Color3.fromRGB(70, 60, 90), Pants = Color3.fromRGB(55, 45, 70),
+			Width = 1.3, Scale = 3.0, Weapon = Color3.fromRGB(255, 170, 60), WeaponLength = 5.5, Extras = { "Crown" }, ExtraColor = Color3.fromRGB(212, 175, 55) },
+		Attacks = {
+			{ Name = "Meteors", Kind = "Meteors", Windup = 1.2, Cooldown = 8, Range = 70, Count = 6, Radius = 8, Damage = 150 },
+			{ Name = "Slam", Kind = "Slam", Windup = 0.9, Cooldown = 7, Range = 20, Radius = 24, Damage = 180 },
+			{ Name = "Charge", Kind = "Charge", Windup = 0.9, Cooldown = 9, Range = 60, MinRange = 18, Length = 50, Width = 14, Damage = 160 },
+		},
+		Phase2 = { At = 0.5, CooldownMultiplier = 0.6, SpeedMultiplier = 1.2, Summon = { TitanWarrior = 2 }, Message = "The Titan King summons his titans!" },
+	},
+
+	-- Demigod trial boss: shown as "Avatar of <your god>".
+	DivineAvatar = {
+		DisplayName = "Divine Avatar", Boss = true, MaxHealth = 30000, Damage = 85, WalkSpeed = 16,
+		AttackRange = 8, Windup = 0.45, AttackCooldown = 0.9, AggroRange = 120, LeashRange = 250,
+		XP = 0, Gold = 0, RespawnTime = 0,
+		Appearance = { Skin = Color3.fromRGB(255, 240, 200), Shirt = Color3.fromRGB(240, 230, 210), Pants = Color3.fromRGB(212, 175, 55),
+			Width = 1.2, Scale = 1.7, Weapon = Color3.fromRGB(255, 240, 160), WeaponLength = 5, Extras = { "Crown" }, ExtraColor = Color3.fromRGB(255, 220, 90) },
+		Attacks = {
+			{ Name = "Judgment", Kind = "Meteors", Windup = 1.1, Cooldown = 8, Range = 60, Count = 4, Radius = 7, Damage = 100 },
+			{ Name = "Slam", Kind = "Slam", Windup = 0.8, Cooldown = 6, Range = 12, Radius = 16, Damage = 95 },
+		},
+		Phase2 = { At = 0.5, CooldownMultiplier = 0.6, SpeedMultiplier = 1.2, Message = "The Avatar blazes with divine power!" },
+	},
 	TrainingDummy = {
 		DisplayName = "Training Dummy",
 		MaxHealth = 500,
@@ -658,7 +948,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v33"
+GameConfig.BuildLabel = "v35"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -3111,8 +3401,9 @@ local function buildArena(center, arena)
 	local model = Instance.new("Model")
 	model.Name = "Arena_" .. arena.Id
 	local MP = WorldBuilder.MakePart
-	local R = ArenaConfig.Radius
-	local stone = Color3.fromRGB(176, 160, 130)
+	local R = arena.Radius or ArenaConfig.Radius
+	local theme = arena.Theme or {}
+	local stone = theme.Wall or Color3.fromRGB(176, 160, 130)
 
 	MP(model, {
 		Name = "Floor",
@@ -3120,7 +3411,7 @@ local function buildArena(center, arena)
 		Size = Vector3.new(2, R * 2 + 6, R * 2 + 6),
 		CFrame = CFrame.new(center - Vector3.new(0, 1, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 		Material = Enum.Material.Sandstone,
-		Color = Color3.fromRGB(196, 170, 125),
+		Color = theme.Floor or Color3.fromRGB(196, 170, 125),
 	})
 	MP(model, {
 		Name = "Centre",
@@ -3151,6 +3442,10 @@ local function buildArena(center, arena)
 			})
 			local fire = Instance.new("Fire")
 			fire.Size = 6
+			if theme.Fire then
+				fire.Color = theme.Fire
+				fire.SecondaryColor = Color3.new(1, 1, 1)
+			end
 			fire.Heat = 10
 			fire.Parent = MP(model, {
 				Name = "Torch",
@@ -3174,7 +3469,7 @@ local finish -- forward declaration
 
 local function spawnPoint(run, index, count)
 	local angle = math.rad(-150 + 300 * ((index - 0.5) / math.max(count, 1))) - math.pi / 2
-	local r = ArenaConfig.Radius - 8
+	local r = (run.Arena.Radius or ArenaConfig.Radius) - 8
 	return run.Center + Vector3.new(math.cos(angle) * r, 0, math.sin(angle) * r)
 end
 
@@ -3225,9 +3520,9 @@ local function spawnEnemy(run, enemyType, position, isBoss)
 		HealthMultiplier = healthMultiplier,
 		DamageMultiplier = damageMultiplier,
 		SpeedMultiplier = speedMultiplier,
-		AggroRange = ArenaConfig.Radius * 3, -- arena enemies always find you
-		LeashRange = ArenaConfig.Radius * 3,
-		Attributes = { RunId = run.Id },
+		AggroRange = (run.Arena.Radius or ArenaConfig.Radius) * 3, -- arena enemies always find you
+		LeashRange = (run.Arena.Radius or ArenaConfig.Radius) * 3,
+		Attributes = { RunId = run.Id, DisplayName = if isBoss then run.Arena.BossDisplayName else nil },
 		OnDeath = function(deadModel)
 			onEnemyGone(run, deadModel)
 		end,
@@ -3277,7 +3572,7 @@ function ArenaService._StartWave(run, index)
 		end
 	end
 	for i, entry in list do
-		local position = if entry[2] then run.Center + Vector3.new(0, 0, -ArenaConfig.Radius + 12) else spawnPoint(run, i, #list)
+		local position = if entry[2] then run.Center + Vector3.new(0, 0, -(run.Arena.Radius or ArenaConfig.Radius) + 16) else spawnPoint(run, i, #list)
 		spawnEnemy(run, entry[1], position, entry[2])
 	end
 	publish(run)
@@ -3435,7 +3730,7 @@ local function startRun(arena, members, onVictory)
 		run.Players[player] = true
 		run.Alive[player] = true
 		playerRun[player] = run
-		local pos = center + Vector3.new((i - (#ready + 1) / 2) * 5, 3, ArenaConfig.Radius - 10)
+		local pos = center + Vector3.new((i - (#ready + 1) / 2) * 5, 3, (arena.Radius or ArenaConfig.Radius) - 10)
 		player.Character:PivotTo(CFrame.lookAt(pos, Vector3.new(center.X, pos.Y, center.Z)))
 		local _, humanoid = aliveRoot(player)
 		if humanoid then
@@ -3484,6 +3779,9 @@ function ArenaService.StartTrial(player, trial, onVictory)
 		WaveDamage = trial.WaveDamage,
 		WaveSpeed = trial.WaveSpeed,
 		BossHealth = trial.BossHealth,
+		BossDisplayName = trial.BossDisplayName,
+		Theme = trial.Theme,
+		Radius = trial.Radius,
 		Rewards = {},
 	}
 	leaveQueue(player)
@@ -3827,6 +4125,13 @@ function AscensionService.StartTrial(player)
 	if reason then
 		message(player, reason)
 		return false
+	end
+	if trial.Divine then
+		-- The Divine Trial's boss is the Avatar of the player's own god.
+		local data = DataService.GetData(player)
+		local god = data and GodConfig.Gods[data.SelectedGod]
+		trial = table.clone(trial)
+		trial.BossDisplayName = "Avatar of " .. (if god then god.DisplayName else "Olympus")
 	end
 	local ok = ArenaService.StartTrial(player, trial, function(run)
 		if not run.Players[player] or not player.Parent then
@@ -4328,6 +4633,23 @@ end
 
 function CombatService.SetDashHandler(handler)
 	dashHandler = handler
+end
+
+-- Phase 7B: slows a player's walking (e.g. Medusa's gaze) for a while.
+function CombatService.SlowPlayer(player, multiplier, duration)
+	local st = state[player]
+	local _, humanoid = getParts(player)
+	if not st or not humanoid or st.Slowed then
+		return
+	end
+	st.Slowed = true
+	humanoid.WalkSpeed *= multiplier
+	task.delay(duration, function()
+		st.Slowed = false
+		if humanoid.Parent then
+			humanoid.WalkSpeed /= multiplier
+		end
+	end)
 end
 
 function CombatService.SetCounterHandler(handler)
@@ -5083,6 +5405,130 @@ local function buildDummy()
 	return model
 end
 
+--------------------------------------------------------------------------
+-- Phase 7B bodies: four-legged beasts and extra armour pieces
+--------------------------------------------------------------------------
+local function weldPart(model, anchorPart, props)
+	local p = Instance.new("Part")
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Massless = true
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	for key, value in props do
+		p[key] = value
+	end
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = anchorPart
+	weld.Part1 = p
+	weld.Parent = p
+	p.Parent = model
+	return p
+end
+
+-- A four-legged animal (war hound, hellhound, Cerberus with Heads = 3).
+local function buildBeast(look)
+	local s = look.Size or 1
+	local hip = 1.8 * s
+	local model = Instance.new("Model")
+	local root = Instance.new("Part")
+	root.Name = "HumanoidRootPart"
+	root.Size = Vector3.new(2 * s, 2 * s, 4 * s)
+	root.Transparency = 1
+	root.CFrame = CFrame.new()
+	root.Parent = model
+	local function part(name, size, offset, color, props)
+		local p = { Name = name, Size = size, CFrame = root.CFrame * offset, Color = color, Material = Enum.Material.SmoothPlastic }
+		for key, value in props or {} do
+			p[key] = value
+		end
+		return weldPart(model, root, p)
+	end
+	part("Torso", Vector3.new(2.4 * s, 1.8 * s, 4.4 * s), CFrame.new(0, 0.2 * s, 0), look.Body)
+	local legLength = hip + 0.3 * s
+	for _, xz in { { -0.8, -1.5 }, { 0.8, -1.5 }, { -0.8, 1.5 }, { 0.8, 1.5 } } do
+		part("Leg", Vector3.new(legLength, 0.7 * s, 0.7 * s), CFrame.new(xz[1] * s, -0.7 * s - legLength / 2, xz[2] * s) * CFrame.Angles(0, 0, math.rad(90)), look.Accent, { Shape = Enum.PartType.Cylinder })
+	end
+	part("Tail", Vector3.new(0.35 * s, 0.35 * s, 2 * s), CFrame.new(0, 0.7 * s, 2.8 * s) * CFrame.Angles(math.rad(30), 0, 0), look.Accent)
+	local heads = look.Heads or 1
+	local xs = if heads == 3 then { 0, -1.9, 1.9 } else { 0 }
+	for i, x in xs do
+		local name = if i == 1 then "Head" else ("Head" .. i)
+		local tilt = if x < 0 then 25 elseif x > 0 then -25 else 0
+		local back = if x ~= 0 then 0.5 else 0 -- side heads sit a little further back
+		if x ~= 0 then
+			part("Neck", Vector3.new(0.9 * s, 0.9 * s, 1.6 * s), CFrame.new(x * 0.6 * s, 0.7 * s, -2.0 * s) * CFrame.Angles(0, math.rad(tilt), 0), look.Body)
+		end
+		local headFrame = CFrame.new(x * s, (1.0 + (if x ~= 0 then 0.25 else 0)) * s, (-2.7 + back) * s) * CFrame.Angles(0, math.rad(tilt), 0)
+		local head = part(name, Vector3.new(1.4 * s, 1.3 * s, 1.6 * s), headFrame, look.Body)
+		part("Snout", Vector3.new(0.85 * s, 0.6 * s, 1.0 * s), headFrame * CFrame.new(0, -0.25 * s, -1.2 * s), look.Accent)
+		for _, ex in { -0.35, 0.35 } do
+			part("Ear", Vector3.new(0.3 * s, 0.6 * s, 0.25 * s), headFrame * CFrame.new(ex * s, 0.85 * s, 0.2 * s), look.Accent)
+			part("Eye", Vector3.new(0.22 * s, 0.22 * s, 0.1 * s), headFrame * CFrame.new(ex * s, 0.2 * s, -0.82 * s), look.Eye, { Material = Enum.Material.Neon })
+		end
+		if look.Fire then
+			local fire = Instance.new("Fire")
+			fire.Size = 3 * s
+			fire.Heat = 6
+			fire.Color = Color3.fromRGB(255, 110, 30)
+			fire.SecondaryColor = Color3.fromRGB(255, 220, 80)
+			fire.Parent = head
+		end
+	end
+	local humanoid = Instance.new("Humanoid")
+	humanoid.RigType = Enum.HumanoidRigType.R15
+	humanoid.HipHeight = hip
+	humanoid.RequiresNeck = false
+	humanoid.Parent = model
+	model.PrimaryPart = root
+	return model
+end
+
+-- Extra armour and features welded onto a humanoid enemy.
+local function addExtras(model, look)
+	local head = model:FindFirstChild("Head")
+	local color = look.ExtraColor or Color3.fromRGB(176, 112, 56)
+	for _, extra in look.Extras or {} do
+		if extra == "Helmet" and head then
+			local s = head.Size
+			weldPart(model, head, { Name = "Helmet", Size = Vector3.new(s.X * 1.15, s.Y * 0.75, s.Z * 1.15), CFrame = head.CFrame * CFrame.new(0, s.Y * 0.2, 0), Color = color, Material = Enum.Material.Metal })
+			weldPart(model, head, { Name = "Crest", Size = Vector3.new(0.18, s.Y * 0.55, s.Z * 1.2), CFrame = head.CFrame * CFrame.new(0, s.Y * 0.75, 0), Color = Color3.fromRGB(170, 30, 30), Material = Enum.Material.Fabric })
+		elseif extra == "Shield" then
+			local arm = model:FindFirstChild("LeftLowerArm")
+			if arm then
+				weldPart(model, arm, { Name = "Shield", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.25, 2.6, 2.6), CFrame = arm.CFrame * CFrame.new(-arm.Size.X / 2 - 0.15, 0, 0), Color = color, Material = Enum.Material.Metal })
+			end
+		elseif extra == "Horns" and head then
+			local s = head.Size
+			for _, side in { -1, 1 } do
+				weldPart(model, head, { Name = "Horn", Size = Vector3.new(s.X * 0.55, 0.28, 0.28), CFrame = head.CFrame * CFrame.new(side * s.X * 0.65, s.Y * 0.35, 0) * CFrame.Angles(0, 0, math.rad(side * -35)), Color = color })
+				weldPart(model, head, { Name = "HornTip", Size = Vector3.new(0.22, s.Y * 0.45, 0.22), CFrame = head.CFrame * CFrame.new(side * s.X * 0.95, s.Y * 0.62, 0) * CFrame.Angles(0, 0, math.rad(side * -10)), Color = color })
+			end
+			weldPart(model, head, { Name = "Muzzle", Size = Vector3.new(s.X * 0.55, s.Y * 0.4, s.Z * 0.35), CFrame = head.CFrame * CFrame.new(0, -s.Y * 0.2, -s.Z * 0.6), Color = look.Skin })
+		elseif extra == "Snakes" and head then
+			local s = head.Size
+			for i = 0, 9 do
+				local angle = (i / 10) * math.pi * 2
+				weldPart(model, head, { Name = "Snake", Shape = Enum.PartType.Cylinder, Size = Vector3.new(s.Y * 0.7, 0.22, 0.22),
+					CFrame = head.CFrame * CFrame.new(math.cos(angle) * s.X * 0.45, s.Y * 0.45, math.sin(angle) * s.Z * 0.45) * CFrame.Angles(0, -angle, math.rad(55)),
+					Color = color })
+			end
+		elseif extra == "Eye" and head then
+			local s = head.Size
+			weldPart(model, head, { Name = "BigEye", Shape = Enum.PartType.Ball, Size = Vector3.new(s.X * 0.55, s.X * 0.55, s.X * 0.55), CFrame = head.CFrame * CFrame.new(0, s.Y * 0.1, -s.Z * 0.4), Color = Color3.new(1, 1, 1) })
+			weldPart(model, head, { Name = "Pupil", Shape = Enum.PartType.Ball, Size = Vector3.new(s.X * 0.22, s.X * 0.22, s.X * 0.22), CFrame = head.CFrame * CFrame.new(0, s.Y * 0.1, -s.Z * 0.62), Color = Color3.fromRGB(180, 30, 20), Material = Enum.Material.Neon })
+		elseif extra == "Crown" and head then
+			local s = head.Size
+			for i = 0, 7 do
+				local angle = (i / 8) * math.pi * 2
+				weldPart(model, head, { Name = "CrownSpike", Size = Vector3.new(0.25, s.Y * 0.45, 0.25),
+					CFrame = head.CFrame * CFrame.new(math.cos(angle) * s.X * 0.42, s.Y * 0.62, math.sin(angle) * s.Z * 0.42), Color = color, Material = Enum.Material.Metal })
+			end
+		end
+	end
+end
+
 -- A finished enemy body for this type (the first one is built, the rest are copies).
 local function makeBody(enemyType, cfg)
 	if cfg.Builder == "Dummy" then
@@ -5090,8 +5536,23 @@ local function makeBody(enemyType, cfg)
 	end
 	if templates[enemyType] == nil then
 		templates[enemyType] = false -- "being built": other spawns wait for it
-		local template = buildRig(cfg.Appearance)
-		addWeapon(template, cfg.Appearance.Weapon, cfg.Appearance.WeaponLength)
+		local template
+		if cfg.Builder == "Beast" then
+			template = buildBeast(cfg.Appearance)
+		else
+			template = buildRig(cfg.Appearance)
+			addWeapon(template, cfg.Appearance.Weapon, cfg.Appearance.WeaponLength)
+			addExtras(template, cfg.Appearance)
+		end
+		local scale = cfg.Appearance.Scale
+		if scale and scale ~= 1 then
+			local humanoid = template:FindFirstChildOfClass("Humanoid")
+			local hipBefore = humanoid and humanoid.HipHeight
+			template:ScaleTo(scale) -- giants
+			if humanoid and math.abs(humanoid.HipHeight - hipBefore) < 0.01 then
+				humanoid.HipHeight = hipBefore * scale -- in case ScaleTo left it alone
+			end
+		end
 		templates[enemyType] = template
 	end
 	while templates[enemyType] == false do
@@ -5311,6 +5772,95 @@ local function glowWeapon(record)
 	end
 end
 
+-- Phase 7B: a red fan in front (gaze, fire breath) and meteor showers.
+local function startConeOrMeteors(record, attack)
+	local root = record.Root
+	local ground = groundUnder(record)
+	local damage = attack.Damage * record.DamageMultiplier
+
+	if attack.Kind == "Cone" then
+		local origin = Vector3.new(root.Position.X, ground, root.Position.Z)
+		local look = flat(root.CFrame.LookVector).Unit
+		local base = CFrame.lookAt(origin, origin + look)
+		local warnings = {}
+		for i = -3, 3 do
+			local angle = math.rad(attack.Arc * i / 3)
+			local dir = base * CFrame.Angles(0, angle, 0)
+			table.insert(warnings, warningPart({
+				Size = Vector3.new(1.2 + attack.Range * 0.06, 0.2, attack.Range),
+				CFrame = dir * CFrame.new(0, 0, -attack.Range / 2),
+			}))
+		end
+		record.Telegraph = warnings
+		task.delay(attack.Windup, function()
+			clearTelegraph(record)
+			if record.Dead or not record.Model.Parent then
+				return
+			end
+			local minDot = math.cos(math.rad(attack.Arc + 5))
+			for _, player in getPlayers() do
+				local playerRoot = aliveCharacterRoot(player)
+				if playerRoot then
+					local offset = flat(playerRoot.Position - origin)
+					if offset.Magnitude <= attack.Range + 1 and (offset.Magnitude < 2 or look:Dot(offset.Unit) >= minDot) then
+						CombatService.DamagePlayer(player, damage, origin, record.Model)
+						if attack.Slow then
+							CombatService.SlowPlayer(player, attack.Slow, attack.SlowTime or 2)
+						end
+					end
+				end
+			end
+			fxRemote:FireAllClients("Wave", root.Position, WARNING_RED, root.CFrame.LookVector, attack.Range)
+			record.State = "Chase"
+		end)
+	else -- Meteors
+		local spots = {}
+		local players = {}
+		for _, player in getPlayers() do
+			local playerRoot = aliveCharacterRoot(player)
+			if playerRoot and (playerRoot.Position - root.Position).Magnitude <= attack.Range then
+				table.insert(players, playerRoot.Position)
+			end
+		end
+		for i = 1, attack.Count do
+			local around = players[((i - 1) % math.max(#players, 1)) + 1] or root.Position
+			local offset = if i <= #players then Vector3.zero else Vector3.new(math.random(-12, 12), 0, math.random(-12, 12))
+			table.insert(spots, Vector3.new(around.X + offset.X, ground, around.Z + offset.Z))
+		end
+		local warnings = {}
+		for _, spot in spots do
+			local d = attack.Radius * 2
+			table.insert(warnings, warningPart({
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(0.2, d, d),
+				CFrame = CFrame.new(spot) * CFrame.Angles(0, 0, math.rad(90)),
+			}))
+		end
+		record.Telegraph = warnings
+		task.delay(attack.Windup, function()
+			clearTelegraph(record)
+			if record.Dead or not record.Model.Parent then
+				return
+			end
+			for _, player in getPlayers() do
+				local playerRoot = aliveCharacterRoot(player)
+				if playerRoot then
+					for _, spot in spots do
+						if flat(playerRoot.Position - spot).Magnitude <= attack.Radius then
+							CombatService.DamagePlayer(player, damage, spot, record.Model)
+							break
+						end
+					end
+				end
+			end
+			for _, spot in spots do
+				fxRemote:FireAllClients("Lightning", spot + Vector3.new(0, 3, 0), Color3.fromRGB(255, 140, 40), attack.Radius, true)
+			end
+			record.State = "Chase"
+		end)
+	end
+end
+
 local function startSpecial(record, target, attack)
 	record.State = "Windup"
 	record.AttackReadyAt[attack.Name] = os.clock() + attack.Windup + attack.Cooldown * record.CooldownMultiplier
@@ -5326,6 +5876,11 @@ local function startSpecial(record, target, attack)
 	local origin = Vector3.new(root.Position.X, ground, root.Position.Z)
 	local look = flat(root.CFrame.LookVector).Unit
 	local damage = attack.Damage * record.DamageMultiplier
+
+	if attack.Kind == "Cone" or attack.Kind == "Meteors" then
+		startConeOrMeteors(record, attack)
+		return
+	end
 
 	if attack.Kind == "Slam" then
 		-- A big red circle around the boss; everyone inside when it lands is hit.
@@ -5578,7 +6133,8 @@ function EnemyService.Spawn(enemyType, cframe, options)
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	humanoid.BreakJointsOnDeath = true
 
-	model:PivotTo(cframe + Vector3.new(0, 3, 0))
+	-- Stand on the ground whatever the size: root centre = half the root + hip height.
+	model:PivotTo(cframe + Vector3.new(0, root.Size.Y / 2 + humanoid.HipHeight, 0))
 	if cfg.Passive then
 		root.Anchored = true
 	end

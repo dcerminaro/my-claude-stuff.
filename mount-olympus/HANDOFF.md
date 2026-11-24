@@ -51,7 +51,7 @@ Follow the master specification in **Part C** exactly, including its section 19
 | 4B. God abilities | **Confirmed** ("Phase 4 confirmed") |
 | 5. Arenas | **Accepted** — developer said "move on to phase 6" (v25) |
 | 6. Ascension | **Accepted** — developer: "we can work on how it looks later, next phase" (v30) |
-| 7. Content Expansion | In progress: **7A gods built and server-tested, live (v33)** · 7B arenas/bosses/trials · 7C weapons/forge · 7D quests · 7E endgame |
+| 7. Content Expansion | In progress: 7A gods (v33) · **7B arenas/bosses/trials built and server-tested, live (v35)** · 7C weapons/forge · 7D quests · 7E endgame |
 | 5–8 | Not started |
 
 ### How to set up Phase 1 on a Mac (or Windows PC)
@@ -378,6 +378,31 @@ environment, so a session can `rojo build` and publish via
    Aegis, Heal; buffs now support `LifeSteal` and `RegenPercent`.
    `EnemyService.Push` / `Slow`; `CombatService.DamagePlayer(..., attackerModel)`
    + `SetCounterHandler`.
+
+### Design decisions made in Phase 7B (arenas 2–6, bosses, trials)
+1. **Arenas** (each themed: floor/wall/torch colours, radius 45–65; same wave
+   ramp as arena 1): Spartan Battleground (16–35, Warrior+) soldiers + war
+   hounds → Spartan Warlord; Labyrinth of Crete (36–60, Champion+) guardians +
+   minotaur brutes → **Minotaur**; Cursed Temple (61–90, Hero+) cursed
+   warriors + gorgons → **Medusa**; Gates of the Underworld (91–135, Demigod+)
+   undead + hellhounds → **Cerberus**; Titan's Colosseum (136–200, Lesser
+   God+) titan warriors + cyclopes → **Titan King**. Completion rewards rise
+   from 1.5K XP / 1.2K Gold / 2 Ambrosia to 150K XP / 100K Gold / 15 Ambrosia.
+2. **Bodies:** humanoid enemies get armour extras (Helmet, Shield, Horns,
+   Snakes, Eye, Crown); hounds and Cerberus are part-built four-legged
+   "Beast" models (Cerberus has 3 heads, fire); giants are scaled with
+   `Model:ScaleTo` (Minotaur ×2, Medusa ×1.8, Titan King ×3). All stand on the
+   ground (spawn lift = root half-height + HipHeight). Preview:
+   `docs/enemies-preview.png`.
+3. **New boss attacks:** `Cone` (red fan; Medusa's gaze slows to 40%,
+   Cerberus's fire breath, gorgons' gaze) and `Meteors` (several red circles
+   on/around players; Titan King, Divine Avatar). Plus Slam / Charge.
+   `CombatService.SlowPlayer`. All bosses enrage at 50% and summon helpers.
+4. **Trials now playable:** Champion = Spartan phalanx + Warlord; Hero =
+   Minotaur; Demigod = Divine Trial (2 waves + "Avatar of <your god>");
+   Lesser God = Cerberus; Olympian = Gauntlet (Minotaur → Medusa → Cerberus,
+   +20% boss health); Elder God = Titan King.
+5. Not yet: the hub's "Titan Gate" (boss challenges) belongs to 7E endgame.
 
 ### Ideas from the developer for later (not built yet)
 - **Rank outfits and physique (Phase 6, Ascension):** each ascension rank gets

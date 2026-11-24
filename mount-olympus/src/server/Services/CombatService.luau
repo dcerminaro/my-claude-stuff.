@@ -325,6 +325,23 @@ function CombatService.SetDashHandler(handler)
 	dashHandler = handler
 end
 
+-- Phase 7B: slows a player's walking (e.g. Medusa's gaze) for a while.
+function CombatService.SlowPlayer(player, multiplier, duration)
+	local st = state[player]
+	local _, humanoid = getParts(player)
+	if not st or not humanoid or st.Slowed then
+		return
+	end
+	st.Slowed = true
+	humanoid.WalkSpeed *= multiplier
+	task.delay(duration, function()
+		st.Slowed = false
+		if humanoid.Parent then
+			humanoid.WalkSpeed /= multiplier
+		end
+	end)
+end
+
 function CombatService.SetCounterHandler(handler)
 	counterHandler = handler
 end

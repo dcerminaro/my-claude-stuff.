@@ -119,8 +119,9 @@ local function buildArena(center, arena)
 	local model = Instance.new("Model")
 	model.Name = "Arena_" .. arena.Id
 	local MP = WorldBuilder.MakePart
-	local R = ArenaConfig.Radius
-	local stone = Color3.fromRGB(176, 160, 130)
+	local R = arena.Radius or ArenaConfig.Radius
+	local theme = arena.Theme or {}
+	local stone = theme.Wall or Color3.fromRGB(176, 160, 130)
 
 	MP(model, {
 		Name = "Floor",
@@ -128,7 +129,7 @@ local function buildArena(center, arena)
 		Size = Vector3.new(2, R * 2 + 6, R * 2 + 6),
 		CFrame = CFrame.new(center - Vector3.new(0, 1, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 		Material = Enum.Material.Sandstone,
-		Color = Color3.fromRGB(196, 170, 125),
+		Color = theme.Floor or Color3.fromRGB(196, 170, 125),
 	})
 	MP(model, {
 		Name = "Centre",
@@ -159,6 +160,10 @@ local function buildArena(center, arena)
 			})
 			local fire = Instance.new("Fire")
 			fire.Size = 6
+			if theme.Fire then
+				fire.Color = theme.Fire
+				fire.SecondaryColor = Color3.new(1, 1, 1)
+			end
 			fire.Heat = 10
 			fire.Parent = MP(model, {
 				Name = "Torch",
@@ -182,7 +187,7 @@ local finish -- forward declaration
 
 local function spawnPoint(run, index, count)
 	local angle = math.rad(-150 + 300 * ((index - 0.5) / math.max(count, 1))) - math.pi / 2
-	local r = ArenaConfig.Radius - 8
+	local r = (run.Arena.Radius or ArenaConfig.Radius) - 8
 	return run.Center + Vector3.new(math.cos(angle) * r, 0, math.sin(angle) * r)
 end
 
@@ -233,9 +238,9 @@ local function spawnEnemy(run, enemyType, position, isBoss)
 		HealthMultiplier = healthMultiplier,
 		DamageMultiplier = damageMultiplier,
 		SpeedMultiplier = speedMultiplier,
-		AggroRange = ArenaConfig.Radius * 3, -- arena enemies always find you
-		LeashRange = ArenaConfig.Radius * 3,
-		Attributes = { RunId = run.Id },
+		AggroRange = (run.Arena.Radius or ArenaConfig.Radius) * 3, -- arena enemies always find you
+		LeashRange = (run.Arena.Radius or ArenaConfig.Radius) * 3,
+		Attributes = { RunId = run.Id, DisplayName = if isBoss then run.Arena.BossDisplayName else nil },
 		OnDeath = function(deadModel)
 			onEnemyGone(run, deadModel)
 		end,
@@ -285,7 +290,7 @@ function ArenaService._StartWave(run, index)
 		end
 	end
 	for i, entry in list do
-		local position = if entry[2] then run.Center + Vector3.new(0, 0, -ArenaConfig.Radius + 12) else spawnPoint(run, i, #list)
+		local position = if entry[2] then run.Center + Vector3.new(0, 0, -(run.Arena.Radius or ArenaConfig.Radius) + 16) else spawnPoint(run, i, #list)
 		spawnEnemy(run, entry[1], position, entry[2])
 	end
 	publish(run)
@@ -443,7 +448,7 @@ local function startRun(arena, members, onVictory)
 		run.Players[player] = true
 		run.Alive[player] = true
 		playerRun[player] = run
-		local pos = center + Vector3.new((i - (#ready + 1) / 2) * 5, 3, ArenaConfig.Radius - 10)
+		local pos = center + Vector3.new((i - (#ready + 1) / 2) * 5, 3, (arena.Radius or ArenaConfig.Radius) - 10)
 		player.Character:PivotTo(CFrame.lookAt(pos, Vector3.new(center.X, pos.Y, center.Z)))
 		local _, humanoid = aliveRoot(player)
 		if humanoid then
@@ -492,6 +497,9 @@ function ArenaService.StartTrial(player, trial, onVictory)
 		WaveDamage = trial.WaveDamage,
 		WaveSpeed = trial.WaveSpeed,
 		BossHealth = trial.BossHealth,
+		BossDisplayName = trial.BossDisplayName,
+		Theme = trial.Theme,
+		Radius = trial.Radius,
 		Rewards = {},
 	}
 	leaveQueue(player)

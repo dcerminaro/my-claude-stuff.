@@ -199,6 +199,130 @@ local function buildDummy()
 	return model
 end
 
+--------------------------------------------------------------------------
+-- Phase 7B bodies: four-legged beasts and extra armour pieces
+--------------------------------------------------------------------------
+local function weldPart(model, anchorPart, props)
+	local p = Instance.new("Part")
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Massless = true
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	for key, value in props do
+		p[key] = value
+	end
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = anchorPart
+	weld.Part1 = p
+	weld.Parent = p
+	p.Parent = model
+	return p
+end
+
+-- A four-legged animal (war hound, hellhound, Cerberus with Heads = 3).
+local function buildBeast(look)
+	local s = look.Size or 1
+	local hip = 1.8 * s
+	local model = Instance.new("Model")
+	local root = Instance.new("Part")
+	root.Name = "HumanoidRootPart"
+	root.Size = Vector3.new(2 * s, 2 * s, 4 * s)
+	root.Transparency = 1
+	root.CFrame = CFrame.new()
+	root.Parent = model
+	local function part(name, size, offset, color, props)
+		local p = { Name = name, Size = size, CFrame = root.CFrame * offset, Color = color, Material = Enum.Material.SmoothPlastic }
+		for key, value in props or {} do
+			p[key] = value
+		end
+		return weldPart(model, root, p)
+	end
+	part("Torso", Vector3.new(2.4 * s, 1.8 * s, 4.4 * s), CFrame.new(0, 0.2 * s, 0), look.Body)
+	local legLength = hip + 0.3 * s
+	for _, xz in { { -0.8, -1.5 }, { 0.8, -1.5 }, { -0.8, 1.5 }, { 0.8, 1.5 } } do
+		part("Leg", Vector3.new(legLength, 0.7 * s, 0.7 * s), CFrame.new(xz[1] * s, -0.7 * s - legLength / 2, xz[2] * s) * CFrame.Angles(0, 0, math.rad(90)), look.Accent, { Shape = Enum.PartType.Cylinder })
+	end
+	part("Tail", Vector3.new(0.35 * s, 0.35 * s, 2 * s), CFrame.new(0, 0.7 * s, 2.8 * s) * CFrame.Angles(math.rad(30), 0, 0), look.Accent)
+	local heads = look.Heads or 1
+	local xs = if heads == 3 then { 0, -1.9, 1.9 } else { 0 }
+	for i, x in xs do
+		local name = if i == 1 then "Head" else ("Head" .. i)
+		local tilt = if x < 0 then 25 elseif x > 0 then -25 else 0
+		local back = if x ~= 0 then 0.5 else 0 -- side heads sit a little further back
+		if x ~= 0 then
+			part("Neck", Vector3.new(0.9 * s, 0.9 * s, 1.6 * s), CFrame.new(x * 0.6 * s, 0.7 * s, -2.0 * s) * CFrame.Angles(0, math.rad(tilt), 0), look.Body)
+		end
+		local headFrame = CFrame.new(x * s, (1.0 + (if x ~= 0 then 0.25 else 0)) * s, (-2.7 + back) * s) * CFrame.Angles(0, math.rad(tilt), 0)
+		local head = part(name, Vector3.new(1.4 * s, 1.3 * s, 1.6 * s), headFrame, look.Body)
+		part("Snout", Vector3.new(0.85 * s, 0.6 * s, 1.0 * s), headFrame * CFrame.new(0, -0.25 * s, -1.2 * s), look.Accent)
+		for _, ex in { -0.35, 0.35 } do
+			part("Ear", Vector3.new(0.3 * s, 0.6 * s, 0.25 * s), headFrame * CFrame.new(ex * s, 0.85 * s, 0.2 * s), look.Accent)
+			part("Eye", Vector3.new(0.22 * s, 0.22 * s, 0.1 * s), headFrame * CFrame.new(ex * s, 0.2 * s, -0.82 * s), look.Eye, { Material = Enum.Material.Neon })
+		end
+		if look.Fire then
+			local fire = Instance.new("Fire")
+			fire.Size = 3 * s
+			fire.Heat = 6
+			fire.Color = Color3.fromRGB(255, 110, 30)
+			fire.SecondaryColor = Color3.fromRGB(255, 220, 80)
+			fire.Parent = head
+		end
+	end
+	local humanoid = Instance.new("Humanoid")
+	humanoid.RigType = Enum.HumanoidRigType.R15
+	humanoid.HipHeight = hip
+	humanoid.RequiresNeck = false
+	humanoid.Parent = model
+	model.PrimaryPart = root
+	return model
+end
+
+-- Extra armour and features welded onto a humanoid enemy.
+local function addExtras(model, look)
+	local head = model:FindFirstChild("Head")
+	local color = look.ExtraColor or Color3.fromRGB(176, 112, 56)
+	for _, extra in look.Extras or {} do
+		if extra == "Helmet" and head then
+			local s = head.Size
+			weldPart(model, head, { Name = "Helmet", Size = Vector3.new(s.X * 1.15, s.Y * 0.75, s.Z * 1.15), CFrame = head.CFrame * CFrame.new(0, s.Y * 0.2, 0), Color = color, Material = Enum.Material.Metal })
+			weldPart(model, head, { Name = "Crest", Size = Vector3.new(0.18, s.Y * 0.55, s.Z * 1.2), CFrame = head.CFrame * CFrame.new(0, s.Y * 0.75, 0), Color = Color3.fromRGB(170, 30, 30), Material = Enum.Material.Fabric })
+		elseif extra == "Shield" then
+			local arm = model:FindFirstChild("LeftLowerArm")
+			if arm then
+				weldPart(model, arm, { Name = "Shield", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.25, 2.6, 2.6), CFrame = arm.CFrame * CFrame.new(-arm.Size.X / 2 - 0.15, 0, 0), Color = color, Material = Enum.Material.Metal })
+			end
+		elseif extra == "Horns" and head then
+			local s = head.Size
+			for _, side in { -1, 1 } do
+				weldPart(model, head, { Name = "Horn", Size = Vector3.new(s.X * 0.55, 0.28, 0.28), CFrame = head.CFrame * CFrame.new(side * s.X * 0.65, s.Y * 0.35, 0) * CFrame.Angles(0, 0, math.rad(side * -35)), Color = color })
+				weldPart(model, head, { Name = "HornTip", Size = Vector3.new(0.22, s.Y * 0.45, 0.22), CFrame = head.CFrame * CFrame.new(side * s.X * 0.95, s.Y * 0.62, 0) * CFrame.Angles(0, 0, math.rad(side * -10)), Color = color })
+			end
+			weldPart(model, head, { Name = "Muzzle", Size = Vector3.new(s.X * 0.55, s.Y * 0.4, s.Z * 0.35), CFrame = head.CFrame * CFrame.new(0, -s.Y * 0.2, -s.Z * 0.6), Color = look.Skin })
+		elseif extra == "Snakes" and head then
+			local s = head.Size
+			for i = 0, 9 do
+				local angle = (i / 10) * math.pi * 2
+				weldPart(model, head, { Name = "Snake", Shape = Enum.PartType.Cylinder, Size = Vector3.new(s.Y * 0.7, 0.22, 0.22),
+					CFrame = head.CFrame * CFrame.new(math.cos(angle) * s.X * 0.45, s.Y * 0.45, math.sin(angle) * s.Z * 0.45) * CFrame.Angles(0, -angle, math.rad(55)),
+					Color = color })
+			end
+		elseif extra == "Eye" and head then
+			local s = head.Size
+			weldPart(model, head, { Name = "BigEye", Shape = Enum.PartType.Ball, Size = Vector3.new(s.X * 0.55, s.X * 0.55, s.X * 0.55), CFrame = head.CFrame * CFrame.new(0, s.Y * 0.1, -s.Z * 0.4), Color = Color3.new(1, 1, 1) })
+			weldPart(model, head, { Name = "Pupil", Shape = Enum.PartType.Ball, Size = Vector3.new(s.X * 0.22, s.X * 0.22, s.X * 0.22), CFrame = head.CFrame * CFrame.new(0, s.Y * 0.1, -s.Z * 0.62), Color = Color3.fromRGB(180, 30, 20), Material = Enum.Material.Neon })
+		elseif extra == "Crown" and head then
+			local s = head.Size
+			for i = 0, 7 do
+				local angle = (i / 8) * math.pi * 2
+				weldPart(model, head, { Name = "CrownSpike", Size = Vector3.new(0.25, s.Y * 0.45, 0.25),
+					CFrame = head.CFrame * CFrame.new(math.cos(angle) * s.X * 0.42, s.Y * 0.62, math.sin(angle) * s.Z * 0.42), Color = color, Material = Enum.Material.Metal })
+			end
+		end
+	end
+end
+
 -- A finished enemy body for this type (the first one is built, the rest are copies).
 local function makeBody(enemyType, cfg)
 	if cfg.Builder == "Dummy" then
@@ -206,8 +330,23 @@ local function makeBody(enemyType, cfg)
 	end
 	if templates[enemyType] == nil then
 		templates[enemyType] = false -- "being built": other spawns wait for it
-		local template = buildRig(cfg.Appearance)
-		addWeapon(template, cfg.Appearance.Weapon, cfg.Appearance.WeaponLength)
+		local template
+		if cfg.Builder == "Beast" then
+			template = buildBeast(cfg.Appearance)
+		else
+			template = buildRig(cfg.Appearance)
+			addWeapon(template, cfg.Appearance.Weapon, cfg.Appearance.WeaponLength)
+			addExtras(template, cfg.Appearance)
+		end
+		local scale = cfg.Appearance.Scale
+		if scale and scale ~= 1 then
+			local humanoid = template:FindFirstChildOfClass("Humanoid")
+			local hipBefore = humanoid and humanoid.HipHeight
+			template:ScaleTo(scale) -- giants
+			if humanoid and math.abs(humanoid.HipHeight - hipBefore) < 0.01 then
+				humanoid.HipHeight = hipBefore * scale -- in case ScaleTo left it alone
+			end
+		end
 		templates[enemyType] = template
 	end
 	while templates[enemyType] == false do
@@ -427,6 +566,95 @@ local function glowWeapon(record)
 	end
 end
 
+-- Phase 7B: a red fan in front (gaze, fire breath) and meteor showers.
+local function startConeOrMeteors(record, attack)
+	local root = record.Root
+	local ground = groundUnder(record)
+	local damage = attack.Damage * record.DamageMultiplier
+
+	if attack.Kind == "Cone" then
+		local origin = Vector3.new(root.Position.X, ground, root.Position.Z)
+		local look = flat(root.CFrame.LookVector).Unit
+		local base = CFrame.lookAt(origin, origin + look)
+		local warnings = {}
+		for i = -3, 3 do
+			local angle = math.rad(attack.Arc * i / 3)
+			local dir = base * CFrame.Angles(0, angle, 0)
+			table.insert(warnings, warningPart({
+				Size = Vector3.new(1.2 + attack.Range * 0.06, 0.2, attack.Range),
+				CFrame = dir * CFrame.new(0, 0, -attack.Range / 2),
+			}))
+		end
+		record.Telegraph = warnings
+		task.delay(attack.Windup, function()
+			clearTelegraph(record)
+			if record.Dead or not record.Model.Parent then
+				return
+			end
+			local minDot = math.cos(math.rad(attack.Arc + 5))
+			for _, player in getPlayers() do
+				local playerRoot = aliveCharacterRoot(player)
+				if playerRoot then
+					local offset = flat(playerRoot.Position - origin)
+					if offset.Magnitude <= attack.Range + 1 and (offset.Magnitude < 2 or look:Dot(offset.Unit) >= minDot) then
+						CombatService.DamagePlayer(player, damage, origin, record.Model)
+						if attack.Slow then
+							CombatService.SlowPlayer(player, attack.Slow, attack.SlowTime or 2)
+						end
+					end
+				end
+			end
+			fxRemote:FireAllClients("Wave", root.Position, WARNING_RED, root.CFrame.LookVector, attack.Range)
+			record.State = "Chase"
+		end)
+	else -- Meteors
+		local spots = {}
+		local players = {}
+		for _, player in getPlayers() do
+			local playerRoot = aliveCharacterRoot(player)
+			if playerRoot and (playerRoot.Position - root.Position).Magnitude <= attack.Range then
+				table.insert(players, playerRoot.Position)
+			end
+		end
+		for i = 1, attack.Count do
+			local around = players[((i - 1) % math.max(#players, 1)) + 1] or root.Position
+			local offset = if i <= #players then Vector3.zero else Vector3.new(math.random(-12, 12), 0, math.random(-12, 12))
+			table.insert(spots, Vector3.new(around.X + offset.X, ground, around.Z + offset.Z))
+		end
+		local warnings = {}
+		for _, spot in spots do
+			local d = attack.Radius * 2
+			table.insert(warnings, warningPart({
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(0.2, d, d),
+				CFrame = CFrame.new(spot) * CFrame.Angles(0, 0, math.rad(90)),
+			}))
+		end
+		record.Telegraph = warnings
+		task.delay(attack.Windup, function()
+			clearTelegraph(record)
+			if record.Dead or not record.Model.Parent then
+				return
+			end
+			for _, player in getPlayers() do
+				local playerRoot = aliveCharacterRoot(player)
+				if playerRoot then
+					for _, spot in spots do
+						if flat(playerRoot.Position - spot).Magnitude <= attack.Radius then
+							CombatService.DamagePlayer(player, damage, spot, record.Model)
+							break
+						end
+					end
+				end
+			end
+			for _, spot in spots do
+				fxRemote:FireAllClients("Lightning", spot + Vector3.new(0, 3, 0), Color3.fromRGB(255, 140, 40), attack.Radius, true)
+			end
+			record.State = "Chase"
+		end)
+	end
+end
+
 local function startSpecial(record, target, attack)
 	record.State = "Windup"
 	record.AttackReadyAt[attack.Name] = os.clock() + attack.Windup + attack.Cooldown * record.CooldownMultiplier
@@ -442,6 +670,11 @@ local function startSpecial(record, target, attack)
 	local origin = Vector3.new(root.Position.X, ground, root.Position.Z)
 	local look = flat(root.CFrame.LookVector).Unit
 	local damage = attack.Damage * record.DamageMultiplier
+
+	if attack.Kind == "Cone" or attack.Kind == "Meteors" then
+		startConeOrMeteors(record, attack)
+		return
+	end
 
 	if attack.Kind == "Slam" then
 		-- A big red circle around the boss; everyone inside when it lands is hit.
@@ -694,7 +927,8 @@ function EnemyService.Spawn(enemyType, cframe, options)
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	humanoid.BreakJointsOnDeath = true
 
-	model:PivotTo(cframe + Vector3.new(0, 3, 0))
+	-- Stand on the ground whatever the size: root centre = half the root + hip height.
+	model:PivotTo(cframe + Vector3.new(0, root.Size.Y / 2 + humanoid.HipHeight, 0))
 	if cfg.Passive then
 		root.Anchored = true
 	end
