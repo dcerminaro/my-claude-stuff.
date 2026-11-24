@@ -209,7 +209,7 @@ environment, so a session can `rojo build` and publish via
 - **Run away** ~55 studs: enemies give up and go home.
 - **Die:** respawn at the plaza after 4 s with everything kept.
 - **Regen:** after 5 s without damage your health refills slowly (faster with the Divine Fountain).
-- **iPad:** Attack / Block / Dash buttons near the jump button; health bar bottom centre.
+- **iPad:** round Attack (left of Jump, hold to keep swinging), Block (above Attack, hold) and Dash (above Jump) buttons, none overlapping Jump; health bar bottom centre.
 
 ## Part B3 — Phase 3 tests
 - **Intro:** joining without a god shows "Choose Your God" with 6 cards; only Zeus and Ares can be picked.

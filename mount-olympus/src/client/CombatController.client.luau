@@ -3,9 +3,10 @@
 --
 -- The client side of combat. It only handles input, animation and effects;
 -- the server decides hits, damage, cooldowns and rewards.
---   Attack: left mouse button / R2 / on-screen "Attack" button
+--   Attack: left mouse button / R2 / on-screen "Attack" button (hold to keep swinging)
 --   Block:  hold F / L2 / hold on-screen "Block" button
 --   Dash:   Left Shift / B / on-screen "Dash" button
+-- On touch screens the buttons are laid out around Roblox's jump button.
 -- Also draws the health bar, swing effects, damage numbers and reward text.
 
 local Players = game:GetService("Players")
@@ -278,16 +279,10 @@ local function onDash(_, inputState)
 	return Enum.ContextActionResult.Sink
 end
 
-ContextActionService:BindAction("OlympusAttack", onAttack, true, Enum.KeyCode.ButtonR2)
-ContextActionService:BindAction("OlympusBlock", onBlock, true, Enum.KeyCode.F, Enum.KeyCode.ButtonL2)
-ContextActionService:BindAction("OlympusDash", onDash, true, Enum.KeyCode.LeftShift, Enum.KeyCode.ButtonB)
-ContextActionService:SetTitle("OlympusAttack", "Attack")
-ContextActionService:SetTitle("OlympusBlock", "Block")
-ContextActionService:SetTitle("OlympusDash", "Dash")
--- Touch buttons sit around the jump button (bottom right).
-ContextActionService:SetPosition("OlympusAttack", UDim2.new(1, -170, 1, -150))
-ContextActionService:SetPosition("OlympusBlock", UDim2.new(1, -240, 1, -95))
-ContextActionService:SetPosition("OlympusDash", UDim2.new(1, -110, 1, -210))
+-- Keyboard and controller (no Roblox touch buttons: we draw our own below).
+ContextActionService:BindAction("OlympusAttack", onAttack, false, Enum.KeyCode.ButtonR2)
+ContextActionService:BindAction("OlympusBlock", onBlock, false, Enum.KeyCode.F, Enum.KeyCode.ButtonL2)
+ContextActionService:BindAction("OlympusDash", onDash, false, Enum.KeyCode.LeftShift, Enum.KeyCode.ButtonB)
 
 -- Left mouse button attacks, unless the click was on a menu or button.
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -383,8 +378,137 @@ if player.Character then
 	task.spawn(onCharacter, player.Character)
 end
 
+--------------------------------------------------------------------------
+-- Touch buttons (phones and tablets), placed around the jump button
+--------------------------------------------------------------------------
+local touchGui = Instance.new("ScreenGui")
+touchGui.Name = "CombatTouchButtons"
+touchGui.ResetOnSpawn = false
+touchGui.Enabled = false
+touchGui.Parent = playerGui
+
+local function touchButton(name, label, color)
+	local b = Instance.new("TextButton")
+	b.Name = name
+	b.AnchorPoint = Vector2.new(0.5, 0.5)
+	b.BackgroundColor3 = color
+	b.BackgroundTransparency = 0.25
+	b.Text = label
+	b.Font = Enum.Font.GothamBold
+	b.TextScaled = true
+	b.TextColor3 = Color3.new(1, 1, 1)
+	b.AutoButtonColor = false
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(1, 0) -- round
+	c.Parent = b
+	local st = Instance.new("UIStroke")
+	st.Color = Color3.fromRGB(212, 175, 55)
+	st.Thickness = 2
+	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	st.Parent = b
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft = UDim.new(0.18, 0)
+	pad.PaddingRight = UDim.new(0.18, 0)
+	pad.PaddingTop = UDim.new(0.3, 0)
+	pad.PaddingBottom = UDim.new(0.3, 0)
+	pad.Parent = b
+	b.Parent = touchGui
+	return b
+end
+
+local attackButton = touchButton("Attack", "Attack", Color3.fromRGB(170, 60, 45))
+local blockButton = touchButton("Block", "Block", Color3.fromRGB(60, 110, 180))
+local dashButton = touchButton("Dash", "Dash", Color3.fromRGB(90, 140, 70))
+
+-- Roblox's jump button: 120 px on big screens (bottom-right corner 170 px in,
+-- 210 px up), 70 px on small screens (95 px in, 90 px up). Our buttons go
+-- to its left and above it so they never overlap.
+local function layoutTouchButtons()
+	local camera = Workspace.CurrentCamera
+	local viewport = if camera then camera.ViewportSize else Vector2.new(1280, 720)
+	local big = math.min(viewport.X, viewport.Y) > 500
+	local jumpSize = if big then 120 else 70
+	local jumpLeft = if big then 170 else 95 -- distance from the right edge to the jump button's left side
+	local jumpTop = if big then 210 else 90 -- distance from the bottom edge to the jump button's top
+	local jumpCenterX = jumpLeft - jumpSize / 2
+	local jumpCenterY = jumpTop - jumpSize / 2
+	local gap = if big then 16 else 10
+
+	local attackSize = math.floor(jumpSize * 1.05)
+	local smallSize = math.floor(jumpSize * 0.75)
+
+	attackButton.Size = UDim2.fromOffset(attackSize, attackSize)
+	attackButton.Position = UDim2.new(1, -(jumpLeft + gap + attackSize / 2), 1, -jumpCenterY)
+
+	dashButton.Size = UDim2.fromOffset(smallSize, smallSize)
+	dashButton.Position = UDim2.new(1, -jumpCenterX, 1, -(jumpTop + gap + smallSize / 2))
+
+	blockButton.Size = UDim2.fromOffset(smallSize, smallSize)
+	blockButton.Position = UDim2.new(1, -(jumpLeft + gap + attackSize / 2), 1, -(jumpCenterY + attackSize / 2 + gap + smallSize / 2))
+end
+layoutTouchButtons()
+if Workspace.CurrentCamera then
+	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(layoutTouchButtons)
+end
+
+local function isPress(input)
+	return input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1
+end
+
+-- Attack: tap, or hold to keep swinging.
+local attackInput = nil
+attackButton.InputBegan:Connect(function(input)
+	if isPress(input) and not attackInput then
+		attackInput = input
+		task.spawn(function()
+			while attackInput == input do
+				attack()
+				task.wait(0.1)
+			end
+		end)
+	end
+end)
+
+-- Block: held for as long as your finger stays down.
+local blockInput = nil
+blockButton.InputBegan:Connect(function(input)
+	if isPress(input) and not blockInput then
+		blockInput = input
+		setBlock(true)
+		blockButton.BackgroundTransparency = 0
+	end
+end)
+
+dashButton.InputBegan:Connect(function(input)
+	if isPress(input) then
+		dash()
+	end
+end)
+
+-- A finger lifted anywhere ends the hold, even if it slid off the button.
+UserInputService.InputEnded:Connect(function(input)
+	if input == attackInput then
+		attackInput = nil
+	end
+	if input == blockInput then
+		blockInput = nil
+		setBlock(false)
+		blockButton.BackgroundTransparency = 0.25
+	end
+end)
+
+-- Dim the Dash button while it recharges.
+task.spawn(function()
+	while true do
+		task.wait(0.1)
+		dashButton.BackgroundTransparency = if os.clock() < nextDashAt then 0.7 else 0.25
+	end
+end)
+
 local function updateEnabled()
-	gui.Enabled = player:GetAttribute("DataLoaded") == true
+	local loaded = player:GetAttribute("DataLoaded") == true
+	gui.Enabled = loaded
+	touchGui.Enabled = loaded and UserInputService.TouchEnabled
 end
 player:GetAttributeChangedSignal("DataLoaded"):Connect(updateEnabled)
 updateEnabled()
