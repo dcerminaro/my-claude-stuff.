@@ -24,6 +24,9 @@ local playerGui = player:WaitForChild("PlayerGui")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CombatConfig = require(Shared:WaitForChild("CombatConfig"))
 local GodConfig = require(Shared:WaitForChild("GodConfig"))
+local SwordBuilder = require(Shared:WaitForChild("SwordBuilder"))
+local SwordPoses = require(Shared:WaitForChild("SwordPoses"))
+local SwordAnimator = require(Shared:WaitForChild("SwordAnimator"))
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local attackRemote = Remotes:WaitForChild("CombatAttack")
@@ -32,14 +35,11 @@ local dashRemote = Remotes:WaitForChild("CombatDash")
 local fxRemote = Remotes:WaitForChild("CombatFX")
 
 local CFG = CombatConfig.Player
--- Roblox's own default R15 sword animations (free for every game).
-local SLASH_ANIMATION = "rbxassetid://522635514"
-local LUNGE_ANIMATION = "rbxassetid://522638767"
 local COMBO_RESET = 1.2 -- seconds; the combo starts over after a pause
 local LUNGE_SPEED = 24  -- small step forward on the 3rd hit of the combo
 
--- Our own health bar replaces Roblox's default one, and the sword is always
--- held, so the backpack bar isn't needed.
+-- Our own health bar replaces Roblox's default one; there are no tools, so
+-- the backpack bar isn't needed.
 pcall(function()
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
@@ -48,7 +48,6 @@ end)
 --------------------------------------------------------------------------
 -- Character helpers
 --------------------------------------------------------------------------
-local comboTracks = {} -- slash, slash, lunge
 local comboIndex = 0
 local lastAttackAt = 0
 
@@ -64,32 +63,6 @@ end
 
 local function godColor()
 	return GodConfig.GetColors(player:GetAttribute("SelectedGod") or "").Primary
-end
-
-local function loadAttackTrack(character)
-	comboTracks = {}
-	comboIndex = 0
-	local humanoid = character:WaitForChild("Humanoid", 10)
-	local animator = humanoid and humanoid:WaitForChild("Animator", 10)
-	if not animator then
-		return
-	end
-	local function load(id)
-		local ok, track = pcall(function()
-			local animation = Instance.new("Animation")
-			animation.AnimationId = id
-			local t = animator:LoadAnimation(animation)
-			t.Priority = Enum.AnimationPriority.Action
-			return t
-		end)
-		return if ok then track else nil
-	end
-	local slash = load(SLASH_ANIMATION)
-	comboTracks = { slash, slash, load(LUNGE_ANIMATION) }
-end
-player.CharacterAdded:Connect(loadAttackTrack)
-if player.Character then
-	task.spawn(loadAttackTrack, player.Character)
 end
 
 --------------------------------------------------------------------------
@@ -116,10 +89,7 @@ end
 -- Show the sword's light trail straight away on your own screen
 -- (the server turns it on for everyone else).
 local function flashTrail()
-	local character = player.Character
-	local tool = character and character:FindFirstChild("DivineSword")
-	local handle = tool and tool:FindFirstChild("Handle")
-	local trail = handle and handle:FindFirstChild("SwingTrail")
+	local trail = SwordBuilder.GetTrail(player.Character)
 	if trail then
 		trail.Enabled = true
 		task.delay(0.3, function()
@@ -173,11 +143,124 @@ local function floatingText(position, textValue, color, size, rise)
 	Debris:AddItem(holder, 1)
 end
 
+--------------------------------------------------------------------------
+-- Hit reactions (drawn on this device only)
+--------------------------------------------------------------------------
+local originalColors = setmetatable({}, { __mode = "k" }) -- [BasePart] = Color3
+local flashing = setmetatable({}, { __mode = "k" })
+local wobbleBase = setmetatable({}, { __mode = "k" }) -- [dummy Model] = upright pivot
+local wobbleToken = setmetatable({}, { __mode = "k" })
+
+-- Enemy turns white for a moment.
+local function flash(model)
+	if flashing[model] then
+		return
+	end
+	flashing[model] = true
+	local parts = {}
+	for _, item in model:GetDescendants() do
+		if item:IsA("BasePart") and item.Transparency < 1 and item.Name ~= "Weapon" then
+			originalColors[item] = originalColors[item] or item.Color
+			item.Color = Color3.new(1, 1, 1)
+			table.insert(parts, item)
+		end
+	end
+	task.delay(0.08, function()
+		for _, item in parts do
+			if item.Parent and originalColors[item] then
+				item.Color = originalColors[item]
+			end
+		end
+		flashing[model] = nil
+	end)
+end
+
+-- Training dummy rocks back and springs upright.
+local function wobble(model, strength)
+	if not model.Parent then
+		return
+	end
+	wobbleBase[model] = wobbleBase[model] or model:GetPivot()
+	local ground = wobbleBase[model] * CFrame.new(0, -3, 0)
+	local token = (wobbleToken[model] or 0) + 1
+	wobbleToken[model] = token
+	local tilt = Instance.new("NumberValue")
+	tilt.Changed:Connect(function(angle)
+		if wobbleToken[model] == token and model.Parent then
+			model:PivotTo(ground * CFrame.Angles(math.rad(angle), 0, 0) * CFrame.new(0, 3, 0))
+		end
+	end)
+	tilt.Value = strength
+	local tween = TweenService:Create(tilt, TweenInfo.new(0.7, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), { Value = 0 })
+	tween.Completed:Connect(function()
+		tilt:Destroy()
+	end)
+	tween:Play()
+end
+
+local function react(model, big)
+	if typeof(model) ~= "Instance" or not model:IsA("Model") then
+		return
+	end
+	if model:GetAttribute("Dummy") then
+		wobble(model, if big then 40 else 14)
+	end
+	flash(model)
+end
+
+-- Instant feedback for your own swing: react to enemies the server will
+-- almost certainly count as hit, without waiting for the round trip.
+local function predictHits(root)
+	local enemies = Workspace:FindFirstChild("Enemies")
+	if not enemies then
+		return
+	end
+	local attack = CFG.BasicAttack
+	local look = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z).Unit
+	for _, model in enemies:GetChildren() do
+		local enemyRoot = model:FindFirstChild("HumanoidRootPart")
+		local humanoid = model:FindFirstChildOfClass("Humanoid")
+		if enemyRoot and humanoid and humanoid.Health > 0 then
+			local offset = enemyRoot.Position - root.Position
+			offset = Vector3.new(offset.X, 0, offset.Z)
+			local reach = attack.Range + enemyRoot.Size.X / 2
+			if offset.Magnitude <= reach and (offset.Magnitude < 1.5 or look:Dot(offset.Unit) >= attack.ArcDot) then
+				react(model, false)
+				burst(enemyRoot.Position, godColor(), 12, 14)
+			end
+		end
+	end
+end
+
 fxRemote.OnClientEvent:Connect(function(kind, position, value, style)
+	if kind == "Swing" then
+		-- Another player swung: play the same move on their character.
+		local other = position
+		if typeof(other) == "Instance" and other:IsA("Player") and other ~= player and other.Character then
+			SwordAnimator.Play(other.Character, value)
+		end
+		return
+	end
 	if typeof(position) ~= "Vector3" then
 		return
 	end
+	if kind == "EnemyAttack" then
+		if typeof(value) == "Instance" and typeof(style) == "number" then
+			SwordAnimator.PlayKeys(value, SwordPoses.EnemyAttack(style))
+		end
+		return
+	end
 	if kind == "Damage" then
+		if style == "KnockedOut" then
+			-- the dummy under the text gets a big wobble
+			local enemies = Workspace:FindFirstChild("Enemies")
+			for _, model in if enemies then enemies:GetChildren() else {} do
+				local r = model:FindFirstChild("HumanoidRootPart")
+				if model:GetAttribute("Dummy") and r and (r.Position - position).Magnitude < 8 then
+					react(model, true)
+				end
+			end
+		end
 		local jitter = Vector3.new(math.random() - 0.5, 0, math.random() - 0.5) * 2
 		local label = if style == "Dodged"
 			then "Dodged!"
@@ -186,7 +269,11 @@ fxRemote.OnClientEvent:Connect(function(kind, position, value, style)
 			else tostring(value)
 		floatingText(position + jitter, label, DAMAGE_COLORS[style] or DAMAGE_COLORS.Enemy, if style == "Enemy" then 26 else 22, 3)
 	elseif kind == "Hit" then
-		burst(position, godColor(), 12, 14)
+		-- value = the enemy model, style = the player who hit it.
+		if style ~= player then
+			burst(position, godColor(), 12, 14)
+			react(value, false)
+		end
 	elseif kind == "Death" then
 		burst(position, Color3.fromRGB(230, 230, 230), 30, 10)
 	elseif kind == "Reward" then
@@ -221,10 +308,8 @@ local function attack()
 	end
 	lastAttackAt = now
 	comboIndex = comboIndex % 3 + 1
-	local track = comboTracks[comboIndex]
-	if track then
-		track:Play(0.05, 1, 1.15)
-	end
+	SwordAnimator.Play(player.Character, SwordPoses.ComboOrder[comboIndex])
+	predictHits(root)
 	if comboIndex == 3 then
 		-- A small step forward on the lunge.
 		local attachment = Instance.new("Attachment")
@@ -243,7 +328,7 @@ local function attack()
 		Debris:AddItem(attachment, 0.12)
 	end
 	flashTrail()
-	attackRemote:FireServer()
+	attackRemote:FireServer(comboIndex)
 end
 
 local function setBlock(on)

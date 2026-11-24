@@ -635,6 +635,467 @@ return Progression
       </Item>
       <Item class="ModuleScript" referent="13">
         <Properties>
+          <string name="Name">SwordAnimator</string>
+          <string name="Source"><![CDATA[-- SwordAnimator (ModuleScript, used by the client only)
+-- Location: ReplicatedStorage > Shared > SwordAnimator
+--
+-- Plays our own sword animations (SwordPoses) by setting the R15 joints
+-- every frame, right after Roblox's normal animations (walk, jump...).
+-- It runs on every player's device for every nearby sword-holder: you,
+-- other players (when the server tells us they swung) and enemies.
+--   * Holding a weapon: the ready stance (right arm only, legs still walk).
+--   * Blocking (player attribute "Blocking"): the guard pose.
+--   * Attacks: SwordAnimator.Play(model, "Slash1" | "Slash2" | "Lunge")
+--   * Enemy attacks: SwordAnimator.PlayKeys(model, SwordPoses.EnemyAttack(windup))
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+local Poses = require(script.Parent:WaitForChild("SwordPoses"))
+
+local SwordAnimator = {}
+
+local JOINT_PARTS = {
+	RightShoulder = "RightUpperArm",
+	RightElbow = "RightLowerArm",
+	RightWrist = "RightHand",
+	LeftShoulder = "LeftUpperArm",
+	LeftElbow = "LeftLowerArm",
+	Waist = "UpperTorso",
+}
+local MAX_DISTANCE = 150 -- don't bother animating far-away characters
+local BLEND_SPEED = 18   -- how fast the stance changes (hold <-> block)
+
+local active = setmetatable({}, { __mode = "k" })  -- [Model] = { Keys, Start, Duration, Joints }
+local current = setmetatable({}, { __mode = "k" }) -- [Model] = { [joint] = CFrame currently applied }
+local motorCache = setmetatable({}, { __mode = "k" })
+
+local function toCFrame(e)
+	return CFrame.Angles(math.rad(e[1]), math.rad(e[2]), math.rad(e[3]))
+end
+
+local function getMotor(model, joint)
+	local cache = motorCache[model]
+	if not cache then
+		cache = {}
+		motorCache[model] = cache
+	end
+	local motor = cache[joint]
+	if motor and motor.Parent then
+		return motor
+	end
+	local part = model:FindFirstChild(JOINT_PARTS[joint])
+	motor = part and part:FindFirstChild(joint)
+	if motor and motor:IsA("Motor6D") then
+		cache[joint] = motor
+		return motor
+	end
+	return nil
+end
+
+local function jointsIn(keys)
+	local set = {}
+	for _, key in keys do
+		for joint in key[2] do
+			set[joint] = true
+		end
+	end
+	return set
+end
+
+local function smooth(alpha)
+	return alpha * alpha * (3 - 2 * alpha)
+end
+
+-- Pose at time t within a list of keyframes: { [joint] = CFrame }
+local function sample(move, t)
+	local keys = move.Keys
+	local i = 1
+	while i < #keys and keys[i + 1][1] < t do
+		i += 1
+	end
+	local a, b = keys[i], keys[math.min(i + 1, #keys)]
+	local span = b[1] - a[1]
+	local alpha = if span > 0 then smooth(math.clamp((t - a[1]) / span, 0, 1)) else 1
+	local pose = {}
+	for joint in move.Joints do
+		local from = a[2][joint] or { 0, 0, 0 }
+		local to = b[2][joint] or { 0, 0, 0 }
+		pose[joint] = toCFrame(from):Lerp(toCFrame(to), alpha)
+	end
+	return pose
+end
+
+local function stance(pose)
+	local result = {}
+	for joint, e in pose do
+		result[joint] = toCFrame(e)
+	end
+	return result
+end
+local HOLD = stance(Poses.Hold)
+local BLOCK = stance(Poses.Block)
+
+local function apply(model, target, dt, instant)
+	local cur = current[model]
+	if not cur then
+		cur = {}
+		current[model] = cur
+	end
+	local alpha = if instant then 1 else math.min(1, dt * BLEND_SPEED)
+	-- Joints we drove last frame but not now: blend back to neutral, then let go.
+	for joint, cf in cur do
+		if not target[joint] then
+			local motor = getMotor(model, joint)
+			local blended = cf:Lerp(CFrame.new(), alpha)
+			if motor then
+				motor.Transform = blended
+			end
+			cur[joint] = if alpha >= 1 then nil else blended
+		end
+	end
+	for joint, cf in target do
+		local motor = getMotor(model, joint)
+		if motor then
+			local blended = if cur[joint] then cur[joint]:Lerp(cf, alpha) else cf
+			motor.Transform = blended
+			cur[joint] = blended
+		end
+	end
+end
+
+local function holdsWeapon(model)
+	return model:FindFirstChild("DivineSword") ~= nil or model:FindFirstChild("Weapon") ~= nil
+end
+
+local function step(dt)
+	local camera = Workspace.CurrentCamera
+	local camPos = if camera then camera.CFrame.Position else Vector3.zero
+	local now = os.clock()
+
+	local function update(model, blocking)
+		local root = model:FindFirstChild("HumanoidRootPart")
+		local humanoid = model:FindFirstChildOfClass("Humanoid")
+		if not root or not humanoid or humanoid.Health <= 0 or not holdsWeapon(model) then
+			return
+		end
+		if (root.Position - camPos).Magnitude > MAX_DISTANCE then
+			return
+		end
+		local move = active[model]
+		if move then
+			local t = now - move.Start
+			if t < move.Duration then
+				apply(model, sample(move, t), dt, true)
+				return
+			end
+			active[model] = nil
+		end
+		apply(model, if blocking then BLOCK else HOLD, dt, false)
+	end
+
+	for _, player in Players:GetPlayers() do
+		local character = player.Character
+		if character then
+			update(character, player:GetAttribute("Blocking") == true)
+		end
+	end
+	local enemies = Workspace:FindFirstChild("Enemies")
+	if enemies then
+		for _, model in enemies:GetChildren() do
+			update(model, false)
+		end
+	end
+end
+
+-- Plays a keyframe list on a character or enemy.
+function SwordAnimator.PlayKeys(model, keys)
+	if not model or #keys < 2 then
+		return
+	end
+	active[model] = {
+		Keys = keys,
+		Start = os.clock(),
+		Duration = keys[#keys][1],
+		Joints = jointsIn(keys),
+	}
+end
+
+-- Plays one of the named moves in SwordPoses.Moves.
+function SwordAnimator.Play(model, moveName)
+	local keys = Poses.Moves[moveName]
+	if keys then
+		SwordAnimator.PlayKeys(model, keys)
+	end
+end
+
+-- Runs each frame right after Roblox's own animations, so our poses win.
+RunService.PreSimulation:Connect(step)
+
+return SwordAnimator
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="14">
+        <Properties>
+          <string name="Name">SwordBuilder</string>
+          <string name="Source"><![CDATA[-- SwordBuilder (ModuleScript)
+-- Location: ReplicatedStorage > Shared > SwordBuilder
+--
+-- Builds the placeholder "Divine Sword" out of parts and welds it into a
+-- character's right hand. The blade's glowing core, the guard gems and the
+-- swing trail use the player's god colour. Real weapons come in Phase 7.
+--
+-- Sword space: the grip is at the origin and the blade points along +Y.
+-- In the hand, the blade points the way the knuckles face, so with the arm
+-- hanging down it points forward, and with the forearm forward it points up.
+
+local SwordBuilder = {}
+
+SwordBuilder.Name = "DivineSword"
+
+local GOLD = Color3.fromRGB(212, 175, 55)
+local STEEL = Color3.fromRGB(214, 220, 230)
+local LEATHER = Color3.fromRGB(100, 62, 38)
+
+local function part(model, name, size, cframe, color, material, shape)
+	local p = Instance.new("Part")
+	p.Name = name
+	if shape then
+		p.Shape = shape
+	end
+	p.Size = size
+	p.CFrame = cframe
+	p.Color = color
+	p.Material = material
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Massless = true
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.Parent = model
+	return p
+end
+
+function SwordBuilder.Build(glowColor)
+	local model = Instance.new("Model")
+	model.Name = SwordBuilder.Name
+	local M = Enum.Material
+
+	local grip = part(model, "Grip", Vector3.new(0.24, 1.0, 0.24), CFrame.new(), LEATHER, M.Fabric)
+	part(model, "Pommel", Vector3.new(0.42, 0.42, 0.42), CFrame.new(0, -0.62, 0), GOLD, M.Metal, Enum.PartType.Ball)
+	part(model, "Guard", Vector3.new(1.5, 0.2, 0.32), CFrame.new(0, 0.6, 0), GOLD, M.Metal)
+	part(model, "GuardEndL", Vector3.new(0.3, 0.3, 0.3), CFrame.new(-0.75, 0.6, 0), GOLD, M.Metal, Enum.PartType.Ball)
+	part(model, "GuardEndR", Vector3.new(0.3, 0.3, 0.3), CFrame.new(0.75, 0.6, 0), GOLD, M.Metal, Enum.PartType.Ball)
+	part(model, "Gem", Vector3.new(0.26, 0.26, 0.4), CFrame.new(0, 0.6, 0), glowColor, M.Neon, Enum.PartType.Ball)
+	local blade = part(model, "Blade", Vector3.new(0.4, 3.0, 0.09), CFrame.new(0, 2.2, 0), STEEL, M.Metal)
+	part(model, "Fuller", Vector3.new(0.1, 2.5, 0.12), CFrame.new(0, 2.05, 0), glowColor, M.Neon)
+	-- A small diamond turned 45 degrees makes the point of the blade.
+	part(model, "Tip", Vector3.new(0.283, 0.283, 0.09), CFrame.new(0, 3.7, 0) * CFrame.Angles(0, 0, math.rad(45)), STEEL, M.Metal)
+
+	for _, item in model:GetChildren() do
+		if item ~= grip then
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = grip
+			weld.Part1 = item
+			weld.Parent = item
+		end
+	end
+
+	-- Light trail from just above the guard to the tip, shown while swinging.
+	local a0 = Instance.new("Attachment")
+	a0.Name = "TrailBase"
+	a0.Position = Vector3.new(0, -1.2, 0)
+	a0.Parent = blade
+	local a1 = Instance.new("Attachment")
+	a1.Name = "TrailTip"
+	a1.Position = Vector3.new(0, 1.6, 0)
+	a1.Parent = blade
+	local trail = Instance.new("Trail")
+	trail.Name = "SwingTrail"
+	trail.Attachment0 = a0
+	trail.Attachment1 = a1
+	trail.Lifetime = 0.18
+	trail.LightEmission = 1
+	trail.FaceCamera = true
+	trail.Color = ColorSequence.new(glowColor)
+	trail.Transparency = NumberSequence.new(0.15, 1)
+	trail.Enabled = false
+	trail.Parent = blade
+
+	model.PrimaryPart = grip
+	return model
+end
+
+-- Welds a new sword into the character's right hand. Returns the sword.
+function SwordBuilder.Attach(character, glowColor)
+	local existing = character:FindFirstChild(SwordBuilder.Name)
+	if existing then
+		return existing
+	end
+	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
+	if not hand then
+		return nil
+	end
+	local sword = SwordBuilder.Build(glowColor)
+	local gripPoint = hand:FindFirstChild("RightGripAttachment")
+	local offset = if gripPoint then CFrame.new(gripPoint.Position) else CFrame.new(0, -hand.Size.Y / 2, 0)
+	local c0 = offset * CFrame.Angles(math.rad(-90), 0, 0) -- blade (+Y) -> knuckle direction (-Z)
+	sword:PivotTo(hand.CFrame * c0)
+
+	local weld = Instance.new("Weld")
+	weld.Name = "SwordGrip"
+	weld.Part0 = hand
+	weld.Part1 = sword.PrimaryPart
+	weld.C0 = c0
+	weld.Parent = sword.PrimaryPart
+	sword.Parent = character
+	return sword
+end
+
+function SwordBuilder.SetColor(sword, glowColor)
+	for _, name in { "Gem", "Fuller" } do
+		local p = sword:FindFirstChild(name)
+		if p then
+			p.Color = glowColor
+		end
+	end
+	local blade = sword:FindFirstChild("Blade")
+	local trail = blade and blade:FindFirstChild("SwingTrail")
+	if trail then
+		trail.Color = ColorSequence.new(glowColor)
+	end
+end
+
+function SwordBuilder.GetTrail(character)
+	local sword = character and character:FindFirstChild(SwordBuilder.Name)
+	local blade = sword and sword:FindFirstChild("Blade")
+	return blade and blade:FindFirstChild("SwingTrail")
+end
+
+return SwordBuilder
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="15">
+        <Properties>
+          <string name="Name">SwordPoses</string>
+          <string name="Source"><![CDATA[-- SwordPoses (ModuleScript)
+-- Location: ReplicatedStorage > Shared > SwordPoses
+--
+-- Our own sword animations, written as joint angles (degrees) for R15
+-- characters. SwordAnimator plays them on every player's screen.
+-- Each pose: { JointName = { X, Y, Z } }
+--   Shoulder/Elbow/Wrist X+ = swing the limb forward/up, Z+ = out to the
+--   right (for the right arm), Waist Y+ = turn the upper body to the left.
+-- Each move: a list of { time in seconds, pose }. Missing joints = neutral.
+-- Tweak the numbers here to change how attacks look.
+
+local Poses = {}
+
+-- Standing ready: sword held up in front.
+Poses.Hold = {
+	RightShoulder = { 30, 0, 10 },
+	RightElbow = { 60, 0, 0 },
+	RightWrist = { -20, 0, 0 },
+}
+
+-- Blocking: sword across the body, other arm braced.
+Poses.Block = {
+	RightShoulder = { 70, 0, -20 },
+	RightElbow = { 60, 0, 0 },
+	RightWrist = { -10, 70, 0 },
+	LeftShoulder = { 60, 0, 20 },
+	LeftElbow = { 70, 0, 0 },
+	Waist = { 0, 10, 0 },
+}
+
+-- Slash 1: high on the right, cutting down to the lower left.
+local slash1Up = {
+	RightShoulder = { 160, 0, 35 },
+	RightElbow = { 30, 0, 0 },
+	RightWrist = { -10, 0, 0 },
+	LeftShoulder = { 20, 0, -10 },
+	Waist = { 0, -25, 0 },
+}
+local slash1Down = {
+	RightShoulder = { 55, 0, -45 },
+	RightElbow = { 10, 0, 0 },
+	RightWrist = { -70, 0, 0 },
+	LeftShoulder = { -15, 0, -10 },
+	Waist = { 0, 30, 0 },
+}
+
+-- Slash 2: backhand, from the left across to the right.
+local slash2Start = {
+	RightShoulder = { 110, 0, -55 },
+	RightElbow = { 80, 0, 0 },
+	RightWrist = { -30, 0, 0 },
+	LeftShoulder = { 10, 0, -10 },
+	Waist = { 0, 30, 0 },
+}
+local slash2End = {
+	RightShoulder = { 85, 0, 60 },
+	RightElbow = { 5, 0, 0 },
+	RightWrist = { -80, 0, 0 },
+	LeftShoulder = { -10, 0, -15 },
+	Waist = { 0, -30, 0 },
+}
+
+-- Lunge: pull back, then thrust straight forward.
+local lungeBack = {
+	RightShoulder = { 20, 0, 15 },
+	RightElbow = { 110, 0, 0 },
+	RightWrist = { -120, 0, 0 },
+	LeftShoulder = { 40, 0, -20 },
+	Waist = { 0, -20, 0 },
+}
+local lungeThrust = {
+	RightShoulder = { 90, 0, 0 },
+	RightElbow = { 0, 0, 0 },
+	RightWrist = { -90, 0, 0 },
+	LeftShoulder = { -30, 0, -20 },
+	Waist = { 0, 15, 0 },
+}
+
+Poses.Moves = {
+	Slash1 = { { 0, Poses.Hold }, { 0.09, slash1Up }, { 0.2, slash1Down }, { 0.42, Poses.Hold } },
+	Slash2 = { { 0, Poses.Hold }, { 0.08, slash2Start }, { 0.19, slash2End }, { 0.42, Poses.Hold } },
+	Lunge = { { 0, Poses.Hold }, { 0.1, lungeBack }, { 0.21, lungeThrust }, { 0.5, Poses.Hold } },
+}
+Poses.ComboOrder = { "Slash1", "Slash2", "Lunge" }
+
+-- Enemies raise their weapon during the red warning, then strike.
+function Poses.EnemyAttack(windup)
+	return {
+		{ 0, Poses.Hold },
+		{ windup * 0.6, slash1Up },
+		{ windup, slash1Up },
+		{ windup + 0.12, slash1Down },
+		{ windup + 0.45, Poses.Hold },
+	}
+end
+
+-- For the preview renderer / tests.
+Poses.Named = {
+	Hold = Poses.Hold,
+	Block = Poses.Block,
+	Slash1Up = slash1Up,
+	Slash1Down = slash1Down,
+	Slash2Start = slash2Start,
+	Slash2End = slash2End,
+	LungeBack = lungeBack,
+	LungeThrust = lungeThrust,
+}
+
+return Poses
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="16">
+        <Properties>
           <string name="Name">TempleConfig</string>
           <string name="Source"><![CDATA[-- TempleConfig (ModuleScript)
 -- Location: ReplicatedStorage > Shared > TempleConfig
@@ -805,11 +1266,11 @@ return TempleConfig
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="14">
+  <Item class="ServerScriptService" referent="17">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Script" referent="15">
+    <Item class="Script" referent="18">
       <Properties>
         <string name="Name">Main</string>
         <token name="RunContext">0</token>
@@ -1027,11 +1488,11 @@ end)
 ]]></string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="16">
+    <Item class="Folder" referent="19">
       <Properties>
         <string name="Name">Services</string>
       </Properties>
-      <Item class="ModuleScript" referent="17">
+      <Item class="ModuleScript" referent="20">
         <Properties>
           <string name="Name">CombatService</string>
           <string name="Source"><![CDATA[-- CombatService (ModuleScript)
@@ -1047,9 +1508,10 @@ end)
 --   * Damage to players (from enemies), damage numbers.
 --   * Health regeneration (replaces Roblox's default), boosted by the
 --     Divine Fountain.
---   * Gives every player a placeholder sword (held as a Tool, so Roblox's
---     sword-holding pose is used) that glows in their god's colour and
---     leaves a light trail when swung. Real weapons come in Phase 7.
+--   * Gives every player a placeholder sword welded into their hand that
+--     glows in their god's colour and leaves a light trail when swung.
+--     Real weapons come in Phase 7. The swing animations themselves are
+--     played on each device by SwordAnimator.
 --
 -- Other systems call: CombatService.DamagePlayer(player, amount, sourcePosition)
 
@@ -1059,6 +1521,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CombatConfig = require(Shared:WaitForChild("CombatConfig"))
 local GodConfig = require(Shared:WaitForChild("GodConfig"))
+local SwordBuilder = require(Shared:WaitForChild("SwordBuilder"))
+local SwordPoses = require(Shared:WaitForChild("SwordPoses"))
 
 local CombatService = {}
 
@@ -1134,120 +1598,18 @@ local function setBlocking(player, on)
 end
 
 --------------------------------------------------------------------------
--- Placeholder sword
+-- Placeholder sword (welded into the right hand; see SwordBuilder)
 --------------------------------------------------------------------------
-local SWORD_NAME = "DivineSword"
-
 local function swordColor(player)
 	return GodConfig.GetColors(player:GetAttribute("SelectedGod") or "").Primary
 end
 
-local function colorSword(player, tool)
-	local color = swordColor(player)
-	local handle = tool:FindFirstChild("Handle")
-	local glow = handle and handle:FindFirstChild("Glow")
-	local trail = handle and handle:FindFirstChild("SwingTrail")
-	if glow then
-		glow.Color = color
-	end
-	if trail then
-		trail.Color = ColorSequence.new(color)
-	end
-end
-
-local function weldTo(handle, part, offset)
-	part.CanCollide = false
-	part.CanQuery = false
-	part.CanTouch = false
-	part.Massless = true
-	part.CFrame = handle.CFrame * offset
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = handle
-	weld.Part1 = part
-	weld.Parent = part
-	part.Parent = handle
-	return part
-end
-
 local function giveSword(player, character)
-	if character:FindFirstChild(SWORD_NAME) then
-		return
-	end
-	local tool = Instance.new("Tool")
-	tool.Name = SWORD_NAME
-	tool.CanBeDropped = false
-	tool.ManualActivationOnly = true
-	tool.RequiresHandle = true
-	-- Same grip as Roblox's classic sword: the blade points up and forward.
-	tool.Grip = CFrame.new(0, 0, -1.7, 0, 0, 1, 1, 0, 0, 0, 1, 0)
-
-	-- The handle is the blade (it runs along Z; the hand holds the -Z end).
-	local handle = Instance.new("Part")
-	handle.Name = "Handle"
-	handle.Size = Vector3.new(0.22, 0.5, 4.2)
-	handle.Material = Enum.Material.Metal
-	handle.Color = Color3.fromRGB(205, 210, 220)
-	handle.CanCollide = false
-	handle.Massless = true
-	handle.CFrame = CFrame.new()
-	handle.Parent = tool
-
-	local glow = Instance.new("Part")
-	glow.Name = "Glow"
-	glow.Size = Vector3.new(0.26, 0.14, 3.0)
-	glow.Material = Enum.Material.Neon
-	weldTo(handle, glow, CFrame.new(0, 0, 0.5))
-
-	local guard = Instance.new("Part")
-	guard.Name = "Guard"
-	guard.Size = Vector3.new(0.32, 1.6, 0.32)
-	guard.Material = Enum.Material.Metal
-	guard.Color = Color3.fromRGB(212, 175, 55)
-	weldTo(handle, guard, CFrame.new(0, 0, -1.15))
-
-	local grip = Instance.new("Part")
-	grip.Name = "GripWrap"
-	grip.Size = Vector3.new(0.3, 0.6, 0.95)
-	grip.Material = Enum.Material.Fabric
-	grip.Color = Color3.fromRGB(110, 70, 40)
-	weldTo(handle, grip, CFrame.new(0, 0, -1.75))
-
-	local pommel = Instance.new("Part")
-	pommel.Name = "Pommel"
-	pommel.Shape = Enum.PartType.Ball
-	pommel.Size = Vector3.new(0.45, 0.45, 0.45)
-	pommel.Material = Enum.Material.Metal
-	pommel.Color = Color3.fromRGB(212, 175, 55)
-	weldTo(handle, pommel, CFrame.new(0, 0, -2.3))
-
-	-- Light trail between the guard and the tip while swinging.
-	local a0 = Instance.new("Attachment")
-	a0.Name = "TrailBase"
-	a0.Position = Vector3.new(0, 0, -1.0)
-	a0.Parent = handle
-	local a1 = Instance.new("Attachment")
-	a1.Name = "TrailTip"
-	a1.Position = Vector3.new(0, 0, 2.1)
-	a1.Parent = handle
-	local trail = Instance.new("Trail")
-	trail.Name = "SwingTrail"
-	trail.Attachment0 = a0
-	trail.Attachment1 = a1
-	trail.Lifetime = 0.2
-	trail.LightEmission = 1
-	trail.FaceCamera = true
-	trail.Transparency = NumberSequence.new(0.1, 1)
-	trail.Enabled = false
-	trail.Parent = handle
-
-	colorSword(player, tool)
-	tool.Parent = character -- equipped straight away
+	SwordBuilder.Attach(character, swordColor(player))
 end
 
 local function flashTrail(player)
-	local character = player.Character
-	local tool = character and character:FindFirstChild(SWORD_NAME)
-	local trail = tool and tool:FindFirstChild("Handle") and tool.Handle:FindFirstChild("SwingTrail")
+	local trail = SwordBuilder.GetTrail(player.Character)
 	if trail then
 		trail.Enabled = true
 		task.delay(0.3, function()
@@ -1259,7 +1621,9 @@ end
 --------------------------------------------------------------------------
 -- Requests from the client
 --------------------------------------------------------------------------
-function CombatService.BasicAttack(player)
+-- combo = which swing of the combo the client played (1-3), only used so
+-- other players see the same animation.
+function CombatService.BasicAttack(player, combo)
 	local st = state[player]
 	local _, _, root = getParts(player)
 	if not st or not root or st.Blocking then
@@ -1272,6 +1636,14 @@ function CombatService.BasicAttack(player)
 	local attack = CFG.BasicAttack
 	st.NextAttackAt = now + attack.Cooldown * 0.9 -- small tolerance for network timing
 	flashTrail(player)
+
+	-- Let everyone else's screen play the same swing.
+	local moveName = SwordPoses.ComboOrder[if type(combo) == "number" then math.clamp(math.floor(combo), 1, 3) else 1]
+	for _, other in Players:GetPlayers() do
+		if other ~= player then
+			fxRemote:FireClient(other, "Swing", player, moveName)
+		end
+	end
 
 	local baseAttack = player:GetAttribute("BaseAttack") or 10
 	local combatBonus = TempleService.GetEffect(player, "CombatBonusPercent") / 100
@@ -1297,7 +1669,7 @@ function CombatService.BasicAttack(player)
 		local damage = baseAttack * attack.DamageMultiplier * (1 + combatBonus) * spread
 		if EnemyService.DamageEnemy(record.Model, damage, player) then
 			hits += 1
-			fxRemote:FireAllClients("Hit", record.Root.Position)
+			fxRemote:FireAllClients("Hit", record.Root.Position, record.Model, player)
 		end
 	end
 	return hits
@@ -1353,8 +1725,8 @@ function CombatService.Init(templeService, enemyService, fxRemoteEvent, remotes)
 	Players.RespawnTime = CFG.RespawnTime
 
 	if remotes then
-		remotes.Attack.OnServerEvent:Connect(function(player)
-			CombatService.BasicAttack(player)
+		remotes.Attack.OnServerEvent:Connect(function(player, combo)
+			CombatService.BasicAttack(player, combo)
 		end)
 		remotes.Block.OnServerEvent:Connect(function(player, on)
 			if type(on) == "boolean" then
@@ -1395,9 +1767,9 @@ function CombatService.SetupPlayer(player)
 	}
 	player:SetAttribute("Blocking", false)
 	player:GetAttributeChangedSignal("SelectedGod"):Connect(function()
-		local tool = player.Character and player.Character:FindFirstChild(SWORD_NAME)
-		if tool then
-			colorSword(player, tool)
+		local sword = player.Character and player.Character:FindFirstChild(SwordBuilder.Name)
+		if sword then
+			SwordBuilder.SetColor(sword, swordColor(player))
 		end
 	end)
 	if player.Character then
@@ -1434,7 +1806,7 @@ return CombatService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="18">
+      <Item class="ModuleScript" referent="21">
         <Properties>
           <string name="Name">DataService</string>
           <string name="Source"><![CDATA[-- DataService (ModuleScript)
@@ -1814,7 +2186,7 @@ return DataService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="19">
+      <Item class="ModuleScript" referent="22">
         <Properties>
           <string name="Name">EnemyService</string>
           <string name="Source"><![CDATA[-- EnemyService (ModuleScript)
@@ -1822,9 +2194,11 @@ return DataService
 --
 -- Server-controlled enemies:
 --   * Spawns enemies from CombatConfig.Enemies (placeholder characters).
---   * Simple AI: idle -> chase the nearest player -> wind up (glows red, red
---     ring on the ground) -> strike -> cooldown. Gives up and heals if pulled
---     too far from its spawn.
+--   * Simple AI: idle -> chase the nearest player -> wind up (weapon glows
+--     red, red ring on the ground, weapon raised) -> strike -> cooldown.
+--     Gives up and heals if pulled too far from its spawn.
+--   * Hits knock enemies back and stagger them briefly. Training dummies
+--     wobble (drawn on each player's device, so it costs the server nothing).
 --   * Health bar over its head, damage numbers, death effect.
 --   * Rewards XP + Gold ONCE per kill to every player who damaged it.
 --
@@ -1862,9 +2236,11 @@ local THINK_INTERVAL = 0.15
 local HEAL_DELAY = 4 -- an enemy only heals after this many seconds without being hit
 local REWARD_WINDOW = 60 -- damage older than this (seconds) doesn't earn a share of the reward
 
--- Roblox's own default R15 animations (free for every game).
+-- Roblox's own default R15 walk animation (free for every game). Attack
+-- poses are our own (SwordPoses), played on each device.
 local WALK_ANIMATION = "rbxassetid://507777826"
-local ATTACK_ANIMATION = "rbxassetid://522635514"
+local KNOCKBACK_SPEED = 16
+local STAGGER_TIME = 0.3
 
 --------------------------------------------------------------------------
 -- Building an enemy character
@@ -2021,30 +2397,6 @@ local function makeBody(enemyType, cfg)
 	return templates[enemyType]:Clone()
 end
 
--- Dummies rock back and spring upright when hit.
-local function wobble(record, strength)
-	local model = record.Model
-	if not record.BasePivot then
-		return
-	end
-	record.WobbleToken = (record.WobbleToken or 0) + 1
-	local token = record.WobbleToken
-	local ground = record.BasePivot * CFrame.new(0, -3, 0)
-	local tilt = Instance.new("NumberValue")
-	tilt.Value = strength
-	tilt.Changed:Connect(function(angle)
-		if record.WobbleToken == token and model.Parent then
-			model:PivotTo(ground * CFrame.Angles(math.rad(angle), 0, 0) * CFrame.new(0, 3, 0))
-		end
-	end)
-	tilt.Value = strength + 0.01
-	local tween = TweenService:Create(tilt, TweenInfo.new(0.6, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), { Value = 0 })
-	tween.Completed:Connect(function()
-		tilt:Destroy()
-	end)
-	tween:Play()
-end
-
 local function addHealthBar(record)
 	local head = record.Model:FindFirstChild("Head")
 	if not head then
@@ -2158,6 +2510,11 @@ local function clearTelegraph(record)
 		end
 		record.Telegraph = nil
 	end
+	local weapon = record.Model:FindFirstChild("Weapon")
+	if weapon and record.WeaponLook then
+		weapon.Material = record.WeaponLook.Material
+		weapon.Color = record.WeaponLook.Color
+	end
 end
 
 local function startAttack(record, target)
@@ -2169,12 +2526,15 @@ local function startAttack(record, target)
 		face(record, targetRoot.Position)
 	end
 
-	-- Telegraph: the enemy glows red and a red ring shows the danger zone.
-	local highlight = Instance.new("Highlight")
-	highlight.FillColor = Color3.fromRGB(255, 40, 30)
-	highlight.FillTransparency = 0.45
-	highlight.OutlineColor = Color3.fromRGB(255, 80, 60)
-	highlight.Parent = record.Model
+	-- Telegraph: the weapon glows red, a red ring shows the danger zone, and
+	-- every player's screen shows the enemy raising its weapon.
+	local weapon = record.Model:FindFirstChild("Weapon")
+	if weapon then
+		record.WeaponLook = record.WeaponLook or { Material = weapon.Material, Color = weapon.Color }
+		weapon.Material = Enum.Material.Neon
+		weapon.Color = Color3.fromRGB(255, 50, 40)
+	end
+	fxRemote:FireAllClients("EnemyAttack", record.Root.Position, record.Model, cfg.Windup)
 
 	local groundY = record.Root.Position.Y - record.Root.Size.Y / 2 - record.Humanoid.HipHeight + 0.1
 	local ring = Instance.new("Part")
@@ -2190,15 +2550,12 @@ local function startAttack(record, target)
 	ring.Size = Vector3.new(0.2, diameter, diameter)
 	ring.CFrame = CFrame.new(record.Root.Position.X, groundY, record.Root.Position.Z) * CFrame.Angles(0, 0, math.rad(90))
 	ring.Parent = folder
-	record.Telegraph = { highlight, ring }
+	record.Telegraph = { ring }
 
 	task.delay(cfg.Windup, function()
 		clearTelegraph(record)
 		if record.Dead or not record.Model.Parent then
 			return
-		end
-		if record.AttackTrack then
-			record.AttackTrack:Play()
 		end
 		local root = record.Root
 		for _, player in getPlayers() do
@@ -2230,7 +2587,7 @@ local function think(record, now)
 		end
 		return
 	end
-	if record.State == "Windup" then
+	if record.State == "Windup" or now < record.StaggerUntil then
 		return
 	end
 
@@ -2364,7 +2721,9 @@ function EnemyService.Spawn(enemyType, cframe, options)
 	if cfg.Passive then
 		root.Anchored = true
 	end
-	local basePivot = if cfg.Builder == "Dummy" then model:GetPivot() else nil
+	if cfg.Builder == "Dummy" then
+		model:SetAttribute("Dummy", true) -- clients wobble it when hit
+	end
 	model:SetAttribute("IsEnemy", true)
 	model.Parent = folder
 	if not root.Anchored then
@@ -2390,11 +2749,10 @@ function EnemyService.Spawn(enemyType, cframe, options)
 		DamageMultiplier = options.DamageMultiplier or 1,
 		RewardMultiplier = options.RewardMultiplier or 1,
 		OnDeath = options.OnDeath,
-		BasePivot = basePivot,
+		StaggerUntil = 0,
 	}
 	addHealthBar(record)
 
-	record.AttackTrack = loadAnimation(humanoid, ATTACK_ANIMATION)
 	local walkTrack = if cfg.Passive then nil else loadAnimation(humanoid, WALK_ANIMATION)
 	if walkTrack then
 		humanoid.Running:Connect(function(speed)
@@ -2438,10 +2796,8 @@ function EnemyService.DamageEnemy(model, amount, player)
 			record.Humanoid.Health = record.Humanoid.MaxHealth
 			fxRemote:FireAllClients("Damage", head.Position + Vector3.new(0, 3, 0), 0, "KnockedOut")
 			fxRemote:FireAllClients("Death", record.Root.Position)
-			wobble(record, 35)
 		else
 			record.Humanoid.Health -= amount
-			wobble(record, 12)
 		end
 		return true
 	end
@@ -2449,6 +2805,17 @@ function EnemyService.DamageEnemy(model, amount, player)
 	record.Humanoid:TakeDamage(amount)
 	if record.Humanoid.Health <= 0 then
 		die(record)
+		return true
+	end
+
+	-- Knock it back a little and interrupt its walking (not a wind-up already started).
+	local attackerRoot = player and aliveCharacterRoot(player)
+	if attackerRoot and not record.Root.Anchored then
+		local away = flat(record.Root.Position - attackerRoot.Position)
+		if away.Magnitude > 0.1 then
+			record.Root.AssemblyLinearVelocity = away.Unit * KNOCKBACK_SPEED + Vector3.new(0, 6, 0)
+		end
+		record.StaggerUntil = now + STAGGER_TIME
 	end
 	return true
 end
@@ -2500,7 +2867,7 @@ return EnemyService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="20">
+      <Item class="ModuleScript" referent="23">
         <Properties>
           <string name="Name">GodService</string>
           <string name="Source"><![CDATA[-- GodService (ModuleScript)
@@ -2941,7 +3308,7 @@ return GodService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="21">
+      <Item class="ModuleScript" referent="24">
         <Properties>
           <string name="Name">PlotService</string>
           <string name="Source"><![CDATA[-- PlotService (ModuleScript)
@@ -3069,7 +3436,7 @@ return PlotService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="22">
+      <Item class="ModuleScript" referent="25">
         <Properties>
           <string name="Name">ProgressionService</string>
           <string name="Source"><![CDATA[-- ProgressionService (ModuleScript)
@@ -3338,7 +3705,7 @@ return ProgressionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="23">
+      <Item class="ModuleScript" referent="26">
         <Properties>
           <string name="Name">TempleModels</string>
           <string name="Source"><![CDATA[-- TempleModels (ModuleScript)
@@ -3820,7 +4187,7 @@ return TempleModels
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="24">
+      <Item class="ModuleScript" referent="27">
         <Properties>
           <string name="Name">TempleService</string>
           <string name="Source"><![CDATA[-- TempleService (ModuleScript)
@@ -4227,7 +4594,7 @@ return TempleService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="25">
+      <Item class="ModuleScript" referent="28">
         <Properties>
           <string name="Name">WorldBuilder</string>
           <string name="Source"><![CDATA[-- WorldBuilder (ModuleScript)
@@ -4467,15 +4834,15 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="26">
+  <Item class="StarterPlayer" referent="29">
     <Properties>
       <string name="Name">StarterPlayer</string>
     </Properties>
-    <Item class="StarterCharacterScripts" referent="27">
+    <Item class="StarterCharacterScripts" referent="30">
       <Properties>
         <string name="Name">StarterCharacterScripts</string>
       </Properties>
-      <Item class="Script" referent="28">
+      <Item class="Script" referent="31">
         <Properties>
           <string name="Name">Health</string>
           <token name="RunContext">0</token>
@@ -4489,11 +4856,11 @@ return WorldBuilder
         </Properties>
       </Item>
     </Item>
-    <Item class="StarterPlayerScripts" referent="29">
+    <Item class="StarterPlayerScripts" referent="32">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="30">
+      <Item class="LocalScript" referent="33">
         <Properties>
           <string name="Name">CombatController</string>
           <string name="Source"><![CDATA[-- CombatController (LocalScript)
@@ -4522,6 +4889,9 @@ local playerGui = player:WaitForChild("PlayerGui")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CombatConfig = require(Shared:WaitForChild("CombatConfig"))
 local GodConfig = require(Shared:WaitForChild("GodConfig"))
+local SwordBuilder = require(Shared:WaitForChild("SwordBuilder"))
+local SwordPoses = require(Shared:WaitForChild("SwordPoses"))
+local SwordAnimator = require(Shared:WaitForChild("SwordAnimator"))
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local attackRemote = Remotes:WaitForChild("CombatAttack")
@@ -4530,14 +4900,11 @@ local dashRemote = Remotes:WaitForChild("CombatDash")
 local fxRemote = Remotes:WaitForChild("CombatFX")
 
 local CFG = CombatConfig.Player
--- Roblox's own default R15 sword animations (free for every game).
-local SLASH_ANIMATION = "rbxassetid://522635514"
-local LUNGE_ANIMATION = "rbxassetid://522638767"
 local COMBO_RESET = 1.2 -- seconds; the combo starts over after a pause
 local LUNGE_SPEED = 24  -- small step forward on the 3rd hit of the combo
 
--- Our own health bar replaces Roblox's default one, and the sword is always
--- held, so the backpack bar isn't needed.
+-- Our own health bar replaces Roblox's default one; there are no tools, so
+-- the backpack bar isn't needed.
 pcall(function()
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
@@ -4546,7 +4913,6 @@ end)
 --------------------------------------------------------------------------
 -- Character helpers
 --------------------------------------------------------------------------
-local comboTracks = {} -- slash, slash, lunge
 local comboIndex = 0
 local lastAttackAt = 0
 
@@ -4562,32 +4928,6 @@ end
 
 local function godColor()
 	return GodConfig.GetColors(player:GetAttribute("SelectedGod") or "").Primary
-end
-
-local function loadAttackTrack(character)
-	comboTracks = {}
-	comboIndex = 0
-	local humanoid = character:WaitForChild("Humanoid", 10)
-	local animator = humanoid and humanoid:WaitForChild("Animator", 10)
-	if not animator then
-		return
-	end
-	local function load(id)
-		local ok, track = pcall(function()
-			local animation = Instance.new("Animation")
-			animation.AnimationId = id
-			local t = animator:LoadAnimation(animation)
-			t.Priority = Enum.AnimationPriority.Action
-			return t
-		end)
-		return if ok then track else nil
-	end
-	local slash = load(SLASH_ANIMATION)
-	comboTracks = { slash, slash, load(LUNGE_ANIMATION) }
-end
-player.CharacterAdded:Connect(loadAttackTrack)
-if player.Character then
-	task.spawn(loadAttackTrack, player.Character)
 end
 
 --------------------------------------------------------------------------
@@ -4614,10 +4954,7 @@ end
 -- Show the sword's light trail straight away on your own screen
 -- (the server turns it on for everyone else).
 local function flashTrail()
-	local character = player.Character
-	local tool = character and character:FindFirstChild("DivineSword")
-	local handle = tool and tool:FindFirstChild("Handle")
-	local trail = handle and handle:FindFirstChild("SwingTrail")
+	local trail = SwordBuilder.GetTrail(player.Character)
 	if trail then
 		trail.Enabled = true
 		task.delay(0.3, function()
@@ -4671,11 +5008,124 @@ local function floatingText(position, textValue, color, size, rise)
 	Debris:AddItem(holder, 1)
 end
 
+--------------------------------------------------------------------------
+-- Hit reactions (drawn on this device only)
+--------------------------------------------------------------------------
+local originalColors = setmetatable({}, { __mode = "k" }) -- [BasePart] = Color3
+local flashing = setmetatable({}, { __mode = "k" })
+local wobbleBase = setmetatable({}, { __mode = "k" }) -- [dummy Model] = upright pivot
+local wobbleToken = setmetatable({}, { __mode = "k" })
+
+-- Enemy turns white for a moment.
+local function flash(model)
+	if flashing[model] then
+		return
+	end
+	flashing[model] = true
+	local parts = {}
+	for _, item in model:GetDescendants() do
+		if item:IsA("BasePart") and item.Transparency < 1 and item.Name ~= "Weapon" then
+			originalColors[item] = originalColors[item] or item.Color
+			item.Color = Color3.new(1, 1, 1)
+			table.insert(parts, item)
+		end
+	end
+	task.delay(0.08, function()
+		for _, item in parts do
+			if item.Parent and originalColors[item] then
+				item.Color = originalColors[item]
+			end
+		end
+		flashing[model] = nil
+	end)
+end
+
+-- Training dummy rocks back and springs upright.
+local function wobble(model, strength)
+	if not model.Parent then
+		return
+	end
+	wobbleBase[model] = wobbleBase[model] or model:GetPivot()
+	local ground = wobbleBase[model] * CFrame.new(0, -3, 0)
+	local token = (wobbleToken[model] or 0) + 1
+	wobbleToken[model] = token
+	local tilt = Instance.new("NumberValue")
+	tilt.Changed:Connect(function(angle)
+		if wobbleToken[model] == token and model.Parent then
+			model:PivotTo(ground * CFrame.Angles(math.rad(angle), 0, 0) * CFrame.new(0, 3, 0))
+		end
+	end)
+	tilt.Value = strength
+	local tween = TweenService:Create(tilt, TweenInfo.new(0.7, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), { Value = 0 })
+	tween.Completed:Connect(function()
+		tilt:Destroy()
+	end)
+	tween:Play()
+end
+
+local function react(model, big)
+	if typeof(model) ~= "Instance" or not model:IsA("Model") then
+		return
+	end
+	if model:GetAttribute("Dummy") then
+		wobble(model, if big then 40 else 14)
+	end
+	flash(model)
+end
+
+-- Instant feedback for your own swing: react to enemies the server will
+-- almost certainly count as hit, without waiting for the round trip.
+local function predictHits(root)
+	local enemies = Workspace:FindFirstChild("Enemies")
+	if not enemies then
+		return
+	end
+	local attack = CFG.BasicAttack
+	local look = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z).Unit
+	for _, model in enemies:GetChildren() do
+		local enemyRoot = model:FindFirstChild("HumanoidRootPart")
+		local humanoid = model:FindFirstChildOfClass("Humanoid")
+		if enemyRoot and humanoid and humanoid.Health > 0 then
+			local offset = enemyRoot.Position - root.Position
+			offset = Vector3.new(offset.X, 0, offset.Z)
+			local reach = attack.Range + enemyRoot.Size.X / 2
+			if offset.Magnitude <= reach and (offset.Magnitude < 1.5 or look:Dot(offset.Unit) >= attack.ArcDot) then
+				react(model, false)
+				burst(enemyRoot.Position, godColor(), 12, 14)
+			end
+		end
+	end
+end
+
 fxRemote.OnClientEvent:Connect(function(kind, position, value, style)
+	if kind == "Swing" then
+		-- Another player swung: play the same move on their character.
+		local other = position
+		if typeof(other) == "Instance" and other:IsA("Player") and other ~= player and other.Character then
+			SwordAnimator.Play(other.Character, value)
+		end
+		return
+	end
 	if typeof(position) ~= "Vector3" then
 		return
 	end
+	if kind == "EnemyAttack" then
+		if typeof(value) == "Instance" and typeof(style) == "number" then
+			SwordAnimator.PlayKeys(value, SwordPoses.EnemyAttack(style))
+		end
+		return
+	end
 	if kind == "Damage" then
+		if style == "KnockedOut" then
+			-- the dummy under the text gets a big wobble
+			local enemies = Workspace:FindFirstChild("Enemies")
+			for _, model in if enemies then enemies:GetChildren() else {} do
+				local r = model:FindFirstChild("HumanoidRootPart")
+				if model:GetAttribute("Dummy") and r and (r.Position - position).Magnitude < 8 then
+					react(model, true)
+				end
+			end
+		end
 		local jitter = Vector3.new(math.random() - 0.5, 0, math.random() - 0.5) * 2
 		local label = if style == "Dodged"
 			then "Dodged!"
@@ -4684,7 +5134,11 @@ fxRemote.OnClientEvent:Connect(function(kind, position, value, style)
 			else tostring(value)
 		floatingText(position + jitter, label, DAMAGE_COLORS[style] or DAMAGE_COLORS.Enemy, if style == "Enemy" then 26 else 22, 3)
 	elseif kind == "Hit" then
-		burst(position, godColor(), 12, 14)
+		-- value = the enemy model, style = the player who hit it.
+		if style ~= player then
+			burst(position, godColor(), 12, 14)
+			react(value, false)
+		end
 	elseif kind == "Death" then
 		burst(position, Color3.fromRGB(230, 230, 230), 30, 10)
 	elseif kind == "Reward" then
@@ -4719,10 +5173,8 @@ local function attack()
 	end
 	lastAttackAt = now
 	comboIndex = comboIndex % 3 + 1
-	local track = comboTracks[comboIndex]
-	if track then
-		track:Play(0.05, 1, 1.15)
-	end
+	SwordAnimator.Play(player.Character, SwordPoses.ComboOrder[comboIndex])
+	predictHits(root)
 	if comboIndex == 3 then
 		-- A small step forward on the lunge.
 		local attachment = Instance.new("Attachment")
@@ -4741,7 +5193,7 @@ local function attack()
 		Debris:AddItem(attachment, 0.12)
 	end
 	flashTrail()
-	attackRemote:FireServer()
+	attackRemote:FireServer(comboIndex)
 end
 
 local function setBlock(on)
@@ -5052,7 +5504,7 @@ updateEnabled()
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="31">
+      <Item class="LocalScript" referent="34">
         <Properties>
           <string name="Name">GodUI</string>
           <string name="Source"><![CDATA[-- GodUI (LocalScript)
@@ -5631,7 +6083,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="32">
+      <Item class="LocalScript" referent="35">
         <Properties>
           <string name="Name">HUDController</string>
           <string name="Source"><![CDATA[-- HUDController (LocalScript)
@@ -6091,7 +6543,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="33">
+      <Item class="LocalScript" referent="36">
         <Properties>
           <string name="Name">TempleUI</string>
           <string name="Source"><![CDATA[-- TempleUI (LocalScript)

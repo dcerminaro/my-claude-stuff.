@@ -186,13 +186,22 @@ environment, so a session can `rojo build` and publish via
 5. **Regeneration:** Roblox's default is replaced: 1% max HP per second after
    5 s without damage, × (1 + Divine Fountain bonus) — so the Fountain is live.
 6. **Death:** respawn after 4 s at the plaza; nothing is lost.
-7. **Animations:** Roblox's own default R15 walk, sword-slash and lunge
-   animations (free to use) as a slash–slash–lunge combo (small step forward
-   on the lunge, resets after 1.2 s). Players hold a placeholder sword (a Tool,
-   so the default sword-holding pose plays; Backpack UI hidden) with a glow and
-   swing trail in their god's colour. Proper animations come in Phase 8, real
-   weapons in Phase 7. (Developer feedback: the first version's animations and
-   grey dummies looked bad, and spawning was slow; this is the fix.)
+7. **Animations and sword (revised after developer feedback: "no sword,
+   rough animation, laggy, dummies don't react"):**
+   - The sword (`Shared/SwordBuilder`) is welded into the right hand (no Tool:
+     disabling the Backpack UI auto-unequips tools, which hid the first sword).
+     Gem, glowing fuller and swing trail use the god colour.
+   - Our own animations (`Shared/SwordPoses`, joint angles) are played by
+     `Shared/SwordAnimator` on every device every frame (PreSimulation, after
+     Roblox's animations): ready stance while holding a weapon, guard while
+     `Blocking`, and a Slash1 → Slash2 → Lunge combo. Other players' swings
+     arrive as `CombatFX("Swing", player, moveName)`; enemies raise and swing
+     their weapon via `CombatFX("EnemyAttack", pos, model, windup)`.
+     Preview: `docs/sword-poses-preview.png` (rendered from the real rig).
+   - Lag fixes: no `Highlight` on attacking enemies (weapon turns neon red
+     instead); dummy wobble moved from the server to each device.
+   - Hit reactions: enemies flash white, get knocked back and stagger 0.3 s;
+     dummies wobble. Your own hits react instantly (predicted locally).
 
 ### Ideas from the developer for later (not built yet)
 - **Rank outfits and physique (Phase 6, Ascension):** each ascension rank gets

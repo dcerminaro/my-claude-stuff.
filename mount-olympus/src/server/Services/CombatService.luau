@@ -11,9 +11,10 @@
 --   * Damage to players (from enemies), damage numbers.
 --   * Health regeneration (replaces Roblox's default), boosted by the
 --     Divine Fountain.
---   * Gives every player a placeholder sword (held as a Tool, so Roblox's
---     sword-holding pose is used) that glows in their god's colour and
---     leaves a light trail when swung. Real weapons come in Phase 7.
+--   * Gives every player a placeholder sword welded into their hand that
+--     glows in their god's colour and leaves a light trail when swung.
+--     Real weapons come in Phase 7. The swing animations themselves are
+--     played on each device by SwordAnimator.
 --
 -- Other systems call: CombatService.DamagePlayer(player, amount, sourcePosition)
 
@@ -23,6 +24,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CombatConfig = require(Shared:WaitForChild("CombatConfig"))
 local GodConfig = require(Shared:WaitForChild("GodConfig"))
+local SwordBuilder = require(Shared:WaitForChild("SwordBuilder"))
+local SwordPoses = require(Shared:WaitForChild("SwordPoses"))
 
 local CombatService = {}
 
@@ -98,120 +101,18 @@ local function setBlocking(player, on)
 end
 
 --------------------------------------------------------------------------
--- Placeholder sword
+-- Placeholder sword (welded into the right hand; see SwordBuilder)
 --------------------------------------------------------------------------
-local SWORD_NAME = "DivineSword"
-
 local function swordColor(player)
 	return GodConfig.GetColors(player:GetAttribute("SelectedGod") or "").Primary
 end
 
-local function colorSword(player, tool)
-	local color = swordColor(player)
-	local handle = tool:FindFirstChild("Handle")
-	local glow = handle and handle:FindFirstChild("Glow")
-	local trail = handle and handle:FindFirstChild("SwingTrail")
-	if glow then
-		glow.Color = color
-	end
-	if trail then
-		trail.Color = ColorSequence.new(color)
-	end
-end
-
-local function weldTo(handle, part, offset)
-	part.CanCollide = false
-	part.CanQuery = false
-	part.CanTouch = false
-	part.Massless = true
-	part.CFrame = handle.CFrame * offset
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = handle
-	weld.Part1 = part
-	weld.Parent = part
-	part.Parent = handle
-	return part
-end
-
 local function giveSword(player, character)
-	if character:FindFirstChild(SWORD_NAME) then
-		return
-	end
-	local tool = Instance.new("Tool")
-	tool.Name = SWORD_NAME
-	tool.CanBeDropped = false
-	tool.ManualActivationOnly = true
-	tool.RequiresHandle = true
-	-- Same grip as Roblox's classic sword: the blade points up and forward.
-	tool.Grip = CFrame.new(0, 0, -1.7, 0, 0, 1, 1, 0, 0, 0, 1, 0)
-
-	-- The handle is the blade (it runs along Z; the hand holds the -Z end).
-	local handle = Instance.new("Part")
-	handle.Name = "Handle"
-	handle.Size = Vector3.new(0.22, 0.5, 4.2)
-	handle.Material = Enum.Material.Metal
-	handle.Color = Color3.fromRGB(205, 210, 220)
-	handle.CanCollide = false
-	handle.Massless = true
-	handle.CFrame = CFrame.new()
-	handle.Parent = tool
-
-	local glow = Instance.new("Part")
-	glow.Name = "Glow"
-	glow.Size = Vector3.new(0.26, 0.14, 3.0)
-	glow.Material = Enum.Material.Neon
-	weldTo(handle, glow, CFrame.new(0, 0, 0.5))
-
-	local guard = Instance.new("Part")
-	guard.Name = "Guard"
-	guard.Size = Vector3.new(0.32, 1.6, 0.32)
-	guard.Material = Enum.Material.Metal
-	guard.Color = Color3.fromRGB(212, 175, 55)
-	weldTo(handle, guard, CFrame.new(0, 0, -1.15))
-
-	local grip = Instance.new("Part")
-	grip.Name = "GripWrap"
-	grip.Size = Vector3.new(0.3, 0.6, 0.95)
-	grip.Material = Enum.Material.Fabric
-	grip.Color = Color3.fromRGB(110, 70, 40)
-	weldTo(handle, grip, CFrame.new(0, 0, -1.75))
-
-	local pommel = Instance.new("Part")
-	pommel.Name = "Pommel"
-	pommel.Shape = Enum.PartType.Ball
-	pommel.Size = Vector3.new(0.45, 0.45, 0.45)
-	pommel.Material = Enum.Material.Metal
-	pommel.Color = Color3.fromRGB(212, 175, 55)
-	weldTo(handle, pommel, CFrame.new(0, 0, -2.3))
-
-	-- Light trail between the guard and the tip while swinging.
-	local a0 = Instance.new("Attachment")
-	a0.Name = "TrailBase"
-	a0.Position = Vector3.new(0, 0, -1.0)
-	a0.Parent = handle
-	local a1 = Instance.new("Attachment")
-	a1.Name = "TrailTip"
-	a1.Position = Vector3.new(0, 0, 2.1)
-	a1.Parent = handle
-	local trail = Instance.new("Trail")
-	trail.Name = "SwingTrail"
-	trail.Attachment0 = a0
-	trail.Attachment1 = a1
-	trail.Lifetime = 0.2
-	trail.LightEmission = 1
-	trail.FaceCamera = true
-	trail.Transparency = NumberSequence.new(0.1, 1)
-	trail.Enabled = false
-	trail.Parent = handle
-
-	colorSword(player, tool)
-	tool.Parent = character -- equipped straight away
+	SwordBuilder.Attach(character, swordColor(player))
 end
 
 local function flashTrail(player)
-	local character = player.Character
-	local tool = character and character:FindFirstChild(SWORD_NAME)
-	local trail = tool and tool:FindFirstChild("Handle") and tool.Handle:FindFirstChild("SwingTrail")
+	local trail = SwordBuilder.GetTrail(player.Character)
 	if trail then
 		trail.Enabled = true
 		task.delay(0.3, function()
@@ -223,7 +124,9 @@ end
 --------------------------------------------------------------------------
 -- Requests from the client
 --------------------------------------------------------------------------
-function CombatService.BasicAttack(player)
+-- combo = which swing of the combo the client played (1-3), only used so
+-- other players see the same animation.
+function CombatService.BasicAttack(player, combo)
 	local st = state[player]
 	local _, _, root = getParts(player)
 	if not st or not root or st.Blocking then
@@ -236,6 +139,14 @@ function CombatService.BasicAttack(player)
 	local attack = CFG.BasicAttack
 	st.NextAttackAt = now + attack.Cooldown * 0.9 -- small tolerance for network timing
 	flashTrail(player)
+
+	-- Let everyone else's screen play the same swing.
+	local moveName = SwordPoses.ComboOrder[if type(combo) == "number" then math.clamp(math.floor(combo), 1, 3) else 1]
+	for _, other in Players:GetPlayers() do
+		if other ~= player then
+			fxRemote:FireClient(other, "Swing", player, moveName)
+		end
+	end
 
 	local baseAttack = player:GetAttribute("BaseAttack") or 10
 	local combatBonus = TempleService.GetEffect(player, "CombatBonusPercent") / 100
@@ -261,7 +172,7 @@ function CombatService.BasicAttack(player)
 		local damage = baseAttack * attack.DamageMultiplier * (1 + combatBonus) * spread
 		if EnemyService.DamageEnemy(record.Model, damage, player) then
 			hits += 1
-			fxRemote:FireAllClients("Hit", record.Root.Position)
+			fxRemote:FireAllClients("Hit", record.Root.Position, record.Model, player)
 		end
 	end
 	return hits
@@ -317,8 +228,8 @@ function CombatService.Init(templeService, enemyService, fxRemoteEvent, remotes)
 	Players.RespawnTime = CFG.RespawnTime
 
 	if remotes then
-		remotes.Attack.OnServerEvent:Connect(function(player)
-			CombatService.BasicAttack(player)
+		remotes.Attack.OnServerEvent:Connect(function(player, combo)
+			CombatService.BasicAttack(player, combo)
 		end)
 		remotes.Block.OnServerEvent:Connect(function(player, on)
 			if type(on) == "boolean" then
@@ -359,9 +270,9 @@ function CombatService.SetupPlayer(player)
 	}
 	player:SetAttribute("Blocking", false)
 	player:GetAttributeChangedSignal("SelectedGod"):Connect(function()
-		local tool = player.Character and player.Character:FindFirstChild(SWORD_NAME)
-		if tool then
-			colorSword(player, tool)
+		local sword = player.Character and player.Character:FindFirstChild(SwordBuilder.Name)
+		if sword then
+			SwordBuilder.SetColor(sword, swordColor(player))
 		end
 	end)
 	if player.Character then

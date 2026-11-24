@@ -3,9 +3,11 @@
 --
 -- Server-controlled enemies:
 --   * Spawns enemies from CombatConfig.Enemies (placeholder characters).
---   * Simple AI: idle -> chase the nearest player -> wind up (glows red, red
---     ring on the ground) -> strike -> cooldown. Gives up and heals if pulled
---     too far from its spawn.
+--   * Simple AI: idle -> chase the nearest player -> wind up (weapon glows
+--     red, red ring on the ground, weapon raised) -> strike -> cooldown.
+--     Gives up and heals if pulled too far from its spawn.
+--   * Hits knock enemies back and stagger them briefly. Training dummies
+--     wobble (drawn on each player's device, so it costs the server nothing).
 --   * Health bar over its head, damage numbers, death effect.
 --   * Rewards XP + Gold ONCE per kill to every player who damaged it.
 --
@@ -43,9 +45,11 @@ local THINK_INTERVAL = 0.15
 local HEAL_DELAY = 4 -- an enemy only heals after this many seconds without being hit
 local REWARD_WINDOW = 60 -- damage older than this (seconds) doesn't earn a share of the reward
 
--- Roblox's own default R15 animations (free for every game).
+-- Roblox's own default R15 walk animation (free for every game). Attack
+-- poses are our own (SwordPoses), played on each device.
 local WALK_ANIMATION = "rbxassetid://507777826"
-local ATTACK_ANIMATION = "rbxassetid://522635514"
+local KNOCKBACK_SPEED = 16
+local STAGGER_TIME = 0.3
 
 --------------------------------------------------------------------------
 -- Building an enemy character
@@ -202,30 +206,6 @@ local function makeBody(enemyType, cfg)
 	return templates[enemyType]:Clone()
 end
 
--- Dummies rock back and spring upright when hit.
-local function wobble(record, strength)
-	local model = record.Model
-	if not record.BasePivot then
-		return
-	end
-	record.WobbleToken = (record.WobbleToken or 0) + 1
-	local token = record.WobbleToken
-	local ground = record.BasePivot * CFrame.new(0, -3, 0)
-	local tilt = Instance.new("NumberValue")
-	tilt.Value = strength
-	tilt.Changed:Connect(function(angle)
-		if record.WobbleToken == token and model.Parent then
-			model:PivotTo(ground * CFrame.Angles(math.rad(angle), 0, 0) * CFrame.new(0, 3, 0))
-		end
-	end)
-	tilt.Value = strength + 0.01
-	local tween = TweenService:Create(tilt, TweenInfo.new(0.6, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), { Value = 0 })
-	tween.Completed:Connect(function()
-		tilt:Destroy()
-	end)
-	tween:Play()
-end
-
 local function addHealthBar(record)
 	local head = record.Model:FindFirstChild("Head")
 	if not head then
@@ -339,6 +319,11 @@ local function clearTelegraph(record)
 		end
 		record.Telegraph = nil
 	end
+	local weapon = record.Model:FindFirstChild("Weapon")
+	if weapon and record.WeaponLook then
+		weapon.Material = record.WeaponLook.Material
+		weapon.Color = record.WeaponLook.Color
+	end
 end
 
 local function startAttack(record, target)
@@ -350,12 +335,15 @@ local function startAttack(record, target)
 		face(record, targetRoot.Position)
 	end
 
-	-- Telegraph: the enemy glows red and a red ring shows the danger zone.
-	local highlight = Instance.new("Highlight")
-	highlight.FillColor = Color3.fromRGB(255, 40, 30)
-	highlight.FillTransparency = 0.45
-	highlight.OutlineColor = Color3.fromRGB(255, 80, 60)
-	highlight.Parent = record.Model
+	-- Telegraph: the weapon glows red, a red ring shows the danger zone, and
+	-- every player's screen shows the enemy raising its weapon.
+	local weapon = record.Model:FindFirstChild("Weapon")
+	if weapon then
+		record.WeaponLook = record.WeaponLook or { Material = weapon.Material, Color = weapon.Color }
+		weapon.Material = Enum.Material.Neon
+		weapon.Color = Color3.fromRGB(255, 50, 40)
+	end
+	fxRemote:FireAllClients("EnemyAttack", record.Root.Position, record.Model, cfg.Windup)
 
 	local groundY = record.Root.Position.Y - record.Root.Size.Y / 2 - record.Humanoid.HipHeight + 0.1
 	local ring = Instance.new("Part")
@@ -371,15 +359,12 @@ local function startAttack(record, target)
 	ring.Size = Vector3.new(0.2, diameter, diameter)
 	ring.CFrame = CFrame.new(record.Root.Position.X, groundY, record.Root.Position.Z) * CFrame.Angles(0, 0, math.rad(90))
 	ring.Parent = folder
-	record.Telegraph = { highlight, ring }
+	record.Telegraph = { ring }
 
 	task.delay(cfg.Windup, function()
 		clearTelegraph(record)
 		if record.Dead or not record.Model.Parent then
 			return
-		end
-		if record.AttackTrack then
-			record.AttackTrack:Play()
 		end
 		local root = record.Root
 		for _, player in getPlayers() do
@@ -411,7 +396,7 @@ local function think(record, now)
 		end
 		return
 	end
-	if record.State == "Windup" then
+	if record.State == "Windup" or now < record.StaggerUntil then
 		return
 	end
 
@@ -545,7 +530,9 @@ function EnemyService.Spawn(enemyType, cframe, options)
 	if cfg.Passive then
 		root.Anchored = true
 	end
-	local basePivot = if cfg.Builder == "Dummy" then model:GetPivot() else nil
+	if cfg.Builder == "Dummy" then
+		model:SetAttribute("Dummy", true) -- clients wobble it when hit
+	end
 	model:SetAttribute("IsEnemy", true)
 	model.Parent = folder
 	if not root.Anchored then
@@ -571,11 +558,10 @@ function EnemyService.Spawn(enemyType, cframe, options)
 		DamageMultiplier = options.DamageMultiplier or 1,
 		RewardMultiplier = options.RewardMultiplier or 1,
 		OnDeath = options.OnDeath,
-		BasePivot = basePivot,
+		StaggerUntil = 0,
 	}
 	addHealthBar(record)
 
-	record.AttackTrack = loadAnimation(humanoid, ATTACK_ANIMATION)
 	local walkTrack = if cfg.Passive then nil else loadAnimation(humanoid, WALK_ANIMATION)
 	if walkTrack then
 		humanoid.Running:Connect(function(speed)
@@ -619,10 +605,8 @@ function EnemyService.DamageEnemy(model, amount, player)
 			record.Humanoid.Health = record.Humanoid.MaxHealth
 			fxRemote:FireAllClients("Damage", head.Position + Vector3.new(0, 3, 0), 0, "KnockedOut")
 			fxRemote:FireAllClients("Death", record.Root.Position)
-			wobble(record, 35)
 		else
 			record.Humanoid.Health -= amount
-			wobble(record, 12)
 		end
 		return true
 	end
@@ -630,6 +614,17 @@ function EnemyService.DamageEnemy(model, amount, player)
 	record.Humanoid:TakeDamage(amount)
 	if record.Humanoid.Health <= 0 then
 		die(record)
+		return true
+	end
+
+	-- Knock it back a little and interrupt its walking (not a wind-up already started).
+	local attackerRoot = player and aliveCharacterRoot(player)
+	if attackerRoot and not record.Root.Anchored then
+		local away = flat(record.Root.Position - attackerRoot.Position)
+		if away.Magnitude > 0.1 then
+			record.Root.AssemblyLinearVelocity = away.Unit * KNOCKBACK_SPEED + Vector3.new(0, 6, 0)
+		end
+		record.StaggerUntil = now + STAGGER_TIME
 	end
 	return true
 end
