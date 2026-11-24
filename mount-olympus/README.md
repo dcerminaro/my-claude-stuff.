@@ -2,7 +2,7 @@
 
 A Greek mythology RPG / temple tycoon for Roblox.
 
-- **Status:** Phase 1 (Core Framework) confirmed by the developer. Phase 2 (Temple Tycoon) built, server-tested on Roblox, awaiting play-testing.
+- **Status:** Phases 1–2 confirmed by the developer. Phase 3 (God Selection) built, server-tested on Roblox, awaiting play-testing.
 - **Full design spec, decisions, and roadmap:** [`HANDOFF.md`](HANDOFF.md).
 
 ## Fastest way to try it (no tools needed)
@@ -21,6 +21,8 @@ A Greek mythology RPG / temple tycoon for Roblox.
 | `src/shared/GameConfig.luau` | ReplicatedStorage › Shared › GameConfig | ModuleScript |
 | `src/shared/Progression.luau` | ReplicatedStorage › Shared › Progression | ModuleScript |
 | `src/shared/TempleConfig.luau` | ReplicatedStorage › Shared › TempleConfig | ModuleScript |
+| `src/shared/GodConfig.luau` | ReplicatedStorage › Shared › GodConfig | ModuleScript |
+| `src/shared/Gods/*.luau` (Zeus, Ares, Poseidon, Hades, Athena, Apollo) | ReplicatedStorage › Shared › Gods › *(one per god)* | ModuleScript |
 | `src/server/Main.server.luau` | ServerScriptService › Main | Script |
 | `src/server/Services/DataService.luau` | ServerScriptService › Services › DataService | ModuleScript |
 | `src/server/Services/ProgressionService.luau` | ServerScriptService › Services › ProgressionService | ModuleScript |
@@ -28,8 +30,10 @@ A Greek mythology RPG / temple tycoon for Roblox.
 | `src/server/Services/WorldBuilder.luau` | ServerScriptService › Services › WorldBuilder | ModuleScript |
 | `src/server/Services/TempleService.luau` | ServerScriptService › Services › TempleService | ModuleScript |
 | `src/server/Services/TempleModels.luau` | ServerScriptService › Services › TempleModels | ModuleScript |
+| `src/server/Services/GodService.luau` | ServerScriptService › Services › GodService | ModuleScript |
 | `src/client/HUDController.client.luau` | StarterPlayer › StarterPlayerScripts › HUDController | LocalScript |
 | `src/client/TempleUI.client.luau` | StarterPlayer › StarterPlayerScripts › TempleUI | LocalScript |
+| `src/client/GodUI.client.luau` | StarterPlayer › StarterPlayerScripts › GodUI | LocalScript |
 
 `default.project.json` is the [Rojo](https://rojo.space) project file that defines this mapping.
 

@@ -123,6 +123,313 @@ return GameConfig
       </Item>
       <Item class="ModuleScript" referent="3">
         <Properties>
+          <string name="Name">GodConfig</string>
+          <string name="Source"><![CDATA[-- GodConfig (ModuleScript)
+-- Location: ReplicatedStorage > Shared > GodConfig
+--
+-- Loads every god module from ReplicatedStorage > Shared > Gods and holds the
+-- rules shared by all gods: blessing tiers, Divine Favor costs, requirements,
+-- worship and god-changing. Both server and client read this.
+-- To add a god: create a module in the Gods folder, add its Id to Order.
+-- All numbers are PLACEHOLDERS, balanced in Phase 8.
+
+local GameConfig = require(script.Parent:WaitForChild("GameConfig"))
+local GodsFolder = script.Parent:WaitForChild("Gods")
+
+local GodConfig = {}
+
+-- Display order in the menus.
+GodConfig.Order = { "Zeus", "Poseidon", "Hades", "Ares", "Athena", "Apollo" }
+
+GodConfig.Gods = {}
+for _, id in GodConfig.Order do
+	GodConfig.Gods[id] = require(GodsFolder:WaitForChild(id))
+end
+
+-- [BlessingId] = { God = godId, Blessing = blessing table }
+GodConfig.BlessingsById = {}
+for godId, god in GodConfig.Gods do
+	for _, blessing in god.Blessings do
+		GodConfig.BlessingsById[blessing.Id] = { God = godId, Blessing = blessing }
+	end
+end
+
+--------------------------------------------------------------------------
+-- Blessing tiers (same rules for every god)
+-- AltarLevel = Main Altar level needed, Loyalty = loyalty with that god,
+-- RankIndex  = ascension rank needed (1 Mortal, 2 Warrior, 3 Champion, 4 Hero),
+-- Costs[n]   = Divine Favor to reach blessing level n.
+-- Tier 1 level 1 is given free when you start worshipping a god.
+--------------------------------------------------------------------------
+GodConfig.MaxBlessingLevel = 3
+
+GodConfig.Tiers = {
+	{ AltarLevel = 0, Loyalty = 0,   RankIndex = 1, Costs = { 0, 40, 120 } },
+	{ AltarLevel = 1, Loyalty = 25,  RankIndex = 1, Costs = { 60, 150, 400 } },
+	{ AltarLevel = 2, Loyalty = 100, RankIndex = 2, Costs = { 200, 500, 1200 } },
+	{ AltarLevel = 3, Loyalty = 300, RankIndex = 3, Costs = { 600, 1500, 3500 } },
+	{ AltarLevel = 4, Loyalty = 800, RankIndex = 4, Costs = { 1500, 4000, 10000 } },
+}
+
+-- Worship at your god's statue in the Hall of the Gods.
+-- Rewards are increased by the Statue Hall's worship bonus.
+GodConfig.Worship = {
+	Cooldown = 30, -- seconds
+	Favor = 10,
+	Loyalty = 10,
+}
+
+-- Changing god: start at the Shrine of Change, then pray there this many times.
+-- Levels, currencies, temple and every god's blessings and loyalty are kept.
+GodConfig.GodChange = {
+	PrayersNeeded = 3,
+	PrayerCooldown = 20, -- seconds between prayers
+}
+
+-- Temple colours before a god is chosen.
+GodConfig.DefaultColors = {
+	Primary = Color3.fromRGB(212, 175, 55),
+	Accent = Color3.fromRGB(212, 175, 55),
+	Glow = Color3.fromRGB(110, 170, 255),
+}
+
+--------------------------------------------------------------------------
+-- Shared rules
+--------------------------------------------------------------------------
+function GodConfig.IsPlayable(godId)
+	local god = GodConfig.Gods[godId]
+	return god ~= nil and god.Available == true
+end
+
+function GodConfig.GetColors(godId)
+	local god = GodConfig.Gods[godId]
+	return if god then god.Colors else GodConfig.DefaultColors
+end
+
+-- What the next level of a blessing needs.
+-- Returns { Maxed = bool, NextLevel = n, Cost = favor, Blocked = "reason" or nil }
+function GodConfig.GetBlessingUpgradeInfo(blessingId, currentLevel, altarLevel, loyalty, rankIndex)
+	local entry = GodConfig.BlessingsById[blessingId]
+	if not entry then
+		return nil
+	end
+	if currentLevel >= GodConfig.MaxBlessingLevel then
+		return { Maxed = true }
+	end
+	local tier = GodConfig.Tiers[entry.Blessing.Tier]
+	local nextLevel = currentLevel + 1
+
+	local blocked = nil
+	if altarLevel < tier.AltarLevel then
+		blocked = ("Needs Main Altar level %d"):format(tier.AltarLevel)
+	elseif loyalty < tier.Loyalty then
+		blocked = ("Needs %d loyalty"):format(tier.Loyalty)
+	elseif rankIndex < tier.RankIndex then
+		blocked = ("Needs rank %s"):format(GameConfig.Ranks[tier.RankIndex].Name)
+	end
+
+	return {
+		Maxed = false,
+		NextLevel = nextLevel,
+		Cost = tier.Costs[nextLevel],
+		Blocked = blocked,
+	}
+end
+
+return GodConfig
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="Folder" referent="4">
+        <Properties>
+          <string name="Name">Gods</string>
+        </Properties>
+        <Item class="ModuleScript" referent="5">
+          <Properties>
+            <string name="Name">Apollo</string>
+            <string name="Source"><![CDATA[-- Apollo (ModuleScript)
+-- Location: ReplicatedStorage > Shared > Gods > Apollo
+-- Not playable yet: Apollo arrives in Phase 7. Blessings are listed by name only.
+
+return {
+	Id = "Apollo",
+	DisplayName = "Apollo",
+	Title = "God of the Sun",
+	Specialty = "Ranged damage and healing.",
+	Available = false,
+
+	Colors = {
+		Primary = Color3.fromRGB(245, 190, 40),
+		Accent = Color3.fromRGB(240, 190, 40),
+		Glow = Color3.fromRGB(255, 220, 90),
+	},
+
+	-- Filled in during Phase 7: Solar Arrow, Radiant Dash, Healing Light, Solar Judgment, Sun God Form.
+	Blessings = {},
+}
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="6">
+          <Properties>
+            <string name="Name">Ares</string>
+            <string name="Source"><![CDATA[-- Ares (ModuleScript)
+-- Location: ReplicatedStorage > Shared > Gods > Ares
+-- See Zeus for what each field means.
+
+return {
+	Id = "Ares",
+	DisplayName = "Ares",
+	Title = "God of War",
+	Specialty = "Melee combat and aggressive damage.",
+	Available = true,
+
+	Colors = {
+		Primary = Color3.fromRGB(215, 60, 45),
+		Accent = Color3.fromRGB(175, 105, 50),  -- bronze
+		Glow = Color3.fromRGB(235, 70, 40),
+		Fire = Color3.fromRGB(255, 90, 40),
+	},
+
+	Blessings = {
+		{ Id = "WarSlash", Name = "War Slash", Tier = 1, Ability = "Q",
+			Description = "A brutal sweeping strike.", Passive = { Stat = "AttackPercent", PerLevel = 3 } },
+		{ Id = "BattleCharge", Name = "Battle Charge", Tier = 2, Ability = "Dash",
+			Description = "Charge into enemies, knocking them back.", Passive = { Stat = "HealthPercent", PerLevel = 5 } },
+		{ Id = "BerserkerRage", Name = "Berserker Rage", Tier = 3, Ability = "E",
+			Description = "Hit harder and faster for a while.", Passive = { Stat = "AttackPercent", PerLevel = 4 } },
+		{ Id = "GodOfWar", Name = "God of War", Tier = 4, Ability = "R",
+			Description = "Unleash the fury of war (ultimate).", Passive = { Stat = "HealthPercent", PerLevel = 8 } },
+		{ Id = "DivineWarlordForm", Name = "Divine Warlord Form", Tier = 5, Ability = "Form",
+			Description = "Become an unstoppable warlord for a short time.", Passive = { Stat = "AttackPercent", PerLevel = 6 } },
+	},
+}
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="7">
+          <Properties>
+            <string name="Name">Athena</string>
+            <string name="Source"><![CDATA[-- Athena (ModuleScript)
+-- Location: ReplicatedStorage > Shared > Gods > Athena
+-- Not playable yet: Athena arrives in Phase 7. Blessings are listed by name only.
+
+return {
+	Id = "Athena",
+	DisplayName = "Athena",
+	Title = "Goddess of Wisdom",
+	Specialty = "Defense, precision, and counterattacks.",
+	Available = false,
+
+	Colors = {
+		Primary = Color3.fromRGB(200, 200, 215),
+		Accent = Color3.fromRGB(200, 200, 210),
+		Glow = Color3.fromRGB(255, 240, 200),
+	},
+
+	-- Filled in during Phase 7: Spear Strike, Divine Shield, Counterattack, Aegis of Olympus, Divine Guardian Form.
+	Blessings = {},
+}
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="8">
+          <Properties>
+            <string name="Name">Hades</string>
+            <string name="Source"><![CDATA[-- Hades (ModuleScript)
+-- Location: ReplicatedStorage > Shared > Gods > Hades
+-- Not playable yet: Hades arrives in Phase 7. Blessings are listed by name only.
+
+return {
+	Id = "Hades",
+	DisplayName = "Hades",
+	Title = "God of the Underworld",
+	Specialty = "Shadow damage, life stealing, and summoning.",
+	Available = false,
+
+	Colors = {
+		Primary = Color3.fromRGB(130, 70, 200),
+		Accent = Color3.fromRGB(90, 60, 120),
+		Glow = Color3.fromRGB(160, 80, 255),
+	},
+
+	-- Filled in during Phase 7: Shadow Strike, Soul Drain, Summon Undead, Army of the Dead, Underworld Ascension.
+	Blessings = {},
+}
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="9">
+          <Properties>
+            <string name="Name">Poseidon</string>
+            <string name="Source"><![CDATA[-- Poseidon (ModuleScript)
+-- Location: ReplicatedStorage > Shared > Gods > Poseidon
+-- Not playable yet: Poseidon arrives in Phase 7. Blessings are listed by name only.
+
+return {
+	Id = "Poseidon",
+	DisplayName = "Poseidon",
+	Title = "God of the Sea",
+	Specialty = "Water damage and crowd control.",
+	Available = false,
+
+	Colors = {
+		Primary = Color3.fromRGB(40, 170, 210),
+		Accent = Color3.fromRGB(60, 160, 190),
+		Glow = Color3.fromRGB(60, 220, 230),
+	},
+
+	-- Filled in during Phase 7: Water Blast, Tidal Dash, Whirlpool, Divine Tsunami, Oceanic Ascension.
+	Blessings = {},
+}
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="10">
+          <Properties>
+            <string name="Name">Zeus</string>
+            <string name="Source"><![CDATA[-- Zeus (ModuleScript)
+-- Location: ReplicatedStorage > Shared > Gods > Zeus
+--
+-- One god = one config module. Blessing tiers 1-5 follow the shared rules
+-- in GodConfig (costs, Altar level, Loyalty and rank requirements).
+-- Ability = which control the blessing's ability will use (Phase 4).
+-- Passive = a permanent stat bonus per blessing level, active NOW while
+-- Zeus is your god: AttackPercent, HealthPercent or SpeedPercent.
+
+return {
+	Id = "Zeus",
+	DisplayName = "Zeus",
+	Title = "God of Thunder",
+	Specialty = "Lightning and burst damage.",
+	Available = true,
+
+	Colors = {
+		Primary = Color3.fromRGB(90, 170, 255),  -- menus and badges
+		Accent = Color3.fromRGB(212, 175, 55),   -- metal trim on your temple
+		Glow = Color3.fromRGB(90, 170, 255),     -- glowing parts on your temple
+		Fire = Color3.fromRGB(120, 180, 255),    -- temple flames
+	},
+
+	Blessings = {
+		{ Id = "LightningStrike", Name = "Lightning Strike", Tier = 1, Ability = "Q",
+			Description = "Call down a bolt of lightning.", Passive = { Stat = "AttackPercent", PerLevel = 3 } },
+		{ Id = "ThunderDash", Name = "Thunder Dash", Tier = 2, Ability = "Dash",
+			Description = "Dash forward as a streak of thunder.", Passive = { Stat = "SpeedPercent", PerLevel = 4 } },
+		{ Id = "ChainLightning", Name = "Chain Lightning", Tier = 3, Ability = "E",
+			Description = "Lightning that leaps between enemies.", Passive = { Stat = "AttackPercent", PerLevel = 4 } },
+		{ Id = "WrathOfOlympus", Name = "Wrath of Olympus", Tier = 4, Ability = "R",
+			Description = "A storm of lightning around you (ultimate).", Passive = { Stat = "AttackPercent", PerLevel = 6 } },
+		{ Id = "AscendedThunderForm", Name = "Ascended Thunder Form", Tier = 5, Ability = "Form",
+			Description = "Become living lightning for a short time.", Passive = { Stat = "SpeedPercent", PerLevel = 5 } },
+	},
+}
+]]></string>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class="ModuleScript" referent="11">
+        <Properties>
           <string name="Name">Progression</string>
           <string name="Source"><![CDATA[-- Progression (ModuleScript)
 -- Location: ReplicatedStorage > Shared > Progression
@@ -185,7 +492,7 @@ return Progression
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="4">
+      <Item class="ModuleScript" referent="12">
         <Properties>
           <string name="Name">TempleConfig</string>
           <string name="Source"><![CDATA[-- TempleConfig (ModuleScript)
@@ -357,11 +664,11 @@ return TempleConfig
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="5">
+  <Item class="ServerScriptService" referent="13">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Script" referent="6">
+    <Item class="Script" referent="14">
       <Properties>
         <string name="Name">Main</string>
         <token name="RunContext">0</token>
@@ -386,6 +693,7 @@ local DataService = require(Services:WaitForChild("DataService"))
 local ProgressionService = require(Services:WaitForChild("ProgressionService"))
 local PlotService = require(Services:WaitForChild("PlotService"))
 local TempleService = require(Services:WaitForChild("TempleService"))
+local GodService = require(Services:WaitForChild("GodService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -405,6 +713,10 @@ local upgradeRemote = Instance.new("RemoteEvent") -- client -> server "upgrade t
 upgradeRemote.Name = "RequestUpgrade"
 upgradeRemote.Parent = remotes
 
+local godRemote = Instance.new("RemoteEvent") -- client -> server god menu requests (choose, blessings, change)
+godRemote.Name = "GodAction"
+godRemote.Parent = remotes
+
 remotes.Parent = ReplicatedStorage
 
 --------------------------------------------------------------------------
@@ -415,6 +727,8 @@ DataService.Init()
 ProgressionService.Init(DataService, notifyRemote)
 PlotService.Init()
 TempleService.Init(DataService, ProgressionService, PlotService, notifyRemote, upgradeRemote)
+GodService.Init(DataService, ProgressionService, TempleService, notifyRemote, godRemote)
+GodService.BuildHall()
 
 --------------------------------------------------------------------------
 -- 3. Debug chat commands
@@ -464,6 +778,8 @@ local function runDebugCommand(player, message)
 	elseif command == "!spend" and number then
 		local ok = ProgressionService.SpendCurrency(player, "Gold", number)
 		reply(if ok then "Spent " .. number .. " Gold" else "Not enough Gold (purchase refused)")
+	elseif command == "!loyalty" and number then
+		reply(if GodService.AddLoyalty(player, number) then "Added " .. number .. " loyalty" else "Choose a god first")
 	elseif command == "!rank" then
 		local _, text = ProgressionService.AdvanceRank(player, "Debug")
 		reply(text)
@@ -476,11 +792,12 @@ local function runDebugCommand(player, message)
 	elseif command == "!reset" then
 		if DataService.ResetData(player) then
 			ProgressionService.RefreshAll(player)
+			GodService.Refresh(player)
 			TempleService.Rebuild(player)
 			reply("Progress reset to defaults")
 		end
 	else
-		reply("Commands: !xp N, !gold N, !favor N, !ambrosia N, !spend N, !rank, !save, !data, !reset")
+		reply("Commands: !xp N, !gold N, !favor N, !ambrosia N, !loyalty N, !spend N, !rank, !save, !data, !reset")
 	end
 end
 
@@ -508,6 +825,7 @@ local function onPlayerAdded(player)
 	end
 
 	ProgressionService.SetupPlayer(player)
+	GodService.SetupPlayer(player)
 	TempleService.SetupPlayer(player, plot)
 	player:SetAttribute("DataLoaded", true)
 	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
@@ -523,6 +841,7 @@ end
 Players.PlayerRemoving:Connect(function(player)
 	lastTeleport[player] = nil
 	TempleService.ReleasePlayer(player)
+	GodService.ReleasePlayer(player)
 	PlotService.ReleasePlot(player)
 	DataService.ReleasePlayer(player) -- yields while saving
 end)
@@ -547,11 +866,11 @@ end)
 ]]></string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="7">
+    <Item class="Folder" referent="15">
       <Properties>
         <string name="Name">Services</string>
       </Properties>
-      <Item class="ModuleScript" referent="8">
+      <Item class="ModuleScript" referent="16">
         <Properties>
           <string name="Name">DataService</string>
           <string name="Source"><![CDATA[-- DataService (ModuleScript)
@@ -623,6 +942,12 @@ local function makeDefaultData()
 		SelectedGod = "",     -- Phase 3
 		GodLoyalty = {},      -- Phase 3: [GodName] = number
 		Blessings = {},       -- Phase 3: [GodName] = { [BlessingId] = level }
+		NextWorshipAt = 0,    -- Phase 3: os.time() when worship is ready again
+		GodChange = {         -- Phase 3: Shrine of Change quest in progress
+			Target = "",      -- god being switched to ("" = none)
+			Prayers = 0,
+			NextPrayerAt = 0,
+		},
 
 		Temple = {            -- Phase 2
 			Tier = 1,
@@ -925,7 +1250,448 @@ return DataService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="9">
+      <Item class="ModuleScript" referent="17">
+        <Properties>
+          <string name="Name">GodService</string>
+          <string name="Source"><![CDATA[-- GodService (ModuleScript)
+-- Location: ServerScriptService > Services > GodService
+--
+-- Everything about gods, on the server:
+--   * First god choice (the intro screen), Zeus and Ares playable for now.
+--   * Blessings: unlocked and upgraded with Divine Favor, gated by Main Altar
+--     level, loyalty with the god, and ascension rank (rules in GodConfig).
+--   * Passive blessing bonuses (attack / health / speed) for the ACTIVE god only.
+--   * Worship at your god's statue: Divine Favor + loyalty (cooldown saved).
+--   * Changing god: start at the Shrine of Change, then pray there.
+--     Levels, currencies, temple, and every god's blessings/loyalty are kept.
+--   * Builds the Hall of the Gods in Olympus Plaza.
+--   * Tells TempleService which colours to paint the temple.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+local Workspace = game:GetService("Workspace")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local GodConfig = require(Shared:WaitForChild("GodConfig"))
+local WorldBuilder = require(ServerScriptService:WaitForChild("Services"):WaitForChild("WorldBuilder"))
+
+local GodService = {}
+
+local DataService = nil
+local ProgressionService = nil
+local TempleService = nil
+local notifyRemote = nil
+
+local MAX_LEVEL = GodConfig.MaxBlessingLevel
+local HALL_CENTER = Vector3.new(-42, 1, -35) -- on the plaza floor (top at Y = 1)
+local lastAction = {} -- [Player] = os.clock() of last menu request
+
+--------------------------------------------------------------------------
+-- Helpers
+--------------------------------------------------------------------------
+local function notify(player, kind, value)
+	if notifyRemote and player.Parent then
+		notifyRemote:FireClient(player, kind, value)
+	end
+end
+
+local function message(player, text)
+	notify(player, "Message", text)
+end
+
+local function blessingLevel(data, godId, blessingId)
+	local tree = data.Blessings[godId]
+	return if type(tree) == "table" then tonumber(tree[blessingId]) or 0 else 0
+end
+
+local function loyalty(data, godId)
+	return tonumber(data.GodLoyalty[godId]) or 0
+end
+
+-- Tier 1 level 1 is free whenever you start worshipping a god.
+local function grantFirstBlessing(data, godId)
+	local god = GodConfig.Gods[godId]
+	data.Blessings[godId] = data.Blessings[godId] or {}
+	for _, blessing in god.Blessings do
+		if blessing.Tier == 1 and blessingLevel(data, godId, blessing.Id) < 1 then
+			data.Blessings[godId][blessing.Id] = 1
+		end
+	end
+end
+
+local function sanitize(data)
+	if type(data.SelectedGod) ~= "string" or (data.SelectedGod ~= "" and not GodConfig.IsPlayable(data.SelectedGod)) then
+		data.SelectedGod = ""
+	end
+	for godId, tree in data.Blessings do
+		if type(tree) == "table" then
+			for id, level in tree do
+				tree[id] = math.clamp(math.floor(tonumber(level) or 0), 0, MAX_LEVEL)
+			end
+		else
+			data.Blessings[godId] = nil
+		end
+	end
+	for godId, value in data.GodLoyalty do
+		data.GodLoyalty[godId] = math.max(0, math.floor(tonumber(value) or 0))
+	end
+	local change = data.GodChange
+	if change.Target ~= "" and (not GodConfig.IsPlayable(change.Target) or change.Target == data.SelectedGod) then
+		change.Target, change.Prayers = "", 0
+	end
+end
+
+-- Publishes god values so the menus can show them.
+local function pushAttributes(player, data)
+	local godId = data.SelectedGod
+	player:SetAttribute("SelectedGod", godId)
+	player:SetAttribute("Loyalty", if godId ~= "" then loyalty(data, godId) else 0)
+	for blessingId, entry in GodConfig.BlessingsById do
+		player:SetAttribute("Blessing_" .. blessingId, blessingLevel(data, entry.God, blessingId))
+	end
+	player:SetAttribute("GodChangeTarget", data.GodChange.Target)
+	player:SetAttribute("GodChangePrayers", data.GodChange.Prayers)
+	player:SetAttribute("NextPrayerAt", data.GodChange.NextPrayerAt)
+	player:SetAttribute("NextWorshipAt", data.NextWorshipAt)
+
+	local bonuses = GodService.GetBonuses(player)
+	player:SetAttribute("BonusAttackPercent", bonuses.AttackPercent)
+	player:SetAttribute("BonusHealthPercent", bonuses.HealthPercent)
+	player:SetAttribute("BonusSpeedPercent", bonuses.SpeedPercent)
+end
+
+-- After anything that changes bonuses or colours.
+local function refreshAll(player, data, rebuildTemple)
+	pushAttributes(player, data)
+	ProgressionService.RefreshAll(player) -- re-applies health, speed and attack
+	if rebuildTemple then
+		TempleService.Rebuild(player) -- new god colours
+	end
+end
+
+--------------------------------------------------------------------------
+-- Hall of the Gods (placeholder build in Olympus Plaza)
+--------------------------------------------------------------------------
+local function addPrompt(part, actionText, objectText, onTriggered)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = actionText
+	prompt.ObjectText = objectText
+	prompt.HoldDuration = 0.3
+	prompt.MaxActivationDistance = 10
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = part
+	prompt.Triggered:Connect(onTriggered)
+	return prompt
+end
+
+function GodService.BuildHall()
+	local hub = Workspace:WaitForChild("Hub")
+	if hub:FindFirstChild("HallOfTheGods") then
+		return
+	end
+	local hall = Instance.new("Model")
+	hall.Name = "HallOfTheGods"
+	local c = HALL_CENTER
+	local MP = WorldBuilder.MakePart
+
+	MP(hall, { Name = "Floor", Size = Vector3.new(18, 0.6, 26), Position = c + Vector3.new(0, 0.3, 0), Color = Color3.fromRGB(245, 240, 228) })
+	local titlePart = MP(hall, { Name = "Title", Size = Vector3.new(1, 1, 1), Position = c + Vector3.new(0, 1, 0), Transparency = 1, CanCollide = false })
+	WorldBuilder.AddLabel(titlePart, "Hall of the Gods", Color3.fromRGB(255, 220, 120), 16)
+
+	-- One statue per god along the back (west) side, facing the plaza.
+	for i, godId in GodConfig.Order do
+		local god = GodConfig.Gods[godId]
+		local z = c.Z - 11 + (i - 1) * 4.4
+		local x = c.X - 6
+		MP(hall, { Name = godId .. "Pedestal", Size = Vector3.new(3, 2, 3), Position = Vector3.new(x, c.Y + 1.6, z) })
+		local figure = MP(hall, {
+			Name = godId .. "Statue",
+			Size = Vector3.new(1.8, 6, 1.8),
+			Position = Vector3.new(x, c.Y + 5.6, z),
+			Material = if god.Available then Enum.Material.Neon else Enum.Material.Marble,
+			Color = if god.Available then god.Colors.Primary else Color3.fromRGB(190, 185, 178),
+		})
+		WorldBuilder.AddLabel(figure, god.DisplayName .. "\n" .. (if god.Available then god.Title else "Coming in Phase 7"), god.Colors.Primary, 5)
+		if god.Available then
+			local light = Instance.new("PointLight")
+			light.Color = god.Colors.Primary
+			light.Range = 10
+			light.Parent = figure
+			addPrompt(figure, "Worship", god.DisplayName, function(player)
+				GodService.Worship(player, godId)
+			end)
+		end
+	end
+
+	-- Altar that opens the god menu
+	local altar = MP(hall, { Name = "GodAltar", Size = Vector3.new(4, 3, 3), Position = c + Vector3.new(3, 2.1, -4), Color = Color3.fromRGB(212, 175, 55), Material = Enum.Material.Metal })
+	WorldBuilder.AddLabel(altar, "Your God & Blessings", Color3.new(1, 1, 1), 4)
+	addPrompt(altar, "Open", "Gods & Blessings", function(player)
+		notify(player, "OpenGodMenu", "Blessings")
+	end)
+
+	-- Shrine of Change
+	local shrine = MP(hall, {
+		Name = "ShrineOfChange",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(7, 2.4, 2.4),
+		CFrame = CFrame.new(c + Vector3.new(3, 4.1, 6)) * CFrame.Angles(0, 0, math.rad(90)),
+		Material = Enum.Material.Neon,
+		Color = Color3.fromRGB(160, 100, 230),
+	})
+	WorldBuilder.AddLabel(shrine, "Shrine of Change", Color3.fromRGB(200, 160, 255), 5)
+	addPrompt(shrine, "Pray", "Shrine of Change", function(player)
+		GodService.Pray(player)
+	end)
+
+	hall.Parent = hub
+end
+
+--------------------------------------------------------------------------
+-- Public API
+--------------------------------------------------------------------------
+function GodService.Init(dataService, progressionService, templeService, notifyRemoteEvent, godRemote)
+	DataService = dataService
+	ProgressionService = progressionService
+	TempleService = templeService
+	notifyRemote = notifyRemoteEvent
+
+	ProgressionService.SetBonusProvider(GodService.GetBonuses)
+	TempleService.SetColorProvider(GodService.GetColors)
+
+	-- Requests from the god menus: ("Choose", godId), ("UpgradeBlessing", blessingId),
+	-- ("StartChange", godId), ("CancelChange"). Never trust the client.
+	if godRemote then
+		godRemote.OnServerEvent:Connect(function(player, action, arg)
+			local now = os.clock()
+			if lastAction[player] and now - lastAction[player] < 0.3 then
+				return
+			end
+			lastAction[player] = now
+			if action == "Choose" and type(arg) == "string" then
+				GodService.ChooseFirstGod(player, arg)
+			elseif action == "UpgradeBlessing" and type(arg) == "string" then
+				GodService.UpgradeBlessing(player, arg)
+			elseif action == "StartChange" and type(arg) == "string" then
+				GodService.StartGodChange(player, arg)
+			elseif action == "CancelChange" then
+				GodService.CancelGodChange(player)
+			end
+		end)
+	end
+end
+
+-- Call after data has loaded (before TempleService.SetupPlayer).
+function GodService.SetupPlayer(player)
+	local data = DataService.GetData(player)
+	if not data then
+		return
+	end
+	sanitize(data)
+	pushAttributes(player, data)
+end
+
+-- Re-publish everything (used after the !reset debug command).
+function GodService.Refresh(player)
+	local data = DataService.GetData(player)
+	if data then
+		sanitize(data)
+		refreshAll(player, data, false)
+	end
+end
+
+function GodService.ReleasePlayer(player)
+	lastAction[player] = nil
+end
+
+-- Sum of passive bonuses from the ACTIVE god's blessings.
+function GodService.GetBonuses(player)
+	local bonuses = { AttackPercent = 0, HealthPercent = 0, SpeedPercent = 0 }
+	local data = DataService.GetData(player)
+	local god = data and GodConfig.Gods[data.SelectedGod]
+	if not god then
+		return bonuses
+	end
+	for _, blessing in god.Blessings do
+		local level = blessingLevel(data, god.Id, blessing.Id)
+		local stat = blessing.Passive and blessing.Passive.Stat
+		if level > 0 and bonuses[stat] then
+			bonuses[stat] += level * blessing.Passive.PerLevel
+		end
+	end
+	return bonuses
+end
+
+function GodService.GetColors(player)
+	local data = DataService.GetData(player)
+	return GodConfig.GetColors(data and data.SelectedGod or "")
+end
+
+function GodService.ChooseFirstGod(player, godId)
+	local data = DataService.GetData(player)
+	if not data or data.SelectedGod ~= "" then
+		return false -- already chosen: changing goes through the Shrine of Change
+	end
+	if not GodConfig.IsPlayable(godId) then
+		message(player, "That god is not available yet.")
+		return false
+	end
+	data.SelectedGod = godId
+	grantFirstBlessing(data, godId)
+	refreshAll(player, data, true)
+	local god = GodConfig.Gods[godId]
+	message(player, ("You now worship %s, %s!"):format(god.DisplayName, god.Title))
+	return true
+end
+
+function GodService.UpgradeBlessing(player, blessingId)
+	local data = DataService.GetData(player)
+	local entry = GodConfig.BlessingsById[blessingId]
+	if not data or not entry then
+		return false
+	end
+	if entry.God ~= data.SelectedGod then
+		message(player, "You can only upgrade blessings of the god you worship.")
+		return false
+	end
+
+	local level = blessingLevel(data, entry.God, blessingId)
+	local altarLevel = tonumber(data.Temple.Buildings.MainAltar) or 0
+	local info = GodConfig.GetBlessingUpgradeInfo(blessingId, level, altarLevel, loyalty(data, entry.God), data.RankIndex)
+	if info.Maxed then
+		message(player, entry.Blessing.Name .. " is already at max level.")
+		return false
+	end
+	if info.Blocked then
+		message(player, info.Blocked .. " to upgrade " .. entry.Blessing.Name .. ".")
+		return false
+	end
+	if info.Cost > 0 and not ProgressionService.SpendCurrency(player, "DivineFavor", info.Cost) then
+		message(player, ("You need %d more Divine Favor."):format(info.Cost - (data.Currencies.DivineFavor or 0)))
+		return false
+	end
+
+	data.Blessings[entry.God] = data.Blessings[entry.God] or {}
+	data.Blessings[entry.God][blessingId] = info.NextLevel
+	refreshAll(player, data, false)
+	message(player, ("%s reached level %d!"):format(entry.Blessing.Name, info.NextLevel))
+	return true
+end
+
+function GodService.Worship(player, godId)
+	local data = DataService.GetData(player)
+	if not data then
+		return false
+	end
+	if data.SelectedGod == "" then
+		notify(player, "OpenGodMenu", "Choose")
+		return false
+	end
+	if godId ~= data.SelectedGod then
+		message(player, ("You worship %s. Visit the Shrine of Change to switch gods."):format(GodConfig.Gods[data.SelectedGod].DisplayName))
+		return false
+	end
+	local now = os.time()
+	if now < data.NextWorshipAt then
+		message(player, ("You can worship again in %d seconds."):format(data.NextWorshipAt - now))
+		return false
+	end
+
+	local multiplier = 1 + TempleService.GetEffect(player, "WorshipBonusPercent") / 100
+	local favor = math.floor(GodConfig.Worship.Favor * multiplier)
+	local gainedLoyalty = math.floor(GodConfig.Worship.Loyalty * multiplier)
+	data.NextWorshipAt = now + GodConfig.Worship.Cooldown
+	data.GodLoyalty[godId] = loyalty(data, godId) + gainedLoyalty
+	ProgressionService.AddCurrency(player, "DivineFavor", favor, "Worship")
+	pushAttributes(player, data)
+	message(player, ("%s is pleased: +%d Favor, +%d Loyalty"):format(GodConfig.Gods[godId].DisplayName, favor, gainedLoyalty))
+	return true
+end
+
+function GodService.StartGodChange(player, godId)
+	local data = DataService.GetData(player)
+	if not data or data.SelectedGod == "" then
+		return false
+	end
+	if not GodConfig.IsPlayable(godId) or godId == data.SelectedGod then
+		message(player, "You can't switch to that god.")
+		return false
+	end
+	data.GodChange.Target = godId
+	data.GodChange.Prayers = 0
+	pushAttributes(player, data)
+	message(player, ("Pray %d times at the Shrine of Change to follow %s."):format(GodConfig.GodChange.PrayersNeeded, GodConfig.Gods[godId].DisplayName))
+	return true
+end
+
+function GodService.CancelGodChange(player)
+	local data = DataService.GetData(player)
+	if not data or data.GodChange.Target == "" then
+		return false
+	end
+	data.GodChange.Target = ""
+	data.GodChange.Prayers = 0
+	pushAttributes(player, data)
+	message(player, "God change cancelled.")
+	return true
+end
+
+function GodService.Pray(player)
+	local data = DataService.GetData(player)
+	if not data then
+		return false
+	end
+	local change = data.GodChange
+	if data.SelectedGod == "" then
+		notify(player, "OpenGodMenu", "Choose")
+		return false
+	end
+	if change.Target == "" then
+		notify(player, "OpenGodMenu", "Change") -- shows the "choose a new god" options
+		return false
+	end
+	local now = os.time()
+	if now < change.NextPrayerAt then
+		message(player, ("You can pray again in %d seconds."):format(change.NextPrayerAt - now))
+		return false
+	end
+
+	change.Prayers += 1
+	change.NextPrayerAt = now + GodConfig.GodChange.PrayerCooldown
+	local target = GodConfig.Gods[change.Target]
+
+	if change.Prayers < GodConfig.GodChange.PrayersNeeded then
+		pushAttributes(player, data)
+		message(player, ("Prayer to %s: %d / %d"):format(target.DisplayName, change.Prayers, GodConfig.GodChange.PrayersNeeded))
+		return true
+	end
+
+	-- Quest complete: switch god. Everything else is kept.
+	data.SelectedGod = change.Target
+	change.Target, change.Prayers = "", 0
+	grantFirstBlessing(data, data.SelectedGod)
+	refreshAll(player, data, true)
+	message(player, ("You now worship %s, %s!"):format(target.DisplayName, target.Title))
+	return true
+end
+
+-- Studio / owner test command: add loyalty to the current god.
+function GodService.AddLoyalty(player, amount)
+	local data = DataService.GetData(player)
+	amount = math.floor(tonumber(amount) or 0)
+	if not data or data.SelectedGod == "" or amount <= 0 then
+		return false
+	end
+	data.GodLoyalty[data.SelectedGod] = loyalty(data, data.SelectedGod) + amount
+	pushAttributes(player, data)
+	return true
+end
+
+return GodService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="18">
         <Properties>
           <string name="Name">PlotService</string>
           <string name="Source"><![CDATA[-- PlotService (ModuleScript)
@@ -1045,7 +1811,7 @@ return PlotService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="10">
+      <Item class="ModuleScript" referent="19">
         <Properties>
           <string name="Name">ProgressionService</string>
           <string name="Source"><![CDATA[-- ProgressionService (ModuleScript)
@@ -1073,6 +1839,9 @@ local ProgressionService = {}
 
 local DataService = nil
 local notifyRemote = nil
+local bonusProvider = nil -- function(player) -> { AttackPercent, HealthPercent, SpeedPercent }
+
+local BASE_WALK_SPEED = 16
 
 local VALID_CURRENCY = {}
 for _, name in GameConfig.Currencies do
@@ -1119,6 +1888,11 @@ local function processLevels(data)
 	end
 end
 
+local function getBonuses(player)
+	local bonuses = if bonusProvider then bonusProvider(player) else nil
+	return bonuses or {}
+end
+
 local function applyCharacterStats(player, character, healFully)
 	if not character then
 		return
@@ -1128,8 +1902,10 @@ local function applyCharacterStats(player, character, healFully)
 	if not humanoid or not data then
 		return
 	end
-	local maxHealth = Progression.GetMaxHealth(data.Level)
+	local bonuses = getBonuses(player)
+	local maxHealth = math.floor(Progression.GetMaxHealth(data.Level) * (1 + (bonuses.HealthPercent or 0) / 100))
 	humanoid.MaxHealth = maxHealth
+	humanoid.WalkSpeed = BASE_WALK_SPEED * (1 + (bonuses.SpeedPercent or 0) / 100)
 	if healFully then
 		humanoid.Health = maxHealth
 	end
@@ -1141,6 +1917,11 @@ end
 function ProgressionService.Init(dataService, notifyRemoteEvent)
 	DataService = dataService
 	notifyRemote = notifyRemoteEvent
+end
+
+-- Phase 3: GodService supplies blessing bonuses (attack / health / speed %).
+function ProgressionService.SetBonusProvider(provider)
+	bonusProvider = provider
 end
 
 -- Pushes saved values to attributes + leaderboard so the client can display them.
@@ -1159,7 +1940,8 @@ function ProgressionService.Refresh(player)
 	player:SetAttribute("RankName", rank.Name)
 	player:SetAttribute("LevelCap", cap)
 	player:SetAttribute("TrialReady", data.Level >= cap and data.RankIndex < #GameConfig.Ranks)
-	player:SetAttribute("BaseAttack", Progression.GetBaseAttack(data.Level))
+	local attackBonus = getBonuses(player).AttackPercent or 0
+	player:SetAttribute("BaseAttack", math.floor(Progression.GetBaseAttack(data.Level) * (1 + attackBonus / 100)))
 	for _, name in GameConfig.Currencies do
 		player:SetAttribute(name, data.Currencies[name] or 0)
 	end
@@ -1298,15 +2080,16 @@ return ProgressionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="11">
+      <Item class="ModuleScript" referent="20">
         <Properties>
           <string name="Name">TempleModels</string>
           <string name="Source"><![CDATA[-- TempleModels (ModuleScript)
 -- Location: ServerScriptService > Services > TempleModels
 --
 -- Builds the PLACEHOLDER 3D models for the Temple Tycoon out of simple parts:
---   TempleModels.Temple(tier, origin)               -> the main temple (tiers 1-7)
---   TempleModels.Building(buildingId, level, origin) -> one of the 5 buildings (levels 1-5)
+--   TempleModels.Temple(tier, origin, colors)               -> the main temple (tiers 1-7)
+--   TempleModels.Building(buildingId, level, origin, colors) -> one of the 5 buildings (levels 1-5)
+-- `colors` = the god's { Accent, Glow, Fire } from GodConfig (optional).
 --   TempleModels.AnimateIn(model)                    -> "rise from the ground" construction effect
 -- `origin` is a CFrame at ground level in the centre of the building's slot.
 -- Models are returned un-parented; the caller parents them.
@@ -1329,6 +2112,10 @@ local SAND = Color3.fromRGB(214, 190, 140)
 local WOOD = Color3.fromRGB(120, 85, 55)
 local IRON = Color3.fromRGB(120, 120, 125)
 local DIVINE_BLUE = Color3.fromRGB(110, 170, 255)
+
+-- Phase 3: trims, glows and flames follow the player's god (GodConfig colours).
+local DEFAULT_COLORS = { Accent = GOLD, Glow = DIVINE_BLUE }
+local pal = DEFAULT_COLORS -- set at the start of each Temple()/Building() call
 
 --------------------------------------------------------------------------
 -- Part helpers (all positions are relative to `origin`)
@@ -1381,6 +2168,10 @@ local function addFire(part, size)
 	local fire = Instance.new("Fire")
 	fire.Size = size or 5
 	fire.Heat = 8
+	if pal.Fire then
+		fire.Color = pal.Fire
+		fire.SecondaryColor = pal.Accent
+	end
 	fire.Parent = part
 	return fire
 end
@@ -1455,7 +2246,7 @@ local function buildTempleStyle(model, origin, s)
 	local floorY = 2
 
 	-- Perimeter columns
-	local columnColor = if s.GoldColumns then GOLD else MARBLE
+	local columnColor = if s.GoldColumns then pal.Accent else MARBLE
 	local columnMaterial = if s.GoldColumns then Enum.Material.Metal else Enum.Material.Marble
 	local x0, x1 = -W / 2 + 1.6, W / 2 - 1.6
 	local z0, z1 = -D / 2 + 1.6, D / 2 - 1.6
@@ -1482,7 +2273,7 @@ local function buildTempleStyle(model, origin, s)
 	-- Altar in front of the chamber
 	local altar = block(model, origin, "Altar", Vector3.new(5, 2.5, 2.5), Vector3.new(0, floorY + 1.25, -D / 2 + 5))
 	if s.GoldTrim then
-		block(model, origin, "AltarGold", Vector3.new(5.4, 0.4, 2.9), Vector3.new(0, floorY + 2.7, -D / 2 + 5), { Material = Enum.Material.Metal, Color = GOLD })
+		block(model, origin, "AltarGold", Vector3.new(5.4, 0.4, 2.9), Vector3.new(0, floorY + 2.7, -D / 2 + 5), { Material = Enum.Material.Metal, Color = pal.Accent })
 	end
 	if s.Braziers then
 		addFire(altar, 3)
@@ -1492,7 +2283,7 @@ local function buildTempleStyle(model, origin, s)
 	if s.Roof then
 		block(model, origin, "Entablature", Vector3.new(W, 1.6, D), Vector3.new(0, topY + 0.8, 0))
 		if s.GoldTrim then
-			block(model, origin, "GoldTrim", Vector3.new(W + 0.4, 0.5, D + 0.4), Vector3.new(0, topY + 0.25, 0), { Material = Enum.Material.Metal, Color = GOLD })
+			block(model, origin, "GoldTrim", Vector3.new(W + 0.4, 0.5, D + 0.4), Vector3.new(0, topY + 0.25, 0), { Material = Enum.Material.Metal, Color = pal.Accent })
 		end
 		-- Stepped roof
 		block(model, origin, "Roof1", Vector3.new(W - 2, 1.2, D), Vector3.new(0, topY + 2.2, 0))
@@ -1509,22 +2300,22 @@ local function buildTempleStyle(model, origin, s)
 
 	if s.Braziers then
 		for i, x in { -W / 2 + 2, W / 2 - 2 } do
-			local bowl = disc(model, origin, "Brazier" .. i, x, 1.6, -D / 2 - 1.5, 0.8, 2.4, { Material = Enum.Material.Metal, Color = GOLD })
+			local bowl = disc(model, origin, "Brazier" .. i, x, 1.6, -D / 2 - 1.5, 0.8, 2.4, { Material = Enum.Material.Metal, Color = pal.Accent })
 			column(model, origin, "BrazierStand" .. i, x, 0, -D / 2 - 1.5, 1.2, 0.6, { Material = Enum.Material.Metal, Color = IRON })
 			addFire(bowl, 4)
 		end
 	end
 
 	if s.Dome then
-		local dome = ball(model, origin, "Dome", W * 0.45, Vector3.new(0, topY, 4), { Material = Enum.Material.Metal, Color = GOLD })
-		addLight(dome, GOLD, 18, 1)
+		local dome = ball(model, origin, "Dome", W * 0.45, Vector3.new(0, topY, 4), { Material = Enum.Material.Metal, Color = pal.Accent })
+		addLight(dome, pal.Accent, 18, 1)
 	end
 
 	if s.Statues then
 		for i, x in { -6, 6 } do
 			block(model, origin, "StatuePedestal" .. i, Vector3.new(2.4, 2, 2.4), Vector3.new(x, 1, -D / 2 - 4))
-			local figure = block(model, origin, "Statue" .. i, Vector3.new(1.4, 5, 1.4), Vector3.new(x, 4.5, -D / 2 - 4), { Material = Enum.Material.Neon, Color = DIVINE_BLUE })
-			addLight(figure, DIVINE_BLUE, 12, 1.5)
+			local figure = block(model, origin, "Statue" .. i, Vector3.new(1.4, 5, 1.4), Vector3.new(x, 4.5, -D / 2 - 4), { Material = Enum.Material.Neon, Color = pal.Glow })
+			addLight(figure, pal.Glow, 12, 1.5)
 		end
 	end
 
@@ -1532,15 +2323,16 @@ local function buildTempleStyle(model, origin, s)
 		local skyY = topY + 8
 		for i, pos in { Vector3.new(-16, skyY, -4), Vector3.new(16, skyY + 2, -4), Vector3.new(0, skyY + 5, 20) } do
 			block(model, origin, "SkyIsland" .. i, Vector3.new(8, 1.2, 8), pos)
-			block(model, origin, "SkyIslandGold" .. i, Vector3.new(8.4, 0.4, 8.4), pos - Vector3.new(0, 0.8, 0), { Material = Enum.Material.Metal, Color = GOLD })
+			block(model, origin, "SkyIslandGold" .. i, Vector3.new(8.4, 0.4, 8.4), pos - Vector3.new(0, 0.8, 0), { Material = Enum.Material.Metal, Color = pal.Accent })
 			column(model, origin, "SkyColumn" .. i, pos.X, pos.Y + 0.6, pos.Z, 5, 1.4, { Color = MARBLE })
-			local orb = ball(model, origin, "SkyOrb" .. i, 1.6, pos + Vector3.new(0, 7, 0), { Material = Enum.Material.Neon, Color = GOLD })
-			addLight(orb, GOLD, 16, 2)
+			local orb = ball(model, origin, "SkyOrb" .. i, 1.6, pos + Vector3.new(0, 7, 0), { Material = Enum.Material.Neon, Color = pal.Accent })
+			addLight(orb, pal.Accent, 16, 2)
 		end
 	end
 end
 
-function TempleModels.Temple(tier, origin)
+function TempleModels.Temple(tier, origin, colors)
+	pal = colors or DEFAULT_COLORS
 	local model = Instance.new("Model")
 	model.Name = "Temple"
 	if tier <= 1 then
@@ -1591,15 +2383,15 @@ BUILDERS.MainAltar = function(model, o, level)
 		addFire(altar, 4)
 	end
 	if level >= 3 then
-		block(model, o, "AltarGold", Vector3.new(4.4, 0.4, 2.4), Vector3.new(0, top + 2.7, 0), { Material = Enum.Material.Metal, Color = GOLD })
+		block(model, o, "AltarGold", Vector3.new(4.4, 0.4, 2.4), Vector3.new(0, top + 2.7, 0), { Material = Enum.Material.Metal, Color = pal.Accent })
 	end
 	if level >= 4 then
-		local orb = ball(model, o, "FavorOrb", 1.6, Vector3.new(0, top + 6, 0), { Material = Enum.Material.Neon, Color = DIVINE_BLUE })
-		addLight(orb, DIVINE_BLUE, 14, 2)
+		local orb = ball(model, o, "FavorOrb", 1.6, Vector3.new(0, top + 6, 0), { Material = Enum.Material.Neon, Color = pal.Glow })
+		addLight(orb, pal.Glow, 14, 2)
 	end
 	if level >= 5 then
 		for i, x in { -4, 4 } do
-			column(model, o, "GoldColumn" .. i, x, top, 0, 8, 1.4, { Material = Enum.Material.Metal, Color = GOLD })
+			column(model, o, "GoldColumn" .. i, x, top, 0, 8, 1.4, { Material = Enum.Material.Metal, Color = pal.Accent })
 		end
 	end
 end
@@ -1607,7 +2399,7 @@ end
 BUILDERS.DivineFountain = function(model, o, level)
 	local d = 7 + level
 	disc(model, o, "BaseDisc", 0, 0.15, 0, 0.3, d + 1.2, if level >= 5
-		then { Material = Enum.Material.Metal, Color = GOLD }
+		then { Material = Enum.Material.Metal, Color = pal.Accent }
 		else nil)
 	disc(model, o, "Basin", 0, 0.9, 0, 1.2, d)
 	local water = disc(model, o, "Water", 0, 1.35, 0, 0.3, d - 1, {
@@ -1667,7 +2459,7 @@ BUILDERS.TrainingGrounds = function(model, o, level)
 	end
 	if level >= 5 then
 		column(model, o, "BannerPole", -5, floorY, 5, 9, 0.5, { Material = Enum.Material.Metal, Color = GOLD })
-		block(model, o, "Banner", Vector3.new(0.2, 3, 2.4), Vector3.new(-5, floorY + 7, 6.3), { Material = Enum.Material.Fabric, Color = Color3.fromRGB(170, 40, 35) })
+		block(model, o, "Banner", Vector3.new(0.2, 3, 2.4), Vector3.new(-5, floorY + 7, 6.3), { Material = Enum.Material.Fabric, Color = pal.Glow })
 	end
 end
 
@@ -1680,18 +2472,18 @@ BUILDERS.StatueHall = function(model, o, level)
 		block(model, o, "Pedestal" .. i, Vector3.new(2, 1.5, 2), Vector3.new(x, floorY + 0.75, 2))
 		local h = 3.5 + 0.3 * i
 		local figure = block(model, o, "Statue" .. i, Vector3.new(1.2, h, 1.2), Vector3.new(x, floorY + 1.5 + h / 2, 2), if golden
-			then { Material = Enum.Material.Metal, Color = GOLD }
+			then { Material = Enum.Material.Metal, Color = pal.Accent }
 			else nil)
 		ball(model, o, "StatueHead" .. i, 1.2, Vector3.new(x, floorY + 1.5 + h + 0.5, 2), if golden
-			then { Material = Enum.Material.Metal, Color = GOLD }
+			then { Material = Enum.Material.Metal, Color = pal.Accent }
 			else nil)
 		if golden then
-			addLight(figure, GOLD, 8, 1)
+			addLight(figure, pal.Accent, 8, 1)
 		end
 	end
 	if level >= 3 then
 		block(model, o, "BackWall", Vector3.new(14, 7, 1), Vector3.new(0, floorY + 3.5, 5.5))
-		block(model, o, "WallGold", Vector3.new(14.2, 0.4, 1.2), Vector3.new(0, floorY + 7.2, 5.5), { Material = Enum.Material.Metal, Color = GOLD })
+		block(model, o, "WallGold", Vector3.new(14.2, 0.4, 1.2), Vector3.new(0, floorY + 7.2, 5.5), { Material = Enum.Material.Metal, Color = pal.Accent })
 	end
 	if level >= 4 then
 		for i, x in { -6.5, 6.5 } do
@@ -1701,7 +2493,8 @@ BUILDERS.StatueHall = function(model, o, level)
 	end
 end
 
-function TempleModels.Building(buildingId, level, origin)
+function TempleModels.Building(buildingId, level, origin, colors)
+	pal = colors or DEFAULT_COLORS
 	local builder = BUILDERS[buildingId]
 	if not builder or level <= 0 then
 		return nil
@@ -1769,7 +2562,7 @@ return TempleModels
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="12">
+      <Item class="ModuleScript" referent="21">
         <Properties>
           <string name="Name">TempleService</string>
           <string name="Source"><![CDATA[-- TempleService (ModuleScript)
@@ -1805,6 +2598,7 @@ local DataService = nil
 local ProgressionService = nil
 local PlotService = nil
 local notifyRemote = nil
+local colorProvider = nil -- function(player) -> god colours { Accent, Glow, Fire }
 
 local MAX_LEVEL = TempleConfig.MaxBuildingLevel
 local PAD_READY = Color3.fromRGB(120, 230, 120)
@@ -1865,7 +2659,8 @@ local function placeTemple(player, data, animate)
 	if old then
 		old:Destroy()
 	end
-	local model = TempleModels.Temple(data.Temple.Tier, slotCFrame(st.Plot, TempleConfig.Buildings.TempleCore.Slot))
+	local colors = if colorProvider then colorProvider(player) else nil
+	local model = TempleModels.Temple(data.Temple.Tier, slotCFrame(st.Plot, TempleConfig.Buildings.TempleCore.Slot), colors)
 	if animate then
 		TempleModels.AnimateIn(model, 1.8)
 	end
@@ -1879,7 +2674,8 @@ local function placeBuilding(player, data, buildingId, animate)
 	if old then
 		old:Destroy()
 	end
-	local model = TempleModels.Building(buildingId, getLevel(data, buildingId), slotCFrame(st.Plot, TempleConfig.Buildings[buildingId].Slot))
+	local colors = if colorProvider then colorProvider(player) else nil
+	local model = TempleModels.Building(buildingId, getLevel(data, buildingId), slotCFrame(st.Plot, TempleConfig.Buildings[buildingId].Slot), colors)
 	if not model then
 		return
 	end
@@ -2014,6 +2810,11 @@ function TempleService.Init(dataService, progressionService, plotService, notify
 			TempleService.PayIncome(interval)
 		end
 	end)
+end
+
+-- Phase 3: GodService supplies the selected god's colours.
+function TempleService.SetColorProvider(provider)
+	colorProvider = provider
 end
 
 -- Call after the player's data has loaded and they have a plot.
@@ -2168,7 +2969,7 @@ return TempleService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="13">
+      <Item class="ModuleScript" referent="22">
         <Properties>
           <string name="Name">WorldBuilder</string>
           <string name="Source"><![CDATA[-- WorldBuilder (ModuleScript)
@@ -2289,7 +3090,7 @@ local function buildHub()
 
 	-- Future area markers
 	local areas = {
-		{ "Hall of the Gods", "Phase 3", Vector3.new(-40, 1.2, -35), Color3.fromRGB(255, 220, 120) },
+		-- Hall of the Gods is built by GodService (Phase 3).
 		{ "Arena Gate", "Phase 5", Vector3.new(-40, 1.2, 0), Color3.fromRGB(220, 80, 60) },
 		{ "Titan Gate", "Phase 5", Vector3.new(-40, 1.2, 35), Color3.fromRGB(150, 70, 200) },
 		{ "Divine Forge", "Phase 7", Vector3.new(40, 1.2, -35), Color3.fromRGB(255, 140, 40) },
@@ -2378,15 +3179,594 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="14">
+  <Item class="StarterPlayer" referent="23">
     <Properties>
       <string name="Name">StarterPlayer</string>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="15">
+    <Item class="StarterPlayerScripts" referent="24">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="16">
+      <Item class="LocalScript" referent="25">
+        <Properties>
+          <string name="Name">GodUI</string>
+          <string name="Source"><![CDATA[-- GodUI (LocalScript)
+-- Location: StarterPlayer > StarterPlayerScripts > GodUI
+--
+-- Phase 3 interface:
+--   * "Choose your god" intro screen (shown until you pick a god).
+--   * God badge under the currency panel (the equipped god indicator).
+--   * Gods & Blessings menu: loyalty, worship timer, bonuses, blessing tree,
+--     and changing god.
+-- Display only: reads Player Attributes and sends requests. The server decides.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local GodConfig = require(Shared:WaitForChild("GodConfig"))
+local Progression = require(Shared:WaitForChild("Progression"))
+
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local godRemote = Remotes:WaitForChild("GodAction")
+local notifyRemote = Remotes:WaitForChild("Notify")
+
+local THEME = {
+	Marble = Color3.fromRGB(246, 242, 232),
+	MarbleDark = Color3.fromRGB(228, 220, 204),
+	Gold = Color3.fromRGB(212, 175, 55),
+	Bronze = Color3.fromRGB(140, 92, 45),
+	Text = Color3.fromRGB(58, 44, 28),
+	SubText = Color3.fromRGB(110, 95, 75),
+	White = Color3.new(1, 1, 1),
+	Night = Color3.fromRGB(18, 22, 38),
+	Ready = Color3.fromRGB(70, 150, 70),
+	TooExpensive = Color3.fromRGB(175, 80, 55),
+	Locked = Color3.fromRGB(130, 130, 140),
+	Warning = Color3.fromRGB(175, 55, 35),
+	Change = Color3.fromRGB(130, 80, 190),
+}
+local TITLE_FONT = Enum.Font.Garamond
+local BODY_FONT = Enum.Font.GothamBold
+local SMALL_FONT = Enum.Font.Gotham
+
+--------------------------------------------------------------------------
+-- Small UI helpers
+--------------------------------------------------------------------------
+local function create(className, props, children)
+	local inst = Instance.new(className)
+	for key, value in props do
+		if key ~= "Parent" then
+			inst[key] = value
+		end
+	end
+	for _, child in children or {} do
+		child.Parent = inst
+	end
+	if props.Parent then
+		inst.Parent = props.Parent
+	end
+	return inst
+end
+
+local function corner(radius)
+	return create("UICorner", { CornerRadius = UDim.new(0, radius) })
+end
+
+local function stroke(color, thickness)
+	return create("UIStroke", { Color = color, Thickness = thickness, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+end
+
+local function padding(px)
+	return create("UIPadding", {
+		PaddingTop = UDim.new(0, px),
+		PaddingBottom = UDim.new(0, px),
+		PaddingLeft = UDim.new(0, px),
+		PaddingRight = UDim.new(0, px),
+	})
+end
+
+local function text(props)
+	props.BackgroundTransparency = 1
+	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
+	props.TextColor3 = props.TextColor3 or THEME.Text
+	props.Font = props.Font or SMALL_FONT
+	return create("TextLabel", props)
+end
+
+local function button(props, radius)
+	props.AutoButtonColor = true
+	props.Font = props.Font or BODY_FONT
+	props.TextColor3 = props.TextColor3 or THEME.White
+	return create("TextButton", props, { corner(radius or 8) })
+end
+
+local function serverNow()
+	return Workspace:GetServerTimeNow()
+end
+
+local function godName(godId)
+	local god = GodConfig.Gods[godId]
+	return if god then god.DisplayName else ""
+end
+
+--------------------------------------------------------------------------
+-- Screen + scaling
+--------------------------------------------------------------------------
+local gui = create("ScreenGui", {
+	Name = "GodUI",
+	ResetOnSpawn = false,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	DisplayOrder = 6,
+	Enabled = false,
+	Parent = playerGui,
+})
+local uiScale = create("UIScale", { Parent = gui })
+local chooserScale = nil -- created with the chooser below; extra shrink for small phones
+
+local CHOOSER_SIZE = Vector2.new(940, 560)
+
+local function updateScale()
+	local camera = Workspace.CurrentCamera
+	local viewport = if camera then camera.ViewportSize else Vector2.new(1280, 720)
+	uiScale.Scale = math.clamp(math.min(viewport.X / 1280, viewport.Y / 720), 0.7, 1.2)
+	if chooserScale then
+		local fit = math.min(viewport.X * 0.96 / CHOOSER_SIZE.X, viewport.Y * 0.94 / CHOOSER_SIZE.Y) / uiScale.Scale
+		chooserScale.Scale = math.min(1, fit)
+	end
+end
+
+--------------------------------------------------------------------------
+-- 1. God badge (top-right, under the currency panel)
+--------------------------------------------------------------------------
+local badge = button({
+	Name = "GodBadge",
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, -12, 0, 120),
+	Size = UDim2.fromOffset(200, 44),
+	BackgroundColor3 = THEME.Marble,
+	Text = "",
+	Parent = gui,
+}, 10)
+stroke(THEME.Gold, 2).Parent = badge
+local badgeName = text({
+	Name = "God",
+	Position = UDim2.fromOffset(10, 2),
+	Size = UDim2.new(1, -20, 0, 24),
+	Font = TITLE_FONT,
+	TextSize = 24,
+	Text = "",
+	Parent = badge,
+})
+local badgeSub = text({
+	Name = "Sub",
+	Position = UDim2.fromOffset(10, 24),
+	Size = UDim2.new(1, -20, 0, 16),
+	TextSize = 13,
+	TextColor3 = THEME.SubText,
+	Text = "",
+	Parent = badge,
+})
+
+--------------------------------------------------------------------------
+-- 2. "Choose your god" screen
+--------------------------------------------------------------------------
+local chooser = create("Frame", {
+	Name = "Chooser",
+	Size = UDim2.fromScale(1, 1),
+	BackgroundColor3 = THEME.Night,
+	BackgroundTransparency = 0.15,
+	Visible = false,
+	ZIndex = 10,
+	Parent = gui,
+})
+local chooserInner = create("Frame", {
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(CHOOSER_SIZE.X, CHOOSER_SIZE.Y),
+	BackgroundTransparency = 1,
+	Parent = chooser,
+})
+chooserScale = create("UIScale", { Parent = chooserInner })
+updateScale()
+if Workspace.CurrentCamera then
+	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+end
+text({
+	Size = UDim2.new(1, 0, 0, 50),
+	Font = TITLE_FONT,
+	TextSize = 44,
+	TextColor3 = THEME.Gold,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	Text = "Choose Your God",
+	Parent = chooserInner,
+})
+text({
+	Position = UDim2.fromOffset(0, 50),
+	Size = UDim2.new(1, 0, 0, 24),
+	TextSize = 16,
+	TextColor3 = THEME.Marble,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	Text = "Your god grants your first blessing. You can change gods later at the Shrine of Change.",
+	Parent = chooserInner,
+})
+local grid = create("Frame", {
+	Position = UDim2.fromOffset(0, 90),
+	Size = UDim2.new(1, 0, 1, -90),
+	BackgroundTransparency = 1,
+	Parent = chooserInner,
+}, {
+	create("UIGridLayout", {
+		CellSize = UDim2.fromOffset(300, 225),
+		CellPadding = UDim2.fromOffset(20, 18),
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+	}),
+})
+
+for order, godId in GodConfig.Order do
+	local god = GodConfig.Gods[godId]
+	local card = create("Frame", {
+		Name = godId,
+		BackgroundColor3 = THEME.Marble,
+		LayoutOrder = order,
+		Parent = grid,
+	}, { corner(12), stroke(god.Colors.Primary, 3), padding(12) })
+	text({ Size = UDim2.new(1, 0, 0, 36), Font = TITLE_FONT, TextSize = 34, TextColor3 = god.Colors.Primary, Text = god.DisplayName, Parent = card })
+	text({ Position = UDim2.fromOffset(0, 36), Size = UDim2.new(1, 0, 0, 20), Font = BODY_FONT, TextSize = 16, Text = god.Title, Parent = card })
+	text({ Position = UDim2.fromOffset(0, 58), Size = UDim2.new(1, 0, 0, 36), TextSize = 14, TextColor3 = THEME.SubText, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top, Text = god.Specialty, Parent = card })
+
+	local names = {}
+	for _, blessing in god.Blessings do
+		table.insert(names, blessing.Name)
+	end
+	text({
+		Position = UDim2.fromOffset(0, 96),
+		Size = UDim2.new(1, 0, 0, 50),
+		TextSize = 12,
+		TextWrapped = true,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		Text = if #names > 0 then table.concat(names, " · ") else "Arrives in a later update.",
+		Parent = card,
+	})
+
+	local choose = button({
+		Name = "Choose",
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.new(1, 0, 0, 44),
+		BackgroundColor3 = if god.Available then god.Colors.Primary else THEME.Locked,
+		Text = if god.Available then "Worship " .. god.DisplayName else "Coming soon",
+		TextSize = 17,
+		Parent = card,
+	})
+	if not god.Available then
+		choose.AutoButtonColor = false
+	end
+	choose.Activated:Connect(function()
+		if god.Available then
+			godRemote:FireServer("Choose", godId)
+		end
+	end)
+end
+
+--------------------------------------------------------------------------
+-- 3. Gods & Blessings menu
+--------------------------------------------------------------------------
+local panel = create("Frame", {
+	Name = "Panel",
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(620, 500),
+	BackgroundColor3 = THEME.Marble,
+	Visible = false,
+	Parent = gui,
+}, { corner(12), padding(14) })
+local panelStroke = stroke(THEME.Gold, 3)
+panelStroke.Parent = panel
+
+local titleLabel = text({ Size = UDim2.new(1, -50, 0, 36), Font = TITLE_FONT, TextSize = 34, Text = "", Parent = panel })
+local closeButton = button({
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.fromScale(1, 0),
+	Size = UDim2.fromOffset(40, 40),
+	BackgroundColor3 = THEME.Bronze,
+	Text = "X",
+	TextSize = 20,
+	Parent = panel,
+})
+local loyaltyLabel = text({ Position = UDim2.fromOffset(0, 40), Size = UDim2.new(1, -50, 0, 20), Font = BODY_FONT, TextSize = 16, TextColor3 = THEME.Bronze, Text = "", Parent = panel })
+local worshipLabel = text({ Position = UDim2.fromOffset(0, 62), Size = UDim2.new(1, 0, 0, 18), TextSize = 14, TextColor3 = THEME.SubText, Text = "", Parent = panel })
+local bonusLabel = text({ Position = UDim2.fromOffset(0, 82), Size = UDim2.new(1, 0, 0, 18), TextSize = 14, TextColor3 = THEME.SubText, Text = "", Parent = panel })
+
+local list = create("ScrollingFrame", {
+	Name = "List",
+	Position = UDim2.fromOffset(0, 108),
+	Size = UDim2.new(1, 0, 1, -108),
+	BackgroundTransparency = 1,
+	BorderSizePixel = 0,
+	ScrollBarThickness = 6,
+	ScrollBarImageColor3 = THEME.Bronze,
+	CanvasSize = UDim2.new(),
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	ScrollingDirection = Enum.ScrollingDirection.Y,
+	Parent = panel,
+}, {
+	create("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
+	create("UIPadding", { PaddingRight = UDim.new(0, 10) }),
+})
+
+-- Five blessing rows (re-filled for whichever god you worship)
+local blessingRows = {}
+for tier = 1, #GodConfig.Tiers do
+	local row = create("Frame", {
+		Name = "Blessing" .. tier,
+		Size = UDim2.new(1, 0, 0, 84),
+		BackgroundColor3 = THEME.MarbleDark,
+		LayoutOrder = tier,
+		Parent = list,
+	}, { corner(8), padding(8) })
+	local r = {
+		Frame = row,
+		Name = text({ Size = UDim2.new(1, -150, 0, 22), Font = BODY_FONT, TextSize = 17, Text = "", Parent = row }),
+		Description = text({ Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, -150, 0, 18), TextSize = 13, TextColor3 = THEME.SubText, TextTruncate = Enum.TextTruncate.AtEnd, Text = "", Parent = row }),
+		Effect = text({ Position = UDim2.fromOffset(0, 41), Size = UDim2.new(1, -150, 0, 18), TextSize = 14, Text = "", Parent = row }),
+		Status = text({ Position = UDim2.fromOffset(0, 59), Size = UDim2.new(1, -150, 0, 16), Font = BODY_FONT, TextSize = 13, TextColor3 = THEME.Warning, Text = "", Parent = row }),
+		Button = button({
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.fromScale(1, 0.5),
+			Size = UDim2.fromOffset(136, 56),
+			BackgroundColor3 = THEME.Locked,
+			Text = "",
+			TextSize = 15,
+			Parent = row,
+		}),
+		BlessingId = nil,
+	}
+	r.Button.Activated:Connect(function()
+		if r.BlessingId then
+			godRemote:FireServer("UpgradeBlessing", r.BlessingId)
+		end
+	end)
+	blessingRows[tier] = r
+end
+
+-- Change-god section (last in the list)
+local changeFrame = create("Frame", {
+	Name = "ChangeGod",
+	Size = UDim2.new(1, 0, 0, 0),
+	AutomaticSize = Enum.AutomaticSize.Y,
+	BackgroundColor3 = THEME.MarbleDark,
+	LayoutOrder = 100,
+	Parent = list,
+}, {
+	corner(8),
+	padding(8),
+	create("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
+})
+text({ Size = UDim2.new(1, 0, 0, 22), Font = BODY_FONT, TextSize = 17, Text = "Change God", LayoutOrder = 1, Parent = changeFrame })
+local changeInfo = text({
+	Size = UDim2.new(1, 0, 0, 36),
+	TextSize = 13,
+	TextColor3 = THEME.SubText,
+	TextWrapped = true,
+	TextYAlignment = Enum.TextYAlignment.Top,
+	LayoutOrder = 2,
+	Text = "",
+	Parent = changeFrame,
+})
+local changeButtons = {}
+for i, godId in GodConfig.Order do
+	if GodConfig.IsPlayable(godId) then
+		local b = button({
+			Name = "SwitchTo" .. godId,
+			Size = UDim2.new(1, 0, 0, 38),
+			BackgroundColor3 = GodConfig.Gods[godId].Colors.Primary,
+			Text = "Start switching to " .. godName(godId),
+			TextSize = 15,
+			LayoutOrder = 10 + i,
+			Parent = changeFrame,
+		})
+		b.Activated:Connect(function()
+			godRemote:FireServer("StartChange", godId)
+		end)
+		changeButtons[godId] = b
+	end
+end
+local cancelButton = button({
+	Name = "Cancel",
+	Size = UDim2.new(1, 0, 0, 38),
+	BackgroundColor3 = THEME.Bronze,
+	Text = "Cancel god change",
+	TextSize = 15,
+	LayoutOrder = 50,
+	Parent = changeFrame,
+})
+cancelButton.Activated:Connect(function()
+	godRemote:FireServer("CancelChange")
+end)
+
+--------------------------------------------------------------------------
+-- Refresh from attributes
+--------------------------------------------------------------------------
+local function statName(stat)
+	if stat == "AttackPercent" then
+		return "attack"
+	elseif stat == "HealthPercent" then
+		return "health"
+	end
+	return "speed"
+end
+
+local function refreshTimers()
+	local now = serverNow()
+	local worshipIn = math.ceil((player:GetAttribute("NextWorshipAt") or 0) - now)
+	worshipLabel.Text = if worshipIn > 0
+		then ("Worship again in %ds at your god's statue in the Hall of the Gods"):format(worshipIn)
+		else "Worship is ready: visit your god's statue in the Hall of the Gods"
+
+	local target = player:GetAttribute("GodChangeTarget") or ""
+	if target ~= "" then
+		local prayers = player:GetAttribute("GodChangePrayers") or 0
+		local prayIn = math.ceil((player:GetAttribute("NextPrayerAt") or 0) - now)
+		changeInfo.Text = ("Switching to %s: prayers %d / %d at the Shrine of Change%s. Your levels, currencies, temple and blessings are kept."):format(
+			godName(target),
+			prayers,
+			GodConfig.GodChange.PrayersNeeded,
+			if prayIn > 0 then (" (next prayer in %ds)"):format(prayIn) else ""
+		)
+	else
+		changeInfo.Text = ("Start a change below, then pray %d times at the Shrine of Change. Your levels, currencies, temple and blessings are kept."):format(GodConfig.GodChange.PrayersNeeded)
+	end
+end
+
+local function refresh()
+	local godId = player:GetAttribute("SelectedGod") or ""
+	local god = GodConfig.Gods[godId]
+	local loaded = player:GetAttribute("DataLoaded") == true
+
+	gui.Enabled = loaded
+	chooser.Visible = loaded and godId == "" and player:GetAttribute("SelectedGod") ~= nil
+	badge.Visible = god ~= nil
+
+	if not god then
+		panel.Visible = false
+		return
+	end
+
+	local loyalty = player:GetAttribute("Loyalty") or 0
+	badgeName.Text = god.DisplayName
+	badgeName.TextColor3 = god.Colors.Primary
+	badgeSub.Text = ("%s · Loyalty %s"):format(god.Title, Progression.FormatNumber(loyalty))
+
+	titleLabel.Text = ("%s, %s"):format(god.DisplayName, god.Title)
+	titleLabel.TextColor3 = god.Colors.Primary
+	panelStroke.Color = god.Colors.Primary
+	loyaltyLabel.Text = ("Loyalty %s   ·   Divine Favor %s"):format(
+		Progression.FormatNumber(loyalty),
+		Progression.FormatNumber(player:GetAttribute("DivineFavor") or 0)
+	)
+	bonusLabel.Text = ("Blessing bonuses: +%d%% attack   +%d%% health   +%d%% speed"):format(
+		player:GetAttribute("BonusAttackPercent") or 0,
+		player:GetAttribute("BonusHealthPercent") or 0,
+		player:GetAttribute("BonusSpeedPercent") or 0
+	)
+
+	local favor = player:GetAttribute("DivineFavor") or 0
+	local altarLevel = player:GetAttribute("Temple_MainAltar") or 0
+	local rankIndex = player:GetAttribute("RankIndex") or 1
+
+	for tier, r in blessingRows do
+		local blessing = nil
+		for _, b in god.Blessings do
+			if b.Tier == tier then
+				blessing = b
+			end
+		end
+		r.Frame.Visible = blessing ~= nil
+		r.BlessingId = blessing and blessing.Id
+		if blessing then
+			local level = player:GetAttribute("Blessing_" .. blessing.Id) or 0
+			local info = GodConfig.GetBlessingUpgradeInfo(blessing.Id, level, altarLevel, loyalty, rankIndex)
+			local per = blessing.Passive.PerLevel
+			r.Name.Text = ("Tier %d: %s   Lv %d/%d"):format(tier, blessing.Name, level, GodConfig.MaxBlessingLevel)
+			r.Description.Text = ("%s (%s ability, Phase 4)"):format(blessing.Description, blessing.Ability)
+			if info.Maxed then
+				r.Effect.Text = ("Bonus: +%d%% %s"):format(level * per, statName(blessing.Passive.Stat))
+				r.Status.Text = ""
+				r.Button.Text = "MAX"
+				r.Button.BackgroundColor3 = THEME.Gold
+			else
+				r.Effect.Text = ("Bonus: +%d%% -> +%d%% %s"):format(level * per, (level + 1) * per, statName(blessing.Passive.Stat))
+				if info.Blocked then
+					r.Status.Text = "Locked: " .. info.Blocked
+					r.Button.Text = "Locked"
+					r.Button.BackgroundColor3 = THEME.Locked
+				else
+					local canAfford = favor >= info.Cost
+					r.Status.Text = if canAfford then "" else "Not enough Divine Favor yet"
+					r.Button.Text = (if level == 0 then "Unlock" else "Upgrade") .. "\n" .. Progression.FormatNumber(info.Cost) .. " Favor"
+					r.Button.BackgroundColor3 = if canAfford then THEME.Ready else THEME.TooExpensive
+				end
+			end
+		end
+	end
+
+	local target = player:GetAttribute("GodChangeTarget") or ""
+	for id, b in changeButtons do
+		b.Visible = target == "" and id ~= godId
+	end
+	cancelButton.Visible = target ~= ""
+	refreshTimers()
+end
+
+local watched = {
+	"DataLoaded", "SelectedGod", "Loyalty", "DivineFavor", "Temple_MainAltar", "RankIndex",
+	"BonusAttackPercent", "BonusHealthPercent", "BonusSpeedPercent",
+	"GodChangeTarget", "GodChangePrayers", "NextPrayerAt", "NextWorshipAt",
+}
+for blessingId in GodConfig.BlessingsById do
+	table.insert(watched, "Blessing_" .. blessingId)
+end
+for _, attribute in watched do
+	player:GetAttributeChangedSignal(attribute):Connect(refresh)
+end
+refresh()
+
+-- Tick the countdown timers once a second while the menu is open.
+task.spawn(function()
+	while true do
+		task.wait(1)
+		if panel.Visible then
+			refreshTimers()
+		end
+	end
+end)
+
+--------------------------------------------------------------------------
+-- Open / close
+--------------------------------------------------------------------------
+local function openMenu(section)
+	if (player:GetAttribute("SelectedGod") or "") == "" then
+		refresh() -- shows the chooser instead
+		return
+	end
+	refresh()
+	panel.Visible = true
+	if section == "Change" then
+		task.defer(function()
+			list.CanvasPosition = Vector2.new(0, list.AbsoluteCanvasSize.Y)
+		end)
+	else
+		list.CanvasPosition = Vector2.zero
+	end
+end
+
+badge.Activated:Connect(function()
+	if panel.Visible then
+		panel.Visible = false
+	else
+		openMenu("Blessings")
+	end
+end)
+closeButton.Activated:Connect(function()
+	panel.Visible = false
+end)
+
+-- The server opens the menu from the Hall of the Gods and the Shrine of Change.
+notifyRemote.OnClientEvent:Connect(function(kind, section)
+	if kind == "OpenGodMenu" then
+		openMenu(section)
+	end
+end)
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="LocalScript" referent="26">
         <Properties>
           <string name="Name">HUDController</string>
           <string name="Source"><![CDATA[-- HUDController (LocalScript)
@@ -2842,7 +4222,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="17">
+      <Item class="LocalScript" referent="27">
         <Properties>
           <string name="Name">TempleUI</string>
           <string name="Source"><![CDATA[-- TempleUI (LocalScript)

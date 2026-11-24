@@ -116,7 +116,7 @@ local function buildHub()
 
 	-- Future area markers
 	local areas = {
-		{ "Hall of the Gods", "Phase 3", Vector3.new(-40, 1.2, -35), Color3.fromRGB(255, 220, 120) },
+		-- Hall of the Gods is built by GodService (Phase 3).
 		{ "Arena Gate", "Phase 5", Vector3.new(-40, 1.2, 0), Color3.fromRGB(220, 80, 60) },
 		{ "Titan Gate", "Phase 5", Vector3.new(-40, 1.2, 35), Color3.fromRGB(150, 70, 200) },
 		{ "Divine Forge", "Phase 7", Vector3.new(40, 1.2, -35), Color3.fromRGB(255, 140, 40) },

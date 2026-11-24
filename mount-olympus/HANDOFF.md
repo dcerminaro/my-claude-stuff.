@@ -17,8 +17,8 @@ Follow the master specification in **Part C** exactly, including its section 19
   published from the cloud session with Open Cloud (see "Publishing without
   Studio" below), and server logic is checked with the Luau Execution API using
   a fake player before going live.
-- Phase 1 is **confirmed**. Phase 2 is built and server-tested; **do not start
-  Phase 3** until the developer replies **"Phase 2 confirmed"**. Build each
+- Phases 1–2 are **confirmed**. Phase 3 is built and server-tested; **do not
+  start Phase 4** until the developer replies **"Phase 3 confirmed"**. Build each
   phase on top of the existing code; do not rewrite earlier phases unless a bug
   requires it.
 - When delivering a phase, give: complete scripts, exact Explorer placement, an
@@ -33,9 +33,10 @@ Follow the master specification in **Part C** exactly, including its section 19
 | Phase | Status |
 |---|---|
 | 1. Core Framework | **Confirmed** by the developer |
-| 2. Temple Tycoon | **Built and server-tested**, live in the game, awaiting "Phase 2 confirmed" |
-| 3. God Selection | Next, starts after "Phase 2 confirmed" |
-| 4–8 | Not started |
+| 2. Temple Tycoon | **Confirmed** by the developer |
+| 3. God Selection | **Built and server-tested**, live in the game, awaiting "Phase 3 confirmed" |
+| 4. Combat | Next, starts after "Phase 3 confirmed" |
+| 5–8 | Not started |
 
 ### How to set up Phase 1 on a Mac (or Windows PC)
 1. Install Roblox Studio from create.roblox.com and sign in.
@@ -53,7 +54,11 @@ ReplicatedStorage
 └── Shared                      (Folder)
     ├── GameConfig              (ModuleScript)
     ├── Progression             (ModuleScript)
-    └── TempleConfig            (ModuleScript)   Phase 2
+    ├── TempleConfig            (ModuleScript)   Phase 2
+    ├── GodConfig               (ModuleScript)   Phase 3
+    └── Gods                    (Folder)         Phase 3
+        ├── Zeus, Ares          (ModuleScript, playable)
+        └── Poseidon, Hades, Athena, Apollo  (ModuleScript, Available = false until Phase 7)
 
 ServerScriptService
 ├── Main                        (Script)
@@ -63,15 +68,18 @@ ServerScriptService
     ├── PlotService             (ModuleScript)
     ├── WorldBuilder            (ModuleScript)
     ├── TempleService           (ModuleScript)   Phase 2
-    └── TempleModels            (ModuleScript)   Phase 2
+    ├── TempleModels            (ModuleScript)   Phase 2
+    └── GodService              (ModuleScript)   Phase 3
 
 StarterPlayer
 └── StarterPlayerScripts
     ├── HUDController           (LocalScript)
-    └── TempleUI                (LocalScript)    Phase 2
+    ├── TempleUI                (LocalScript)    Phase 2
+    └── GodUI                   (LocalScript)    Phase 3
 ```
 Created automatically at runtime: `ReplicatedStorage > Remotes` (RemoteEvents
-`Notify`, `RequestTeleport`, `RequestUpgrade`), `Workspace > Hub`,
+`Notify`, `RequestTeleport`, `RequestUpgrade`, `GodAction`), `Workspace > Hub`
+(including `HallOfTheGods`),
 `Workspace > TemplePlots` (Plot1–Plot8, each a Model with `Base`, `Sign`,
 `Buildings` folder, `Pads` folder; attribute `OwnerUserId`, 0 = free).
 
@@ -118,6 +126,53 @@ environment, so a session can `rojo build` and publish via
    1K/8K/40K/160K/600K. Placeholders, balanced in Phase 8.
 7. No save-layout change (uses the reserved `Temple.Tier` / `Temple.Buildings`),
    so `SchemaVersion` stays 1.
+
+### Design decisions made in Phase 3 (developer asked to confirm)
+1. **Blessing tree:** each god has 5 blessings, one per tier, each up to level 3.
+   They map to the spec's 5 abilities (Q, Dash, E, R, Form). The abilities
+   themselves are built in Phase 4; **for now each blessing gives a passive
+   bonus** that works immediately for the active god only (Zeus: attack/speed,
+   Ares: attack/health). Abilities of inactive gods will be blocked in Phase 4.
+2. **Tier requirements:** Main Altar level 0/1/2/3/4, loyalty 0/25/100/300/800,
+   rank Mortal/Mortal/Warrior/Champion/Hero. Favor costs per level: tier 1
+   free/40/120, tier 2 60/150/400, tier 3 200/500/1.2K, tier 4 600/1.5K/3.5K,
+   tier 5 1.5K/4K/10K.
+3. **First blessing:** tier 1 level 1 is free when you choose (or switch to) a god.
+4. **Loyalty** (per god, kept forever): earned by worshipping at your god's
+   statue in the Hall of the Gods: +10 Favor and +10 loyalty every 30 s,
+   boosted by the Statue Hall's worship bonus (so that bonus is live now).
+5. **Changing god:** pick the new god in the menu (or at the Shrine of Change),
+   then pray 3 times at the Shrine (20 s apart). Can be cancelled. Keeps
+   levels, currencies, temple, and every god's blessings and loyalty.
+6. **Temple colours:** trims, glowing parts, banner and flames use the god's
+   colours (Zeus gold + blue lightning, Ares bronze + red fire). Treasury
+   gold stays gold.
+7. **New save fields:** `NextWorshipAt`, `GodChange { Target, Prayers,
+   NextPrayerAt }` (added to defaults, filled in for old saves; `SchemaVersion`
+   stays 1).
+8. New test command: `!loyalty N`.
+
+### Ideas from the developer for later (not built yet)
+- **Rank outfits and physique (Phase 6, Ascension):** each ascension rank gets
+  its own outfit, and the character gets bigger with a more powerful physique
+  as they rank up. The spec already gives each ascension "a visual
+  transformation or aura", so this belongs there. Ask the developer then:
+  whether outfits replace or layer over the player's own avatar, and how much
+  bigger (Roblox body scales: `BodyHeightScale`, `BodyWidthScale`,
+  `BodyDepthScale`, `HeadScale` via `HumanoidDescription`). Use original
+  models/clothing, not unverified Toolbox assets.
+
+---
+
+## Part B3 — Phase 3 tests
+- **Intro:** joining without a god shows "Choose Your God" with 6 cards; only Zeus and Ares can be picked.
+- **Choice:** picking Zeus closes the screen, shows a Zeus badge (top right), and your temple turns blue/gold.
+- **Menu:** tapping the badge opens Gods & Blessings: Lightning Strike Lv 1, bonus +3% attack.
+- **Locks:** Thunder Dash says "Needs Main Altar level 1", then "Needs 25 loyalty".
+- **Worship:** at Zeus's statue in the Hall of the Gods (left of spawn): +10 Favor, +10 Loyalty; again too soon says "wait".
+- **Upgrade:** `!loyalty 50`, `!favor 500`, build the Main Altar, then unlock Thunder Dash: you walk a bit faster.
+- **Change god:** start switching to Ares, pray 3 times at the purple Shrine of Change (20 s apart): Ares badge, red/bronze temple, Zeus progress kept.
+- **Saving:** leave and rejoin: god, blessings, loyalty and worship timer are kept.
 
 ---
 
@@ -185,6 +240,22 @@ Phase 3 should colour the temple by god by passing a palette into `TempleModels`
 **TempleModels** (server, Phase 2) — placeholder models: `Temple(tier, origin)`,
 `Building(id, level, origin)`, `AnimateIn(model)`.
 
+**GodService** (server, Phase 3) — `ChooseFirstGod`, `UpgradeBlessing`,
+`Worship`, `StartGodChange`, `CancelGodChange`, `Pray`, `GetBonuses(player)`
+(→ `{AttackPercent, HealthPercent, SpeedPercent}` for the active god),
+`GetColors(player)`, `BuildHall()`. It registers itself with
+`ProgressionService.SetBonusProvider` (health/speed/attack are applied there)
+and `TempleService.SetColorProvider`. Attributes: `SelectedGod, Loyalty,
+Blessing_<Id>, GodChangeTarget, GodChangePrayers, NextPrayerAt, NextWorshipAt,
+BonusAttackPercent, BonusHealthPercent, BonusSpeedPercent`.
+**Phase 4:** abilities should check `data.SelectedGod` and the blessing level
+(`data.Blessings[god][blessingId]`); each blessing's `Ability` field says
+which control it uses.
+
+**GodConfig + Gods/** (shared, Phase 3) — one module per god (colours,
+blessings with `Tier`, `Ability`, `Passive`); `GodConfig` holds tier rules,
+worship and god-change settings and `GetBlessingUpgradeInfo`.
+
 **TempleConfig** (shared, Phase 2) — buildings, costs, effects, slots, tiers,
 and `GetUpgradeInfo` (the purchase rules, shared by server and menu).
 
@@ -234,6 +305,8 @@ tables here (or in new config modules in `ReplicatedStorage > Shared`).
 - Ascension Chamber UI; trials per rank (Training Champion, Spartan Arena,
   Minotaur, God's Divine Trial, Cerberus, Olympian Gauntlet, Titan King).
 - Calls `ProgressionService.AdvanceRank`; rank auras and transformations; area unlock restrictions.
+- **Developer request:** an outfit per rank, and the character grows bigger
+  with a better physique each rank (see "Ideas from the developer" above).
 
 **Phase 7 — Content Expansion** (may be split into sub-phases)
 - Poseidon, Hades, Athena and Apollo; arenas 2–6; bosses Minotaur, Medusa, Cerberus and Titan King.

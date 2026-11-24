@@ -25,6 +25,9 @@
         },
         "TempleUI": {
           "$path": "src/client/TempleUI.client.luau"
+        },
+        "GodUI": {
+          "$path": "src/client/GodUI.client.luau"
         }
       }
     }

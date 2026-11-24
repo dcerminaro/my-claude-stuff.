@@ -31,6 +31,7 @@ local DataService = nil
 local ProgressionService = nil
 local PlotService = nil
 local notifyRemote = nil
+local colorProvider = nil -- function(player) -> god colours { Accent, Glow, Fire }
 
 local MAX_LEVEL = TempleConfig.MaxBuildingLevel
 local PAD_READY = Color3.fromRGB(120, 230, 120)
@@ -91,7 +92,8 @@ local function placeTemple(player, data, animate)
 	if old then
 		old:Destroy()
 	end
-	local model = TempleModels.Temple(data.Temple.Tier, slotCFrame(st.Plot, TempleConfig.Buildings.TempleCore.Slot))
+	local colors = if colorProvider then colorProvider(player) else nil
+	local model = TempleModels.Temple(data.Temple.Tier, slotCFrame(st.Plot, TempleConfig.Buildings.TempleCore.Slot), colors)
 	if animate then
 		TempleModels.AnimateIn(model, 1.8)
 	end
@@ -105,7 +107,8 @@ local function placeBuilding(player, data, buildingId, animate)
 	if old then
 		old:Destroy()
 	end
-	local model = TempleModels.Building(buildingId, getLevel(data, buildingId), slotCFrame(st.Plot, TempleConfig.Buildings[buildingId].Slot))
+	local colors = if colorProvider then colorProvider(player) else nil
+	local model = TempleModels.Building(buildingId, getLevel(data, buildingId), slotCFrame(st.Plot, TempleConfig.Buildings[buildingId].Slot), colors)
 	if not model then
 		return
 	end
@@ -240,6 +243,11 @@ function TempleService.Init(dataService, progressionService, plotService, notify
 			TempleService.PayIncome(interval)
 		end
 	end)
+end
+
+-- Phase 3: GodService supplies the selected god's colours.
+function TempleService.SetColorProvider(provider)
+	colorProvider = provider
 end
 
 -- Call after the player's data has loaded and they have a plot.

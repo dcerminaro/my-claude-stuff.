@@ -67,6 +67,12 @@ local function makeDefaultData()
 		SelectedGod = "",     -- Phase 3
 		GodLoyalty = {},      -- Phase 3: [GodName] = number
 		Blessings = {},       -- Phase 3: [GodName] = { [BlessingId] = level }
+		NextWorshipAt = 0,    -- Phase 3: os.time() when worship is ready again
+		GodChange = {         -- Phase 3: Shrine of Change quest in progress
+			Target = "",      -- god being switched to ("" = none)
+			Prayers = 0,
+			NextPrayerAt = 0,
+		},
 
 		Temple = {            -- Phase 2
 			Tier = 1,

@@ -23,6 +23,9 @@ local ProgressionService = {}
 
 local DataService = nil
 local notifyRemote = nil
+local bonusProvider = nil -- function(player) -> { AttackPercent, HealthPercent, SpeedPercent }
+
+local BASE_WALK_SPEED = 16
 
 local VALID_CURRENCY = {}
 for _, name in GameConfig.Currencies do
@@ -69,6 +72,11 @@ local function processLevels(data)
 	end
 end
 
+local function getBonuses(player)
+	local bonuses = if bonusProvider then bonusProvider(player) else nil
+	return bonuses or {}
+end
+
 local function applyCharacterStats(player, character, healFully)
 	if not character then
 		return
@@ -78,8 +86,10 @@ local function applyCharacterStats(player, character, healFully)
 	if not humanoid or not data then
 		return
 	end
-	local maxHealth = Progression.GetMaxHealth(data.Level)
+	local bonuses = getBonuses(player)
+	local maxHealth = math.floor(Progression.GetMaxHealth(data.Level) * (1 + (bonuses.HealthPercent or 0) / 100))
 	humanoid.MaxHealth = maxHealth
+	humanoid.WalkSpeed = BASE_WALK_SPEED * (1 + (bonuses.SpeedPercent or 0) / 100)
 	if healFully then
 		humanoid.Health = maxHealth
 	end
@@ -91,6 +101,11 @@ end
 function ProgressionService.Init(dataService, notifyRemoteEvent)
 	DataService = dataService
 	notifyRemote = notifyRemoteEvent
+end
+
+-- Phase 3: GodService supplies blessing bonuses (attack / health / speed %).
+function ProgressionService.SetBonusProvider(provider)
+	bonusProvider = provider
 end
 
 -- Pushes saved values to attributes + leaderboard so the client can display them.
@@ -109,7 +124,8 @@ function ProgressionService.Refresh(player)
 	player:SetAttribute("RankName", rank.Name)
 	player:SetAttribute("LevelCap", cap)
 	player:SetAttribute("TrialReady", data.Level >= cap and data.RankIndex < #GameConfig.Ranks)
-	player:SetAttribute("BaseAttack", Progression.GetBaseAttack(data.Level))
+	local attackBonus = getBonuses(player).AttackPercent or 0
+	player:SetAttribute("BaseAttack", math.floor(Progression.GetBaseAttack(data.Level) * (1 + attackBonus / 100)))
 	for _, name in GameConfig.Currencies do
 		player:SetAttribute(name, data.Currencies[name] or 0)
 	end

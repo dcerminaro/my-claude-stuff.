@@ -19,6 +19,7 @@ local DataService = require(Services:WaitForChild("DataService"))
 local ProgressionService = require(Services:WaitForChild("ProgressionService"))
 local PlotService = require(Services:WaitForChild("PlotService"))
 local TempleService = require(Services:WaitForChild("TempleService"))
+local GodService = require(Services:WaitForChild("GodService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -38,6 +39,10 @@ local upgradeRemote = Instance.new("RemoteEvent") -- client -> server "upgrade t
 upgradeRemote.Name = "RequestUpgrade"
 upgradeRemote.Parent = remotes
 
+local godRemote = Instance.new("RemoteEvent") -- client -> server god menu requests (choose, blessings, change)
+godRemote.Name = "GodAction"
+godRemote.Parent = remotes
+
 remotes.Parent = ReplicatedStorage
 
 --------------------------------------------------------------------------
@@ -48,6 +53,8 @@ DataService.Init()
 ProgressionService.Init(DataService, notifyRemote)
 PlotService.Init()
 TempleService.Init(DataService, ProgressionService, PlotService, notifyRemote, upgradeRemote)
+GodService.Init(DataService, ProgressionService, TempleService, notifyRemote, godRemote)
+GodService.BuildHall()
 
 --------------------------------------------------------------------------
 -- 3. Debug chat commands
@@ -97,6 +104,8 @@ local function runDebugCommand(player, message)
 	elseif command == "!spend" and number then
 		local ok = ProgressionService.SpendCurrency(player, "Gold", number)
 		reply(if ok then "Spent " .. number .. " Gold" else "Not enough Gold (purchase refused)")
+	elseif command == "!loyalty" and number then
+		reply(if GodService.AddLoyalty(player, number) then "Added " .. number .. " loyalty" else "Choose a god first")
 	elseif command == "!rank" then
 		local _, text = ProgressionService.AdvanceRank(player, "Debug")
 		reply(text)
@@ -109,11 +118,12 @@ local function runDebugCommand(player, message)
 	elseif command == "!reset" then
 		if DataService.ResetData(player) then
 			ProgressionService.RefreshAll(player)
+			GodService.Refresh(player)
 			TempleService.Rebuild(player)
 			reply("Progress reset to defaults")
 		end
 	else
-		reply("Commands: !xp N, !gold N, !favor N, !ambrosia N, !spend N, !rank, !save, !data, !reset")
+		reply("Commands: !xp N, !gold N, !favor N, !ambrosia N, !loyalty N, !spend N, !rank, !save, !data, !reset")
 	end
 end
 
@@ -141,6 +151,7 @@ local function onPlayerAdded(player)
 	end
 
 	ProgressionService.SetupPlayer(player)
+	GodService.SetupPlayer(player)
 	TempleService.SetupPlayer(player, plot)
 	player:SetAttribute("DataLoaded", true)
 	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
@@ -156,6 +167,7 @@ end
 Players.PlayerRemoving:Connect(function(player)
 	lastTeleport[player] = nil
 	TempleService.ReleasePlayer(player)
+	GodService.ReleasePlayer(player)
 	PlotService.ReleasePlot(player)
 	DataService.ReleasePlayer(player) -- yields while saving
 end)

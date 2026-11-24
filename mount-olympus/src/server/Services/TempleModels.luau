@@ -2,8 +2,9 @@
 -- Location: ServerScriptService > Services > TempleModels
 --
 -- Builds the PLACEHOLDER 3D models for the Temple Tycoon out of simple parts:
---   TempleModels.Temple(tier, origin)               -> the main temple (tiers 1-7)
---   TempleModels.Building(buildingId, level, origin) -> one of the 5 buildings (levels 1-5)
+--   TempleModels.Temple(tier, origin, colors)               -> the main temple (tiers 1-7)
+--   TempleModels.Building(buildingId, level, origin, colors) -> one of the 5 buildings (levels 1-5)
+-- `colors` = the god's { Accent, Glow, Fire } from GodConfig (optional).
 --   TempleModels.AnimateIn(model)                    -> "rise from the ground" construction effect
 -- `origin` is a CFrame at ground level in the centre of the building's slot.
 -- Models are returned un-parented; the caller parents them.
@@ -26,6 +27,10 @@ local SAND = Color3.fromRGB(214, 190, 140)
 local WOOD = Color3.fromRGB(120, 85, 55)
 local IRON = Color3.fromRGB(120, 120, 125)
 local DIVINE_BLUE = Color3.fromRGB(110, 170, 255)
+
+-- Phase 3: trims, glows and flames follow the player's god (GodConfig colours).
+local DEFAULT_COLORS = { Accent = GOLD, Glow = DIVINE_BLUE }
+local pal = DEFAULT_COLORS -- set at the start of each Temple()/Building() call
 
 --------------------------------------------------------------------------
 -- Part helpers (all positions are relative to `origin`)
@@ -78,6 +83,10 @@ local function addFire(part, size)
 	local fire = Instance.new("Fire")
 	fire.Size = size or 5
 	fire.Heat = 8
+	if pal.Fire then
+		fire.Color = pal.Fire
+		fire.SecondaryColor = pal.Accent
+	end
 	fire.Parent = part
 	return fire
 end
@@ -152,7 +161,7 @@ local function buildTempleStyle(model, origin, s)
 	local floorY = 2
 
 	-- Perimeter columns
-	local columnColor = if s.GoldColumns then GOLD else MARBLE
+	local columnColor = if s.GoldColumns then pal.Accent else MARBLE
 	local columnMaterial = if s.GoldColumns then Enum.Material.Metal else Enum.Material.Marble
 	local x0, x1 = -W / 2 + 1.6, W / 2 - 1.6
 	local z0, z1 = -D / 2 + 1.6, D / 2 - 1.6
@@ -179,7 +188,7 @@ local function buildTempleStyle(model, origin, s)
 	-- Altar in front of the chamber
 	local altar = block(model, origin, "Altar", Vector3.new(5, 2.5, 2.5), Vector3.new(0, floorY + 1.25, -D / 2 + 5))
 	if s.GoldTrim then
-		block(model, origin, "AltarGold", Vector3.new(5.4, 0.4, 2.9), Vector3.new(0, floorY + 2.7, -D / 2 + 5), { Material = Enum.Material.Metal, Color = GOLD })
+		block(model, origin, "AltarGold", Vector3.new(5.4, 0.4, 2.9), Vector3.new(0, floorY + 2.7, -D / 2 + 5), { Material = Enum.Material.Metal, Color = pal.Accent })
 	end
 	if s.Braziers then
 		addFire(altar, 3)
@@ -189,7 +198,7 @@ local function buildTempleStyle(model, origin, s)
 	if s.Roof then
 		block(model, origin, "Entablature", Vector3.new(W, 1.6, D), Vector3.new(0, topY + 0.8, 0))
 		if s.GoldTrim then
-			block(model, origin, "GoldTrim", Vector3.new(W + 0.4, 0.5, D + 0.4), Vector3.new(0, topY + 0.25, 0), { Material = Enum.Material.Metal, Color = GOLD })
+			block(model, origin, "GoldTrim", Vector3.new(W + 0.4, 0.5, D + 0.4), Vector3.new(0, topY + 0.25, 0), { Material = Enum.Material.Metal, Color = pal.Accent })
 		end
 		-- Stepped roof
 		block(model, origin, "Roof1", Vector3.new(W - 2, 1.2, D), Vector3.new(0, topY + 2.2, 0))
@@ -206,22 +215,22 @@ local function buildTempleStyle(model, origin, s)
 
 	if s.Braziers then
 		for i, x in { -W / 2 + 2, W / 2 - 2 } do
-			local bowl = disc(model, origin, "Brazier" .. i, x, 1.6, -D / 2 - 1.5, 0.8, 2.4, { Material = Enum.Material.Metal, Color = GOLD })
+			local bowl = disc(model, origin, "Brazier" .. i, x, 1.6, -D / 2 - 1.5, 0.8, 2.4, { Material = Enum.Material.Metal, Color = pal.Accent })
 			column(model, origin, "BrazierStand" .. i, x, 0, -D / 2 - 1.5, 1.2, 0.6, { Material = Enum.Material.Metal, Color = IRON })
 			addFire(bowl, 4)
 		end
 	end
 
 	if s.Dome then
-		local dome = ball(model, origin, "Dome", W * 0.45, Vector3.new(0, topY, 4), { Material = Enum.Material.Metal, Color = GOLD })
-		addLight(dome, GOLD, 18, 1)
+		local dome = ball(model, origin, "Dome", W * 0.45, Vector3.new(0, topY, 4), { Material = Enum.Material.Metal, Color = pal.Accent })
+		addLight(dome, pal.Accent, 18, 1)
 	end
 
 	if s.Statues then
 		for i, x in { -6, 6 } do
 			block(model, origin, "StatuePedestal" .. i, Vector3.new(2.4, 2, 2.4), Vector3.new(x, 1, -D / 2 - 4))
-			local figure = block(model, origin, "Statue" .. i, Vector3.new(1.4, 5, 1.4), Vector3.new(x, 4.5, -D / 2 - 4), { Material = Enum.Material.Neon, Color = DIVINE_BLUE })
-			addLight(figure, DIVINE_BLUE, 12, 1.5)
+			local figure = block(model, origin, "Statue" .. i, Vector3.new(1.4, 5, 1.4), Vector3.new(x, 4.5, -D / 2 - 4), { Material = Enum.Material.Neon, Color = pal.Glow })
+			addLight(figure, pal.Glow, 12, 1.5)
 		end
 	end
 
@@ -229,15 +238,16 @@ local function buildTempleStyle(model, origin, s)
 		local skyY = topY + 8
 		for i, pos in { Vector3.new(-16, skyY, -4), Vector3.new(16, skyY + 2, -4), Vector3.new(0, skyY + 5, 20) } do
 			block(model, origin, "SkyIsland" .. i, Vector3.new(8, 1.2, 8), pos)
-			block(model, origin, "SkyIslandGold" .. i, Vector3.new(8.4, 0.4, 8.4), pos - Vector3.new(0, 0.8, 0), { Material = Enum.Material.Metal, Color = GOLD })
+			block(model, origin, "SkyIslandGold" .. i, Vector3.new(8.4, 0.4, 8.4), pos - Vector3.new(0, 0.8, 0), { Material = Enum.Material.Metal, Color = pal.Accent })
 			column(model, origin, "SkyColumn" .. i, pos.X, pos.Y + 0.6, pos.Z, 5, 1.4, { Color = MARBLE })
-			local orb = ball(model, origin, "SkyOrb" .. i, 1.6, pos + Vector3.new(0, 7, 0), { Material = Enum.Material.Neon, Color = GOLD })
-			addLight(orb, GOLD, 16, 2)
+			local orb = ball(model, origin, "SkyOrb" .. i, 1.6, pos + Vector3.new(0, 7, 0), { Material = Enum.Material.Neon, Color = pal.Accent })
+			addLight(orb, pal.Accent, 16, 2)
 		end
 	end
 end
 
-function TempleModels.Temple(tier, origin)
+function TempleModels.Temple(tier, origin, colors)
+	pal = colors or DEFAULT_COLORS
 	local model = Instance.new("Model")
 	model.Name = "Temple"
 	if tier <= 1 then
@@ -288,15 +298,15 @@ BUILDERS.MainAltar = function(model, o, level)
 		addFire(altar, 4)
 	end
 	if level >= 3 then
-		block(model, o, "AltarGold", Vector3.new(4.4, 0.4, 2.4), Vector3.new(0, top + 2.7, 0), { Material = Enum.Material.Metal, Color = GOLD })
+		block(model, o, "AltarGold", Vector3.new(4.4, 0.4, 2.4), Vector3.new(0, top + 2.7, 0), { Material = Enum.Material.Metal, Color = pal.Accent })
 	end
 	if level >= 4 then
-		local orb = ball(model, o, "FavorOrb", 1.6, Vector3.new(0, top + 6, 0), { Material = Enum.Material.Neon, Color = DIVINE_BLUE })
-		addLight(orb, DIVINE_BLUE, 14, 2)
+		local orb = ball(model, o, "FavorOrb", 1.6, Vector3.new(0, top + 6, 0), { Material = Enum.Material.Neon, Color = pal.Glow })
+		addLight(orb, pal.Glow, 14, 2)
 	end
 	if level >= 5 then
 		for i, x in { -4, 4 } do
-			column(model, o, "GoldColumn" .. i, x, top, 0, 8, 1.4, { Material = Enum.Material.Metal, Color = GOLD })
+			column(model, o, "GoldColumn" .. i, x, top, 0, 8, 1.4, { Material = Enum.Material.Metal, Color = pal.Accent })
 		end
 	end
 end
@@ -304,7 +314,7 @@ end
 BUILDERS.DivineFountain = function(model, o, level)
 	local d = 7 + level
 	disc(model, o, "BaseDisc", 0, 0.15, 0, 0.3, d + 1.2, if level >= 5
-		then { Material = Enum.Material.Metal, Color = GOLD }
+		then { Material = Enum.Material.Metal, Color = pal.Accent }
 		else nil)
 	disc(model, o, "Basin", 0, 0.9, 0, 1.2, d)
 	local water = disc(model, o, "Water", 0, 1.35, 0, 0.3, d - 1, {
@@ -364,7 +374,7 @@ BUILDERS.TrainingGrounds = function(model, o, level)
 	end
 	if level >= 5 then
 		column(model, o, "BannerPole", -5, floorY, 5, 9, 0.5, { Material = Enum.Material.Metal, Color = GOLD })
-		block(model, o, "Banner", Vector3.new(0.2, 3, 2.4), Vector3.new(-5, floorY + 7, 6.3), { Material = Enum.Material.Fabric, Color = Color3.fromRGB(170, 40, 35) })
+		block(model, o, "Banner", Vector3.new(0.2, 3, 2.4), Vector3.new(-5, floorY + 7, 6.3), { Material = Enum.Material.Fabric, Color = pal.Glow })
 	end
 end
 
@@ -377,18 +387,18 @@ BUILDERS.StatueHall = function(model, o, level)
 		block(model, o, "Pedestal" .. i, Vector3.new(2, 1.5, 2), Vector3.new(x, floorY + 0.75, 2))
 		local h = 3.5 + 0.3 * i
 		local figure = block(model, o, "Statue" .. i, Vector3.new(1.2, h, 1.2), Vector3.new(x, floorY + 1.5 + h / 2, 2), if golden
-			then { Material = Enum.Material.Metal, Color = GOLD }
+			then { Material = Enum.Material.Metal, Color = pal.Accent }
 			else nil)
 		ball(model, o, "StatueHead" .. i, 1.2, Vector3.new(x, floorY + 1.5 + h + 0.5, 2), if golden
-			then { Material = Enum.Material.Metal, Color = GOLD }
+			then { Material = Enum.Material.Metal, Color = pal.Accent }
 			else nil)
 		if golden then
-			addLight(figure, GOLD, 8, 1)
+			addLight(figure, pal.Accent, 8, 1)
 		end
 	end
 	if level >= 3 then
 		block(model, o, "BackWall", Vector3.new(14, 7, 1), Vector3.new(0, floorY + 3.5, 5.5))
-		block(model, o, "WallGold", Vector3.new(14.2, 0.4, 1.2), Vector3.new(0, floorY + 7.2, 5.5), { Material = Enum.Material.Metal, Color = GOLD })
+		block(model, o, "WallGold", Vector3.new(14.2, 0.4, 1.2), Vector3.new(0, floorY + 7.2, 5.5), { Material = Enum.Material.Metal, Color = pal.Accent })
 	end
 	if level >= 4 then
 		for i, x in { -6.5, 6.5 } do
@@ -398,7 +408,8 @@ BUILDERS.StatueHall = function(model, o, level)
 	end
 end
 
-function TempleModels.Building(buildingId, level, origin)
+function TempleModels.Building(buildingId, level, origin, colors)
+	pal = colors or DEFAULT_COLORS
 	local builder = BUILDERS[buildingId]
 	if not builder or level <= 0 then
 		return nil
