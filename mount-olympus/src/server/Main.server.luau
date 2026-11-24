@@ -44,9 +44,27 @@ ProgressionService.Init(DataService, notifyRemote)
 PlotService.Init()
 
 --------------------------------------------------------------------------
--- 3. Studio-only debug chat commands
+-- 3. Debug chat commands
+-- Allowed in Studio, and in the live game for the game's owner only
+-- (see GameConfig.Debug).
 --------------------------------------------------------------------------
-local DEBUG_ENABLED = RunService:IsStudio() and GameConfig.Debug.ChatCommandsInStudio
+local function isGameOwner(player)
+	if game.CreatorType == Enum.CreatorType.User then
+		return player.UserId == game.CreatorId
+	end
+	-- Group-owned game: only the group owner (rank 255).
+	local ok, rank = pcall(function()
+		return player:GetRankInGroup(game.CreatorId)
+	end)
+	return ok and rank == 255
+end
+
+local function canUseDebugCommands(player)
+	if RunService:IsStudio() then
+		return GameConfig.Debug.ChatCommandsInStudio
+	end
+	return GameConfig.Debug.ChatCommandsForOwnerInLiveGame and isGameOwner(player)
+end
 
 local function runDebugCommand(player, message)
 	local args = string.split(message, " ")
@@ -96,7 +114,7 @@ end
 -- 4. Player lifecycle
 --------------------------------------------------------------------------
 local function onPlayerAdded(player)
-	if DEBUG_ENABLED then
+	if canUseDebugCommands(player) then
 		player.Chatted:Connect(function(message)
 			if string.sub(message, 1, 1) == "!" then
 				runDebugCommand(player, message)

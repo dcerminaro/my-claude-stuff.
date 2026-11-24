@@ -76,8 +76,19 @@ Created automatically at runtime: `ReplicatedStorage > Remotes` (RemoteEvents
 4. **Placeholder XP curve:** XP to next level = `floor(100 × level^1.5)`. That's
    100 at level 1, 3,162 at 10, 100,000 at 100, about 22.5M total to level 200.
    To be balanced in Phase 8.
-5. **Debug chat commands** work only in Studio: `!xp N`, `!gold N`, `!favor N`,
+5. **Debug chat commands** work in Studio: `!xp N`, `!gold N`, `!favor N`,
    `!ambrosia N`, `!spend N`, `!rank`, `!save`, `!data`, `!reset`.
+   **Changed (approved by the developer):** they also work in the live game for
+   the game's owner only, so Phase 1 can be tested on an iPad without Studio.
+   Toggle: `GameConfig.Debug.ChatCommandsForOwnerInLiveGame` — **must be set to
+   false before public release.**
+
+### Publishing without Studio
+The experience is Universe `6686565007`, start place `73663368596582`. A Roblox
+Open Cloud API key is saved as a network secret on this repo's Claude cloud
+environment, so a session can `rojo build` and publish via
+`POST https://apis.roblox.com/universes/v1/<universe>/places/<place>/versions?versionType=Published`
+(Content-Type `application/xml`, body = the `.rbxlx`).
 
 ---
 

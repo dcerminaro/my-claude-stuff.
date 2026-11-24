@@ -98,6 +98,11 @@ GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
 	-- never in the live game, even if this is left true.
 	ChatCommandsInStudio = true,
+
+	-- Lets ONLY the game's owner use the same chat commands in the live
+	-- game (e.g. testing on an iPad without Studio). Nobody else can.
+	-- !!! Set this to false before releasing the game to the public. !!!
+	ChatCommandsForOwnerInLiveGame = true,
 }
 
 return GameConfig
