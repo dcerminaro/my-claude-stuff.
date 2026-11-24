@@ -186,7 +186,8 @@ function CombatService.BasicAttack(player, combo)
 	local candidates = {}
 	for _, record in EnemyService.GetEnemiesInRange(root.Position, attack.Range + 4) do
 		local offset = flat(record.Root.Position - root.Position)
-		local reach = attack.Range + record.Root.Size.X / 2
+		-- +1.5 studs allows for internet delay (positions on the server lag a little).
+		local reach = attack.Range + record.Root.Size.X / 2 + 1.5
 		if offset.Magnitude <= reach and (offset.Magnitude < 1.5 or look:Dot(offset.Unit) >= attack.ArcDot) then
 			table.insert(candidates, { Record = record, Distance = offset.Magnitude })
 		end

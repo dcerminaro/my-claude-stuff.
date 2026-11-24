@@ -37,6 +37,9 @@ local current = setmetatable({}, { __mode = "k" }) -- [Model] = { [joint] = CFra
 local motorCache = setmetatable({}, { __mode = "k" })
 local baseC0 = setmetatable({}, { __mode = "k" }) -- [Motor6D] = its original C0
 
+-- Numbers for the diagnostics report.
+local debugInfo = { Frames = 0, Updates = 0, JointsSet = 0, Errors = 0, LastError = "", MissingJoints = {} }
+
 -- Pose a joint: C0 * pose * Transform^-1 * Transform = C0 * pose, whatever
 -- the Animator writes into Transform.
 local function setJoint(motor, pose)
@@ -76,6 +79,7 @@ local function getMotor(model, joint)
 		cache[joint] = motor
 		return motor
 	end
+	debugInfo.MissingJoints[model.Name .. "." .. joint] = true
 	return nil
 end
 
@@ -145,6 +149,7 @@ local function apply(model, target, dt, instant)
 		if motor then
 			local blended = if cur[joint] then cur[joint]:Lerp(cf, alpha) else cf
 			setJoint(motor, blended)
+			debugInfo.JointsSet += 1
 			cur[joint] = blended
 		end
 	end
@@ -158,8 +163,10 @@ local function step(dt)
 	local camera = Workspace.CurrentCamera
 	local camPos = if camera then camera.CFrame.Position else Vector3.zero
 	local now = os.clock()
+	debugInfo.Frames += 1
 
 	local function update(model, blocking)
+		debugInfo.Updates += 1
 		local root = model:FindFirstChild("HumanoidRootPart")
 		local humanoid = model:FindFirstChildOfClass("Humanoid")
 		if not root or not humanoid or humanoid.Health <= 0 or not holdsWeapon(model) then
@@ -180,18 +187,56 @@ local function step(dt)
 		apply(model, if blocking then BLOCK else HOLD, dt, false)
 	end
 
+	local function safeUpdate(model, blocking)
+		local ok, err = pcall(update, model, blocking)
+		if not ok then
+			debugInfo.Errors += 1
+			debugInfo.LastError = tostring(err)
+		end
+	end
+
 	for _, player in Players:GetPlayers() do
 		local character = player.Character
 		if character then
-			update(character, player:GetAttribute("Blocking") == true)
+			safeUpdate(character, player:GetAttribute("Blocking") == true)
 		end
 	end
 	local enemies = Workspace:FindFirstChild("Enemies")
 	if enemies then
 		for _, model in enemies:GetChildren() do
-			update(model, false)
+			safeUpdate(model, false)
 		end
 	end
+end
+
+-- For the diagnostics report: counters, plus a look at the local character's arm joint.
+function SwordAnimator.GetDebugInfo()
+	local info = table.clone(debugInfo)
+	local missing = {}
+	for name in debugInfo.MissingJoints do
+		table.insert(missing, name)
+	end
+	info.MissingJoints = table.concat(missing, ",")
+	local character = Players.LocalPlayer and Players.LocalPlayer.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	info.RigType = humanoid and humanoid.RigType.Name or "?"
+	local motor = character and getMotor(character, "RightShoulder")
+	if motor then
+		local base = baseC0[motor]
+		info.ShoulderC0Changed = base ~= nil and (motor.C0.Position - base.Position).Magnitude < 1 and motor.C0 ~= base
+		local x, y, z = motor.Transform:ToEulerAnglesXYZ()
+		info.ShoulderTransformDeg = ("%d,%d,%d"):format(math.deg(x), math.deg(y), math.deg(z))
+	end
+	local joints = {}
+	if character then
+		for _, d in character:GetDescendants() do
+			if d:IsA("Motor6D") or d:IsA("AnimationConstraint") then
+				table.insert(joints, d.ClassName .. ":" .. d.Name)
+			end
+		end
+	end
+	info.CharacterJoints = table.concat(joints, ",")
+	return info
 end
 
 -- Plays a keyframe list on a character or enemy.

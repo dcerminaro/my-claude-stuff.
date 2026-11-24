@@ -28,6 +28,9 @@
         },
         "CombatController": {
           "$path": "src/client/CombatController.client.luau"
+        },
+        "Diagnostics": {
+          "$path": "src/client/Diagnostics.client.luau"
         }
       },
       "StarterCharacterScripts": {

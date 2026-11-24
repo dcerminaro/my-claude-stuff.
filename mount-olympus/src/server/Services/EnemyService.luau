@@ -48,7 +48,7 @@ local REWARD_WINDOW = 60 -- damage older than this (seconds) doesn't earn a shar
 -- Roblox's own default R15 walk animation (free for every game). Attack
 -- poses are our own (SwordPoses), played on each device.
 local WALK_ANIMATION = "rbxassetid://507777826"
-local KNOCKBACK_SPEED = 16
+local KNOCKBACK_SPEED = 8 -- small, so hits don't push enemies out of sword reach
 local STAGGER_TIME = 0.3
 
 --------------------------------------------------------------------------
@@ -478,7 +478,6 @@ local function die(record)
 		if item:IsA("BasePart") then
 			item.CanCollide = true
 			item.Massless = false
-			item.AssemblyLinearVelocity += Vector3.new(math.random(-6, 6), math.random(4, 10), math.random(-6, 6))
 		elseif item:IsA("BillboardGui") then
 			item.Enabled = false
 		end
@@ -654,11 +653,11 @@ function EnemyService.DamageEnemy(model, amount, player)
 			local push = Instance.new("LinearVelocity")
 			push.Attachment0 = attachment
 			push.RelativeTo = Enum.ActuatorRelativeTo.World
-			push.VectorVelocity = away.Unit * KNOCKBACK_SPEED + Vector3.new(0, 4, 0)
+			push.VectorVelocity = away.Unit * KNOCKBACK_SPEED
 			push.MaxForce = 40000
 			push.Parent = record.Root
-			Debris:AddItem(push, 0.15)
-			Debris:AddItem(attachment, 0.15)
+			Debris:AddItem(push, 0.12)
+			Debris:AddItem(attachment, 0.12)
 		end
 		record.Humanoid:MoveTo(record.Root.Position)
 		record.StaggerUntil = now + STAGGER_TIME

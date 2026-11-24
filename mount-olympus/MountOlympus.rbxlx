@@ -249,7 +249,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v15"
+GameConfig.BuildLabel = "v16"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -260,6 +260,11 @@ GameConfig.Debug = {
 	-- game (e.g. testing on an iPad without Studio). Nobody else can.
 	-- !!! Set this to false before releasing the game to the public. !!!
 	ChatCommandsForOwnerInLiveGame = true,
+
+	-- Devices send a small performance/error report to the server, saved in
+	-- the "OlympusDiagnostics" DataStore so problems can be investigated.
+	-- Set to false before release if no longer needed.
+	Diagnostics = true,
 }
 
 return GameConfig
@@ -679,6 +684,9 @@ local current = setmetatable({}, { __mode = "k" }) -- [Model] = { [joint] = CFra
 local motorCache = setmetatable({}, { __mode = "k" })
 local baseC0 = setmetatable({}, { __mode = "k" }) -- [Motor6D] = its original C0
 
+-- Numbers for the diagnostics report.
+local debugInfo = { Frames = 0, Updates = 0, JointsSet = 0, Errors = 0, LastError = "", MissingJoints = {} }
+
 -- Pose a joint: C0 * pose * Transform^-1 * Transform = C0 * pose, whatever
 -- the Animator writes into Transform.
 local function setJoint(motor, pose)
@@ -718,6 +726,7 @@ local function getMotor(model, joint)
 		cache[joint] = motor
 		return motor
 	end
+	debugInfo.MissingJoints[model.Name .. "." .. joint] = true
 	return nil
 end
 
@@ -787,6 +796,7 @@ local function apply(model, target, dt, instant)
 		if motor then
 			local blended = if cur[joint] then cur[joint]:Lerp(cf, alpha) else cf
 			setJoint(motor, blended)
+			debugInfo.JointsSet += 1
 			cur[joint] = blended
 		end
 	end
@@ -800,8 +810,10 @@ local function step(dt)
 	local camera = Workspace.CurrentCamera
 	local camPos = if camera then camera.CFrame.Position else Vector3.zero
 	local now = os.clock()
+	debugInfo.Frames += 1
 
 	local function update(model, blocking)
+		debugInfo.Updates += 1
 		local root = model:FindFirstChild("HumanoidRootPart")
 		local humanoid = model:FindFirstChildOfClass("Humanoid")
 		if not root or not humanoid or humanoid.Health <= 0 or not holdsWeapon(model) then
@@ -822,18 +834,56 @@ local function step(dt)
 		apply(model, if blocking then BLOCK else HOLD, dt, false)
 	end
 
+	local function safeUpdate(model, blocking)
+		local ok, err = pcall(update, model, blocking)
+		if not ok then
+			debugInfo.Errors += 1
+			debugInfo.LastError = tostring(err)
+		end
+	end
+
 	for _, player in Players:GetPlayers() do
 		local character = player.Character
 		if character then
-			update(character, player:GetAttribute("Blocking") == true)
+			safeUpdate(character, player:GetAttribute("Blocking") == true)
 		end
 	end
 	local enemies = Workspace:FindFirstChild("Enemies")
 	if enemies then
 		for _, model in enemies:GetChildren() do
-			update(model, false)
+			safeUpdate(model, false)
 		end
 	end
+end
+
+-- For the diagnostics report: counters, plus a look at the local character's arm joint.
+function SwordAnimator.GetDebugInfo()
+	local info = table.clone(debugInfo)
+	local missing = {}
+	for name in debugInfo.MissingJoints do
+		table.insert(missing, name)
+	end
+	info.MissingJoints = table.concat(missing, ",")
+	local character = Players.LocalPlayer and Players.LocalPlayer.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	info.RigType = humanoid and humanoid.RigType.Name or "?"
+	local motor = character and getMotor(character, "RightShoulder")
+	if motor then
+		local base = baseC0[motor]
+		info.ShoulderC0Changed = base ~= nil and (motor.C0.Position - base.Position).Magnitude < 1 and motor.C0 ~= base
+		local x, y, z = motor.Transform:ToEulerAnglesXYZ()
+		info.ShoulderTransformDeg = ("%d,%d,%d"):format(math.deg(x), math.deg(y), math.deg(z))
+	end
+	local joints = {}
+	if character then
+		for _, d in character:GetDescendants() do
+			if d:IsA("Motor6D") or d:IsA("AnimationConstraint") then
+				table.insert(joints, d.ClassName .. ":" .. d.Name)
+			end
+		end
+	end
+	info.CharacterJoints = table.concat(joints, ",")
+	return info
 end
 
 -- Plays a keyframe list on a character or enemy.
@@ -1332,6 +1382,7 @@ local TempleService = require(Services:WaitForChild("TempleService"))
 local GodService = require(Services:WaitForChild("GodService"))
 local EnemyService = require(Services:WaitForChild("EnemyService"))
 local CombatService = require(Services:WaitForChild("CombatService"))
+local DiagnosticsService = require(Services:WaitForChild("DiagnosticsService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -1367,6 +1418,7 @@ local combatRemotes = {
 	Dash = newRemote("CombatDash"),     -- client -> server "I dashed"
 }
 local fxRemote = newRemote("CombatFX") -- server -> clients damage numbers and effects
+local reportRemote = newRemote("ClientReport") -- client -> server diagnostics report
 
 remotes.Parent = ReplicatedStorage
 
@@ -1383,6 +1435,9 @@ GodService.BuildHall()
 CombatService.Init(TempleService, EnemyService, fxRemote, combatRemotes)
 EnemyService.Init(DataService, ProgressionService, CombatService, fxRemote)
 EnemyService.SpawnPracticeField()
+if GameConfig.Debug.Diagnostics then
+	DiagnosticsService.Init(reportRemote)
+end
 
 --------------------------------------------------------------------------
 -- 3. Debug chat commands
@@ -1740,7 +1795,8 @@ function CombatService.BasicAttack(player, combo)
 	local candidates = {}
 	for _, record in EnemyService.GetEnemiesInRange(root.Position, attack.Range + 4) do
 		local offset = flat(record.Root.Position - root.Position)
-		local reach = attack.Range + record.Root.Size.X / 2
+		-- +1.5 studs allows for internet delay (positions on the server lag a little).
+		local reach = attack.Range + record.Root.Size.X / 2 + 1.5
 		if offset.Magnitude <= reach and (offset.Magnitude < 1.5 or look:Dot(offset.Unit) >= attack.ArcDot) then
 			table.insert(candidates, { Record = record, Distance = offset.Magnitude })
 		end
@@ -2287,6 +2343,107 @@ return DataService
       </Item>
       <Item class="ModuleScript" referent="22">
         <Properties>
+          <string name="Name">DiagnosticsService</string>
+          <string name="Source"><![CDATA[-- DiagnosticsService (ModuleScript)
+-- Location: ServerScriptService > Services > DiagnosticsService
+--
+-- Receives the small reports devices send (see the Diagnostics LocalScript),
+-- adds server numbers (server frame rate, network use, memory, enemy count)
+-- and saves the latest 40 per player in the "OlympusDiagnostics" DataStore.
+-- They can be read later with a Luau Execution task. Debug use only.
+
+local DataStoreService = game:GetService("DataStoreService")
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Stats = game:GetService("Stats")
+local Workspace = game:GetService("Workspace")
+
+local DiagnosticsService = {}
+
+local KEEP = 40
+local FLUSH_EVERY = 15
+local MAX_REPORT_CHARS = 6000
+
+local queue = {} -- [userId] = { entries }
+local lastReport = {}
+local serverFps = 0
+
+function DiagnosticsService.Init(remote)
+	local store = DataStoreService:GetDataStore("OlympusDiagnostics")
+
+	-- Server frame rate (Heartbeats per second).
+	local beats, since = 0, os.clock()
+	RunService.Heartbeat:Connect(function()
+		beats += 1
+		local now = os.clock()
+		if now - since >= 5 then
+			serverFps = math.floor(beats / (now - since) * 10) / 10
+			beats, since = 0, now
+		end
+	end)
+
+	remote.OnServerEvent:Connect(function(player, report)
+		local now = os.clock()
+		if type(report) ~= "table" or (lastReport[player] and now - lastReport[player] < 5) then
+			return
+		end
+		lastReport[player] = now
+		local ok, json = pcall(HttpService.JSONEncode, HttpService, report)
+		if not ok then
+			return
+		end
+		local enemies = Workspace:FindFirstChild("Enemies")
+		local entry = {
+			Time = os.time(),
+			PlaceVersion = game.PlaceVersion,
+			Server = {
+				Fps = serverFps,
+				Players = #Players:GetPlayers(),
+				MemoryMb = math.floor(Stats:GetTotalMemoryUsageMb()),
+				ReceiveKbps = math.floor(Stats.DataReceiveKbps),
+				SendKbps = math.floor(Stats.DataSendKbps),
+				EnemyModels = if enemies then #enemies:GetChildren() else 0,
+			},
+			Client = string.sub(json, 1, MAX_REPORT_CHARS),
+		}
+		local list = queue[player.UserId] or {}
+		table.insert(list, entry)
+		queue[player.UserId] = list
+	end)
+
+	Players.PlayerRemoving:Connect(function(player)
+		lastReport[player] = nil
+	end)
+
+	task.spawn(function()
+		while true do
+			task.wait(FLUSH_EVERY)
+			for userId, entries in queue do
+				queue[userId] = nil
+				pcall(function()
+					store:UpdateAsync("Player_" .. userId, function(old)
+						local list = if type(old) == "table" then old else {}
+						for _, e in entries do
+							table.insert(list, e)
+						end
+						while #list > KEEP do
+							table.remove(list, 1)
+						end
+						return list
+					end)
+				end)
+			end
+		end
+	end)
+end
+
+return DiagnosticsService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="23">
+        <Properties>
           <string name="Name">EnemyService</string>
           <string name="Source"><![CDATA[-- EnemyService (ModuleScript)
 -- Location: ServerScriptService > Services > EnemyService
@@ -2338,7 +2495,7 @@ local REWARD_WINDOW = 60 -- damage older than this (seconds) doesn't earn a shar
 -- Roblox's own default R15 walk animation (free for every game). Attack
 -- poses are our own (SwordPoses), played on each device.
 local WALK_ANIMATION = "rbxassetid://507777826"
-local KNOCKBACK_SPEED = 16
+local KNOCKBACK_SPEED = 8 -- small, so hits don't push enemies out of sword reach
 local STAGGER_TIME = 0.3
 
 --------------------------------------------------------------------------
@@ -2768,7 +2925,6 @@ local function die(record)
 		if item:IsA("BasePart") then
 			item.CanCollide = true
 			item.Massless = false
-			item.AssemblyLinearVelocity += Vector3.new(math.random(-6, 6), math.random(4, 10), math.random(-6, 6))
 		elseif item:IsA("BillboardGui") then
 			item.Enabled = false
 		end
@@ -2944,11 +3100,11 @@ function EnemyService.DamageEnemy(model, amount, player)
 			local push = Instance.new("LinearVelocity")
 			push.Attachment0 = attachment
 			push.RelativeTo = Enum.ActuatorRelativeTo.World
-			push.VectorVelocity = away.Unit * KNOCKBACK_SPEED + Vector3.new(0, 4, 0)
+			push.VectorVelocity = away.Unit * KNOCKBACK_SPEED
 			push.MaxForce = 40000
 			push.Parent = record.Root
-			Debris:AddItem(push, 0.15)
-			Debris:AddItem(attachment, 0.15)
+			Debris:AddItem(push, 0.12)
+			Debris:AddItem(attachment, 0.12)
 		end
 		record.Humanoid:MoveTo(record.Root.Position)
 		record.StaggerUntil = now + STAGGER_TIME
@@ -3003,7 +3159,7 @@ return EnemyService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="23">
+      <Item class="ModuleScript" referent="24">
         <Properties>
           <string name="Name">GodService</string>
           <string name="Source"><![CDATA[-- GodService (ModuleScript)
@@ -3444,7 +3600,7 @@ return GodService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="24">
+      <Item class="ModuleScript" referent="25">
         <Properties>
           <string name="Name">PlotService</string>
           <string name="Source"><![CDATA[-- PlotService (ModuleScript)
@@ -3572,7 +3728,7 @@ return PlotService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="25">
+      <Item class="ModuleScript" referent="26">
         <Properties>
           <string name="Name">ProgressionService</string>
           <string name="Source"><![CDATA[-- ProgressionService (ModuleScript)
@@ -3841,7 +3997,7 @@ return ProgressionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="26">
+      <Item class="ModuleScript" referent="27">
         <Properties>
           <string name="Name">TempleModels</string>
           <string name="Source"><![CDATA[-- TempleModels (ModuleScript)
@@ -4323,7 +4479,7 @@ return TempleModels
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="27">
+      <Item class="ModuleScript" referent="28">
         <Properties>
           <string name="Name">TempleService</string>
           <string name="Source"><![CDATA[-- TempleService (ModuleScript)
@@ -4730,7 +4886,7 @@ return TempleService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="28">
+      <Item class="ModuleScript" referent="29">
         <Properties>
           <string name="Name">WorldBuilder</string>
           <string name="Source"><![CDATA[-- WorldBuilder (ModuleScript)
@@ -4970,15 +5126,15 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="29">
+  <Item class="StarterPlayer" referent="30">
     <Properties>
       <string name="Name">StarterPlayer</string>
     </Properties>
-    <Item class="StarterCharacterScripts" referent="30">
+    <Item class="StarterCharacterScripts" referent="31">
       <Properties>
         <string name="Name">StarterCharacterScripts</string>
       </Properties>
-      <Item class="Script" referent="31">
+      <Item class="Script" referent="32">
         <Properties>
           <string name="Name">Health</string>
           <token name="RunContext">0</token>
@@ -4992,11 +5148,11 @@ return WorldBuilder
         </Properties>
       </Item>
     </Item>
-    <Item class="StarterPlayerScripts" referent="32">
+    <Item class="StarterPlayerScripts" referent="33">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="33">
+      <Item class="LocalScript" referent="34">
         <Properties>
           <string name="Name">CombatController</string>
           <string name="Source"><![CDATA[-- CombatController (LocalScript)
@@ -5150,22 +5306,28 @@ local flashing = setmetatable({}, { __mode = "k" })
 local wobbleBase = setmetatable({}, { __mode = "k" }) -- [dummy Model] = upright pivot
 local wobbleToken = setmetatable({}, { __mode = "k" })
 
--- Enemy glows white for a moment (only while hit, so it stays cheap).
+-- Enemy turns glowing white for a moment. (Changing colour and material is
+-- cheap; Roblox's Highlight effect is expensive on phones and tablets.)
 local function flash(model)
 	if flashing[model] then
 		return
 	end
 	flashing[model] = true
-	local glow = Instance.new("Highlight")
-	glow.FillColor = Color3.new(1, 1, 1)
-	glow.FillTransparency = 0.15
-	glow.OutlineTransparency = 1
-	glow.DepthMode = Enum.HighlightDepthMode.Occluded
-	glow.Adornee = model
-	glow.Parent = fxFolder
-	TweenService:Create(glow, TweenInfo.new(0.18), { FillTransparency = 1 }):Play()
-	task.delay(0.18, function()
-		glow:Destroy()
+	local saved = {}
+	for _, item in model:GetDescendants() do
+		if item:IsA("BasePart") and item.Transparency < 1 and item.Name ~= "Weapon" then
+			saved[item] = { item.Color, item.Material }
+			item.Color = Color3.new(1, 1, 1)
+			item.Material = Enum.Material.Neon
+		end
+	end
+	task.delay(0.15, function()
+		for item, look in saved do
+			if item.Parent then
+				item.Color = look[1]
+				item.Material = look[2]
+			end
+		end
 		flashing[model] = nil
 	end)
 end
@@ -5617,7 +5779,105 @@ updateEnabled()
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="34">
+      <Item class="LocalScript" referent="35">
+        <Properties>
+          <string name="Name">Diagnostics</string>
+          <string name="Source"><![CDATA[-- Diagnostics (LocalScript)
+-- Location: StarterPlayer > StarterPlayerScripts > Diagnostics
+--
+-- Sends a small report to the server so problems on real devices can be
+-- investigated: frame rate, ping, script errors, and what the sword
+-- animation system is doing. Turn off with GameConfig.Debug.Diagnostics.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local ScriptContext = game:GetService("ScriptContext")
+local Stats = game:GetService("Stats")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local GameConfig = require(Shared:WaitForChild("GameConfig"))
+if not GameConfig.Debug.Diagnostics then
+	return
+end
+local SwordAnimator = require(Shared:WaitForChild("SwordAnimator"))
+local reportRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ClientReport")
+
+local player = Players.LocalPlayer
+local errors = {}
+local errorCount = 0
+
+ScriptContext.Error:Connect(function(message, trace, source)
+	errorCount += 1
+	if #errors < 15 then
+		table.insert(errors, {
+			Message = string.sub(tostring(message), 1, 300),
+			Trace = string.sub(tostring(trace), 1, 300),
+			Script = if source then source:GetFullName() else "?",
+		})
+	end
+end)
+
+local frames = 0
+local slowFrames = 0
+RunService.RenderStepped:Connect(function(dt)
+	frames += 1
+	if dt > 1 / 30 then
+		slowFrames += 1
+	end
+end)
+
+local function round(n)
+	return math.floor(n * 10 + 0.5) / 10
+end
+
+local function snapshot(elapsed)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local camera = Workspace.CurrentCamera
+	local enemies = Workspace:FindFirstChild("Enemies")
+	local ok, anim = pcall(SwordAnimator.GetDebugInfo)
+	return {
+		Build = GameConfig.BuildLabel,
+		Fps = round(frames / elapsed),
+		SlowFramePercent = round(100 * slowFrames / math.max(frames, 1)),
+		PingMs = math.floor(player:GetNetworkPing() * 1000),
+		MemoryMb = math.floor(Stats:GetTotalMemoryUsageMb()),
+		Touch = UserInputService.TouchEnabled,
+		Screen = if camera then ("%dx%d"):format(camera.ViewportSize.X, camera.ViewportSize.Y) else "?",
+		Position = if root then ("%d,%d,%d"):format(root.Position.X, root.Position.Y, root.Position.Z) else "none",
+		HasSword = character ~= nil and character:FindFirstChild("DivineSword") ~= nil,
+		EnemyModels = if enemies then #enemies:GetChildren() else 0,
+		Parts = #Workspace:GetDescendants(),
+		Animator = if ok then anim else { Error = tostring(anim) },
+		ErrorCount = errorCount,
+		Errors = errors,
+	}
+end
+
+task.spawn(function()
+	while player:GetAttribute("DataLoaded") ~= true do
+		task.wait(1)
+	end
+	local started = os.clock()
+	local last = os.clock()
+	while true do
+		-- Every 10 s for the first 5 minutes, then once a minute.
+		task.wait(if os.clock() - started < 300 then 10 else 60)
+		local now = os.clock()
+		local report = snapshot(now - last)
+		last = now
+		frames, slowFrames = 0, 0
+		errors = {}
+		reportRemote:FireServer(report)
+	end
+end)
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="LocalScript" referent="36">
         <Properties>
           <string name="Name">GodUI</string>
           <string name="Source"><![CDATA[-- GodUI (LocalScript)
@@ -6196,7 +6456,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="35">
+      <Item class="LocalScript" referent="37">
         <Properties>
           <string name="Name">HUDController</string>
           <string name="Source"><![CDATA[-- HUDController (LocalScript)
@@ -6673,7 +6933,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="36">
+      <Item class="LocalScript" referent="38">
         <Properties>
           <string name="Name">TempleUI</string>
           <string name="Source"><![CDATA[-- TempleUI (LocalScript)

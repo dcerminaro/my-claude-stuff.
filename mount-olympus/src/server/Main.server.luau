@@ -23,6 +23,7 @@ local TempleService = require(Services:WaitForChild("TempleService"))
 local GodService = require(Services:WaitForChild("GodService"))
 local EnemyService = require(Services:WaitForChild("EnemyService"))
 local CombatService = require(Services:WaitForChild("CombatService"))
+local DiagnosticsService = require(Services:WaitForChild("DiagnosticsService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -58,6 +59,7 @@ local combatRemotes = {
 	Dash = newRemote("CombatDash"),     -- client -> server "I dashed"
 }
 local fxRemote = newRemote("CombatFX") -- server -> clients damage numbers and effects
+local reportRemote = newRemote("ClientReport") -- client -> server diagnostics report
 
 remotes.Parent = ReplicatedStorage
 
@@ -74,6 +76,9 @@ GodService.BuildHall()
 CombatService.Init(TempleService, EnemyService, fxRemote, combatRemotes)
 EnemyService.Init(DataService, ProgressionService, CombatService, fxRemote)
 EnemyService.SpawnPracticeField()
+if GameConfig.Debug.Diagnostics then
+	DiagnosticsService.Init(reportRemote)
+end
 
 --------------------------------------------------------------------------
 -- 3. Debug chat commands

@@ -149,22 +149,28 @@ local flashing = setmetatable({}, { __mode = "k" })
 local wobbleBase = setmetatable({}, { __mode = "k" }) -- [dummy Model] = upright pivot
 local wobbleToken = setmetatable({}, { __mode = "k" })
 
--- Enemy glows white for a moment (only while hit, so it stays cheap).
+-- Enemy turns glowing white for a moment. (Changing colour and material is
+-- cheap; Roblox's Highlight effect is expensive on phones and tablets.)
 local function flash(model)
 	if flashing[model] then
 		return
 	end
 	flashing[model] = true
-	local glow = Instance.new("Highlight")
-	glow.FillColor = Color3.new(1, 1, 1)
-	glow.FillTransparency = 0.15
-	glow.OutlineTransparency = 1
-	glow.DepthMode = Enum.HighlightDepthMode.Occluded
-	glow.Adornee = model
-	glow.Parent = fxFolder
-	TweenService:Create(glow, TweenInfo.new(0.18), { FillTransparency = 1 }):Play()
-	task.delay(0.18, function()
-		glow:Destroy()
+	local saved = {}
+	for _, item in model:GetDescendants() do
+		if item:IsA("BasePart") and item.Transparency < 1 and item.Name ~= "Weapon" then
+			saved[item] = { item.Color, item.Material }
+			item.Color = Color3.new(1, 1, 1)
+			item.Material = Enum.Material.Neon
+		end
+	end
+	task.delay(0.15, function()
+		for item, look in saved do
+			if item.Parent then
+				item.Color = look[1]
+				item.Material = look[2]
+			end
+		end
 		flashing[model] = nil
 	end)
 end

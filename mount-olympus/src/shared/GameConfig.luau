@@ -96,7 +96,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v15"
+GameConfig.BuildLabel = "v16"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -107,6 +107,11 @@ GameConfig.Debug = {
 	-- game (e.g. testing on an iPad without Studio). Nobody else can.
 	-- !!! Set this to false before releasing the game to the public. !!!
 	ChatCommandsForOwnerInLiveGame = true,
+
+	-- Devices send a small performance/error report to the server, saved in
+	-- the "OlympusDiagnostics" DataStore so problems can be investigated.
+	-- Set to false before release if no longer needed.
+	Diagnostics = true,
 }
 
 return GameConfig

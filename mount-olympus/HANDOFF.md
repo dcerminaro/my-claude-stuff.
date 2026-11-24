@@ -221,6 +221,19 @@ environment, so a session can `rojo build` and publish via
      in `PreRender` (the Animator never touches C0; the inverse cancels its
      motion on the joints we drive) and restores the original C0 when done.
 
+### Diagnostics (debug)
+- `GameConfig.Debug.Diagnostics = true`: each device (LocalScript
+  `Diagnostics`) sends a report (FPS, slow-frame %, ping, memory, position,
+  sword present, `SwordAnimator.GetDebugInfo()`, script errors) every 10 s for
+  5 minutes, then every 60 s. `DiagnosticsService` adds server FPS, network,
+  memory and enemy count and keeps the last 40 per player in the DataStore
+  `OlympusDiagnostics`, key `Player_<userId>`. Read it with a Luau Execution
+  task (`GetAsync`). Turn off before release.
+- Fifth fix round: no upward kick on enemy death (they "flew"), knockback
+  halved to 8 studs/s with no lift (it pushed enemies out of reach so hits
+  "did nothing"), server reach +1.5 studs for latency, hit flash switched
+  from Highlight to a cheap colour/Neon swap.
+
 ### Build label and update restarts
 - `GameConfig.BuildLabel` (e.g. "v13") is shown bottom-left. **Bump it to the
   Roblox version number with every publish.**
