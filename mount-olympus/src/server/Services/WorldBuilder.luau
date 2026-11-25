@@ -122,7 +122,6 @@ local function buildHub()
 		{ "Titan Gate", "Phase 5", Vector3.new(-40, 1.2, 35), Color3.fromRGB(150, 70, 200) },
 		{ "Divine Forge", "Phase 7", Vector3.new(40, 1.2, -35), Color3.fromRGB(255, 140, 40) },
 		{ "Ascension Chamber", "Phase 6", Vector3.new(40, 1.2, 0), Color3.fromRGB(120, 200, 255) },
-		{ "Olympus Market", "Phase 7", Vector3.new(40, 1.2, 35), Color3.fromRGB(120, 220, 120) },
 	}
 	for _, area in areas do
 		local pad = WorldBuilder.MakePart(hub, {
@@ -164,7 +163,7 @@ local function buildHub()
 		Material = Enum.Material.Sandstone,
 		Color = Color3.fromRGB(196, 170, 125),
 	})
-	WorldBuilder.AddLabel(practiceFloor, "Practice Field\n(arenas arrive in Phase 5)", Color3.fromRGB(255, 140, 110), 12)
+	WorldBuilder.AddLabel(practiceFloor, "Practice Field", Color3.fromRGB(255, 140, 110), 12)
 	WorldBuilder.MakePart(hub, {
 		Name = "PracticeSpawn",
 		Size = Vector3.new(6, 0.2, 6),

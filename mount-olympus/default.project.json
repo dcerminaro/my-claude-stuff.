@@ -58,6 +58,9 @@
         },
         "AudioController": {
           "$path": "src/client/AudioController.client.luau"
+        },
+        "DecorAnimator": {
+          "$path": "src/client/DecorAnimator.client.luau"
         }
       },
       "StarterCharacterScripts": {

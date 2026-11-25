@@ -33,6 +33,7 @@ local QuestService = require(Services:WaitForChild("QuestService"))
 local ChallengeService = require(Services:WaitForChild("ChallengeService"))
 local MasteryService = require(Services:WaitForChild("MasteryService"))
 local EnvironmentService = require(Services:WaitForChild("EnvironmentService"))
+local HubDecor = require(Services:WaitForChild("HubDecor"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -113,6 +114,15 @@ local function pushSettings(player)
 		player:SetAttribute("SfxVolume", tonumber(data.Settings.SfxVolume) or 0.8)
 	end
 end
+-- Phase 8: statues, fountain, gateways, trees, sky islands (after every
+-- hub building exists, so decorations fit around them).
+task.spawn(function()
+	local ok, err = pcall(HubDecor.Build)
+	if not ok then
+		warn("[HubDecor] " .. tostring(err))
+	end
+end)
+
 settingsRemote.OnServerEvent:Connect(function(player, key, value)
 	local data = DataService.GetData(player)
 	if not data or (key ~= "MusicVolume" and key ~= "SfxVolume") or type(value) ~= "number" or value ~= value then
