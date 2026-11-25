@@ -176,6 +176,87 @@ local function buildArena(center, arena)
 			})
 		end
 	end
+	-- Phase 8: a sky colosseum floating above the clouds.
+	local accent = arena.Color or Color3.fromRGB(212, 175, 55)
+	local glow = theme.Fire or Color3.fromRGB(255, 180, 90)
+	local gold = Color3.fromRGB(212, 175, 55)
+	-- Rocky underside (the arena floats)
+	for i = 0, 5 do
+		local t = i / 5
+		MP(model, {
+			Name = "Underside", Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(10, (R * 2 + 10) * (1 - t * 0.85), (R * 2 + 10) * (1 - t * 0.85)),
+			CFrame = CFrame.new(center - Vector3.new(0, 7 + i * 9, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+			Material = Enum.Material.Rock, Color = Color3.fromRGB(125 - i * 9, 118 - i * 9, 110 - i * 8), CanCollide = false,
+		})
+	end
+	-- Glowing rings and rays in the floor
+	for _, ringRadius in { R * 0.45, R * 0.8 } do
+		local count = math.floor(ringRadius * 1.2)
+		for i = 1, count do
+			local angle = i / count * math.pi * 2
+			MP(model, {
+				Name = "FloorRing", Size = Vector3.new(2 * math.pi * ringRadius / count * 1.05, 0.12, 0.5), CanCollide = false,
+				CFrame = CFrame.new(center + Vector3.new(0, 0.02, 0)) * CFrame.Angles(0, -angle, 0) * CFrame.new(0, 0, ringRadius),
+				Material = Enum.Material.Neon, Color = glow, Transparency = 0.35,
+			})
+		end
+	end
+	for i = 0, 7 do
+		local angle = i / 8 * math.pi * 2
+		MP(model, {
+			Name = "FloorRay", Size = Vector3.new(R * 0.32, 0.1, 0.5), CanCollide = false,
+			CFrame = CFrame.new(center + Vector3.new(math.cos(angle) * R * 0.62, 0.02, math.sin(angle) * R * 0.62)) * CFrame.Angles(0, -angle, 0),
+			Material = Enum.Material.Metal, Color = gold,
+		})
+	end
+	-- Tiered stands behind the wall, and arches between the columns
+	for tier = 1, 3 do
+		local radius = R + 3 + tier * 4
+		local count = math.floor(radius * 0.55)
+		for i = 0, count - 1 do
+			local angle = (i / count) * math.pi * 2
+			local pos = center + Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
+			MP(model, {
+				Name = "Stand", Size = Vector3.new(2 * math.pi * radius / count + 0.4, 4 + tier * 4, 4),
+				CFrame = CFrame.lookAt(pos + Vector3.new(0, (4 + tier * 4) / 2, 0), center + Vector3.new(0, (4 + tier * 4) / 2, 0)),
+				Material = Enum.Material.Slate, Color = stone:Lerp(Color3.new(1, 1, 1), 0.08 * tier),
+			})
+		end
+	end
+	for i = 0, segments - 1, 3 do
+		local a1 = (i / segments) * math.pi * 2
+		local a2 = ((i + 3) / segments) * math.pi * 2
+		local p1 = center + Vector3.new(math.cos(a1) * (R + 1.5), 16.8, math.sin(a1) * (R + 1.5))
+		local p2 = center + Vector3.new(math.cos(a2) * (R + 1.5), 16.8, math.sin(a2) * (R + 1.5))
+		MP(model, {
+			Name = "Lintel", Size = Vector3.new(2.6, 1.4, (p2 - p1).Magnitude + 2),
+			CFrame = CFrame.lookAt((p1 + p2) / 2, p2), Material = Enum.Material.Marble, Color = Color3.fromRGB(236, 232, 224),
+		})
+		-- A banner hanging from each arch, in the arena's colour
+		local mid = (p1 + p2) / 2
+		local inward = (center - mid) * Vector3.new(1, 0, 1)
+		inward = if inward.Magnitude > 0 then inward.Unit else Vector3.new(0, 0, 1)
+		MP(model, {
+			Name = "Banner", Size = Vector3.new(4, 9, 0.2), CanCollide = false,
+			CFrame = CFrame.lookAt(mid + Vector3.new(0, -5.5, 0) + inward * 1.6, mid + Vector3.new(0, -5.5, 0) + inward * 3),
+			Material = Enum.Material.Fabric, Color = accent,
+		})
+	end
+	-- Embers drifting over the sand
+	local embers = MP(model, { Name = "Embers", Size = Vector3.new(R * 2, 14, R * 2), Position = center + Vector3.new(0, 8, 0), Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Shape = Enum.ParticleEmitterShape.Box
+	emitter.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+	emitter.Color = ColorSequence.new(glow)
+	emitter.LightEmission = 1
+	emitter.Rate = 18
+	emitter.Lifetime = NumberRange.new(3, 6)
+	emitter.Speed = NumberRange.new(0.5, 1.5)
+	emitter.SpreadAngle = Vector2.new(180, 180)
+	emitter.Size = NumberSequence.new(0.2, 0)
+	emitter.Parent = embers
+
 	local sign = MP(model, { Name = "Sign", Size = Vector3.new(1, 1, 1), Position = center + Vector3.new(0, 20, 0), Transparency = 1, CanCollide = false })
 	WorldBuilder.AddLabel(sign, arena.DisplayName, arena.Color or Color3.new(1, 1, 1), 0)
 	model.Parent = arenasFolder

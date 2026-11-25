@@ -716,6 +716,56 @@ local function buildSkyIslands(folder)
 end
 
 --------------------------------------------------------------------------
+-- 6. Temple plots: border, corner obelisks, entrance arch, walkway
+--------------------------------------------------------------------------
+local function decoratePlot(folder, plot)
+	local base = plot:FindFirstChild("Base")
+	if not base then
+		return
+	end
+	local c = base.Position
+	local half = base.Size.X / 2
+	local top = c.Y + base.Size.Y / 2
+	local model = Instance.new("Model")
+	model.Name = "PlotDecor_" .. plot.Name
+	-- Foundation and a marble curb around the edge (gap at the front entrance)
+	MP(model, { Name = "PlotFoundation", Size = Vector3.new(base.Size.X + 4, 3, base.Size.Z + 4), Position = Vector3.new(c.X, top - 2.6, c.Z), Color = MARBLE_DARK })
+	for _, side in { "Left", "Right", "Back", "FrontLeft", "FrontRight" } do
+		local size, pos
+		if side == "Left" or side == "Right" then
+			local x = if side == "Left" then -half + 0.6 else half - 0.6
+			size, pos = Vector3.new(1.2, 1, base.Size.Z), Vector3.new(c.X + x, top + 0.5, c.Z)
+		elseif side == "Back" then
+			size, pos = Vector3.new(base.Size.X, 1, 1.2), Vector3.new(c.X, top + 0.5, c.Z + half - 0.6)
+		else
+			local x = if side == "FrontLeft" then -(half + 10) / 2 else (half + 10) / 2
+			size, pos = Vector3.new(half - 10, 1, 1.2), Vector3.new(c.X + x, top + 0.5, c.Z - half + 0.6)
+		end
+		MP(model, { Name = "Curb", Size = size, Position = pos, Color = MARBLE })
+		MP(model, { Name = "CurbGold", Size = size + Vector3.new(0.1, -0.7, 0.1), Position = pos + Vector3.new(0, 0.55, 0), Material = M.Metal, Color = GOLD, CanCollide = false })
+	end
+	-- Corner obelisks with braziers
+	for _, corner in { { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } } do
+		local p = Vector3.new(c.X + corner[1] * (half - 2.5), top, c.Z + corner[2] * (half - 2.5))
+		MP(model, { Name = "ObeliskBase", Size = Vector3.new(4, 1.2, 4), Position = p + Vector3.new(0, 0.6, 0), Color = MARBLE_DARK })
+		MP(model, { Name = "Obelisk", Size = Vector3.new(2.4, 9, 2.4), Position = p + Vector3.new(0, 5.7, 0), Color = MARBLE })
+		local bowl = cyl(model, "ObeliskFlame", p + Vector3.new(0, 10.7, 0), 1, 3.2, { Material = M.Metal, Color = GOLD })
+		fire(bowl, Color3.fromRGB(255, 190, 90), Color3.fromRGB(255, 120, 40), 4)
+		light(bowl, Color3.fromRGB(255, 190, 120), 18, 1.2)
+	end
+	-- Entrance arch at the front
+	local front = Vector3.new(c.X, top, c.Z - half + 0.6)
+	for _, x in { -8, 8 } do
+		cyl(model, "ArchPillar", front + Vector3.new(x, 7, 0), 14, 1.8, { Color = MARBLE })
+	end
+	MP(model, { Name = "ArchTop", Size = Vector3.new(19, 1.6, 2.6), Position = front + Vector3.new(0, 14.6, 0), Color = MARBLE_WARM })
+	MP(model, { Name = "ArchGold", Size = Vector3.new(19.4, 0.4, 2.8), Position = front + Vector3.new(0, 13.7, 0), Material = M.Metal, Color = GOLD })
+	-- A marble walkway from the entrance towards the temple
+	MP(model, { Name = "Walkway", Size = Vector3.new(7, 0.12, half - 4), Position = Vector3.new(c.X, top + 0.06, c.Z - half / 2 - 2), Color = MARBLE_WARM, CanCollide = false })
+	model.Parent = folder
+end
+
+--------------------------------------------------------------------------
 function HubDecor.Build()
 	local hub = Workspace:WaitForChild("Hub")
 	local old = Workspace:FindFirstChild("OlympusDecor")
@@ -759,6 +809,17 @@ function HubDecor.Build()
 	sky.Name = "SkyIslands"
 	sky.Parent = folder
 	buildSkyIslands(sky)
+	task.wait()
+
+	local plots = Workspace:FindFirstChild("TemplePlots")
+	if plots then
+		local plotDecor = Instance.new("Folder")
+		plotDecor.Name = "Plots"
+		plotDecor.Parent = folder
+		for _, plot in plots:GetChildren() do
+			decoratePlot(plotDecor, plot)
+		end
+	end
 end
 
 return HubDecor
