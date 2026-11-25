@@ -34,6 +34,8 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CombatConfig = require(Shared:WaitForChild("CombatConfig"))
+local WeaponConfig = require(Shared:WaitForChild("WeaponConfig"))
+local SwordBuilder = require(Shared:WaitForChild("SwordBuilder"))
 
 local EnemyService = {}
 
@@ -324,6 +326,118 @@ local function addExtras(model, look)
 	end
 end
 
+-- Phase 8: a real weapon model (the ones players use) in the enemy's hand.
+-- Its main metal part is renamed "Weapon" and moved under the enemy model,
+-- so the wind-up glow keeps working.
+local ENEMY_WEAPONS = {
+	Bandit = "IronSword", Skeleton = "BronzeSword", TrainingChampion = "ChampionsBlade",
+	SpartanSoldier = "HopliteSpear", SpartanWarlord = "SpartanBlade",
+	LabyrinthGuardian = "IronSword", MinotaurBrute = "MinotaursLabrys", Minotaur = "MinotaursLabrys",
+	CursedWarrior = "ChampionsBlade", Gorgon = "GorgonSpear", Medusa = "GorgonSpear",
+	UndeadSoldier = "IronSword", TitanWarrior = "SpartanBlade", Cyclops = "MinotaursLabrys",
+	TitanKing = "ThunderboltBlade", DivineAvatar = "AegisSpear",
+}
+
+local function addRealWeapon(model, enemyType, glowColor)
+	local weaponId = ENEMY_WEAPONS[enemyType]
+	local def = weaponId and WeaponConfig.Weapons[weaponId]
+	local hand = model:FindFirstChild("RightHand")
+	if not def or not hand then
+		return false
+	end
+	local ok, weaponModel = pcall(SwordBuilder.Build, glowColor or Color3.fromRGB(255, 200, 120), def)
+	if not ok or not weaponModel or not weaponModel.PrimaryPart then
+		return false
+	end
+	local gripPoint = hand:FindFirstChild("RightGripAttachment")
+	local offset = if gripPoint then CFrame.new(gripPoint.Position) else CFrame.new(0, -hand.Size.Y / 2, 0)
+	local c0 = offset * CFrame.Angles(math.rad(-90), 0, 0)
+	weaponModel:PivotTo(hand.CFrame * c0)
+	local weld = Instance.new("Weld")
+	weld.Part0 = hand
+	weld.Part1 = weaponModel.PrimaryPart
+	weld.C0 = c0
+	weld.Parent = weaponModel.PrimaryPart
+	for _, item in weaponModel:GetDescendants() do
+		if item:IsA("BasePart") then
+			item.CanCollide = false
+			item.CanQuery = false
+			item.CanTouch = false
+			item.Massless = true
+			item.Anchored = false
+		end
+	end
+	local main = weaponModel:FindFirstChild("Blade") or weaponModel:FindFirstChild("AxeHead") or weaponModel:FindFirstChild("Prong") or weaponModel:FindFirstChild("Shaft")
+	weaponModel.Name = "WeaponModel"
+	weaponModel.Parent = model
+	if main then
+		main.Name = "Weapon"
+		main.Parent = model -- welds still hold it; FindFirstChild("Weapon") finds it
+	end
+	return true
+end
+
+-- Phase 8: menacing glowing eyes (the painted face is removed).
+local function addEyes(model, color)
+	local head = model:FindFirstChild("Head")
+	if not head then
+		return
+	end
+	for _, item in head:GetChildren() do
+		if item:IsA("Decal") then
+			item:Destroy()
+		end
+	end
+	local s = head.Size
+	for _, side in { -1, 1 } do
+		weldPart(model, head, {
+			Name = "Eye", Size = Vector3.new(s.X * 0.17, s.Y * 0.1, 0.06),
+			CFrame = head.CFrame * CFrame.new(side * s.X * 0.2, s.Y * 0.08, -s.Z * 0.5 - 0.02),
+			Material = Enum.Material.Neon, Color = color,
+		})
+	end
+end
+
+-- Phase 8: shoulder guards for soldiers, a cape and an aura for bosses.
+local function addArmour(model, look, isBoss)
+	local torso = model:FindFirstChild("UpperTorso")
+	if not torso then
+		return
+	end
+	local s = torso.Size
+	local color = look.ExtraColor or Color3.fromRGB(150, 110, 60)
+	if table.find(look.Extras or {}, "Helmet") then
+		for _, side in { -1, 1 } do
+			weldPart(model, torso, {
+				Name = "Pauldron", Size = Vector3.new(s.X * 0.42, s.Y * 0.22, s.Z * 1.15),
+				CFrame = torso.CFrame * CFrame.new(side * s.X * 0.55, s.Y * 0.45, 0) * CFrame.Angles(0, 0, math.rad(side * -18)),
+				Material = Enum.Material.Metal, Color = color,
+			})
+		end
+	end
+	if isBoss and (look.Scale or 1) < 1.9 then -- giants scale the cape badly; they get only the aura
+		weldPart(model, torso, {
+			Name = "Cape", Size = Vector3.new(s.X * 0.8, s.Y * 1.5, 0.1),
+			CFrame = torso.CFrame * CFrame.new(0, -s.Y * 0.3, s.Z * 0.55) * CFrame.Angles(math.rad(-6), 0, 0),
+			Material = Enum.Material.Fabric, Color = (look.Shirt or color):Lerp(Color3.new(0, 0, 0), 0.35),
+		})
+	end
+	if isBoss then
+		-- A faint menacing aura
+		local aura = Instance.new("ParticleEmitter")
+		aura.Name = "BossAura"
+		aura.Color = ColorSequence.new(look.Weapon or color)
+		aura.LightEmission = 0.8
+		aura.Rate = 6
+		aura.Lifetime = NumberRange.new(1, 1.6)
+		aura.Speed = NumberRange.new(0.5, 1.5)
+		aura.SpreadAngle = Vector2.new(180, 180)
+		aura.Size = NumberSequence.new(0.5, 0)
+		aura.Transparency = NumberSequence.new(0.4, 1)
+		aura.Parent = torso
+	end
+end
+
 -- A finished enemy body for this type (the first one is built, the rest are copies).
 local function makeBody(enemyType, cfg)
 	if cfg.Builder == "Dummy" then
@@ -336,8 +450,14 @@ local function makeBody(enemyType, cfg)
 			template = buildBeast(cfg.Appearance)
 		else
 			template = buildRig(cfg.Appearance)
-			addWeapon(template, cfg.Appearance.Weapon, cfg.Appearance.WeaponLength)
+			if not addRealWeapon(template, enemyType, cfg.Appearance.Weapon) then
+				addWeapon(template, cfg.Appearance.Weapon, cfg.Appearance.WeaponLength)
+			end
 			addExtras(template, cfg.Appearance)
+			if not table.find(cfg.Appearance.Extras or {}, "Eye") then
+				addEyes(template, cfg.Appearance.EyeColor or (if cfg.Boss then Color3.fromRGB(255, 200, 60) else Color3.fromRGB(255, 70, 40)))
+			end
+			addArmour(template, cfg.Appearance, cfg.Boss == true)
 		end
 		local scale = cfg.Appearance.Scale
 		if scale and scale ~= 1 then
