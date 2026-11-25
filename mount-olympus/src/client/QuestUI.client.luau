@@ -126,7 +126,7 @@ updateEnabled()
 --------------------------------------------------------------------------
 local openButton = button({
 	Position = UDim2.fromOffset(12, 258), Size = UDim2.fromOffset(290, 40),
-	BackgroundColor3 = THEME.Quest, Text = "Quests", TextSize = 17, Parent = gui,
+	BackgroundColor3 = THEME.Quest, Text = "📜  Quests", TextSize = 17, Parent = gui,
 })
 stroke(THEME.Bronze, 2).Parent = openButton
 
@@ -271,7 +271,7 @@ local function refresh()
 			readyCount += 1
 		end
 	end
-	openButton.Text = if readyCount > 0 then ("Quests  (%d!)"):format(readyCount) else "Quests"
+	openButton.Text = if readyCount > 0 then ("📜  Quests  (%d!)"):format(readyCount) else "📜  Quests"
 	openButton.BackgroundColor3 = if readyCount > 0 then THEME.Ready else THEME.Quest
 end
 

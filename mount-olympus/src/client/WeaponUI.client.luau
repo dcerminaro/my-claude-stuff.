@@ -97,7 +97,7 @@ updateEnabled()
 -- Button under "Temple Upgrades"
 local openButton = button({
 	Position = UDim2.fromOffset(12, 210), Size = UDim2.fromOffset(290, 40),
-	BackgroundColor3 = THEME.Forge, Text = "Weapons", TextSize = 17, Parent = gui,
+	BackgroundColor3 = THEME.Forge, Text = "⚔  Weapons", TextSize = 17, Parent = gui,
 })
 stroke(THEME.Bronze, 2).Parent = openButton
 

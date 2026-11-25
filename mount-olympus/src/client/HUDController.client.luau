@@ -120,10 +120,9 @@ create("TextLabel", {
 	Parent = loadingFrame,
 })
 
+-- Phase 8: the title screen (ReplicatedFirst > Intro) replaces this one.
 local function updateLoading()
-	if player:GetAttribute("DataLoaded") == true then
-		loadingGui.Enabled = false
-	end
+	loadingGui.Enabled = false
 end
 player:GetAttributeChangedSignal("DataLoaded"):Connect(updateLoading)
 updateLoading()
@@ -184,7 +183,7 @@ local rankBadge = create("TextLabel", {
 	TextColor3 = THEME.White,
 	TextStrokeTransparency = 0.6,
 	Parent = statsPanel,
-}, { corner(6) })
+}, { corner(6), create("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(170, 170, 180)) }) })
 
 local xpBack = create("Frame", {
 	Name = "XPBar",
@@ -199,7 +198,10 @@ local xpFill = create("Frame", {
 	Size = UDim2.fromScale(0, 1),
 	BackgroundColor3 = THEME.Gold,
 	Parent = xpBack,
-}, { corner(6) })
+}, {
+	corner(6),
+	create("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(255, 236, 150), Color3.fromRGB(190, 140, 40)) }),
+})
 
 local xpText = create("TextLabel", {
 	Name = "XPText",
@@ -245,6 +247,7 @@ local currencyPanel = create("Frame", {
 })
 
 local currencyLabels = {}
+local CURRENCY_ICONS = { Gold = "🪙", DivineFavor = "✨", Ambrosia = "🍯" }
 for i, name in GameConfig.Currencies do
 	local info = GameConfig.CurrencyInfo[name]
 	local row = create("Frame", {
@@ -254,13 +257,16 @@ for i, name in GameConfig.Currencies do
 		LayoutOrder = i,
 		Parent = currencyPanel,
 	})
-	create("Frame", {
+	create("TextLabel", {
 		Name = "Icon",
-		Position = UDim2.new(0, 0, 0.5, -8),
-		Size = UDim2.fromOffset(16, 16),
-		BackgroundColor3 = info.Color,
+		Position = UDim2.new(0, -2, 0.5, -11),
+		Size = UDim2.fromOffset(22, 22),
+		BackgroundTransparency = 1,
+		Text = CURRENCY_ICONS[name] or "●",
+		TextScaled = true,
+		TextColor3 = info.Color,
 		Parent = row,
-	}, { corner(8), stroke(THEME.Bronze, 1) })
+	})
 	create("TextLabel", {
 		Name = "Name",
 		Position = UDim2.fromOffset(24, 0),

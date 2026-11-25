@@ -121,7 +121,7 @@ end
 --------------------------------------------------------------------------
 local openButton = button({
 	Position = UDim2.fromOffset(12, 306), Size = UDim2.fromOffset(290, 40),
-	BackgroundColor3 = THEME.Mastery, Text = "Divine Mastery", TextSize = 17, Parent = gui,
+	BackgroundColor3 = THEME.Mastery, Text = "✨  Divine Mastery", TextSize = 17, Parent = gui,
 })
 stroke(THEME.Bronze, 2).Parent = openButton
 

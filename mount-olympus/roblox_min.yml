@@ -21,3 +21,5 @@ globals:
   NumberSequence: {any: true}
   Random: {any: true}
   RaycastParams: {any: true}
+  ColorSequenceKeypoint: {any: true}
+  NumberSequenceKeypoint: {any: true}

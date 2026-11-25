@@ -5,15 +5,277 @@
       <token name="Technology">4</token>
     </Properties>
   </Item>
-  <Item class="ReplicatedStorage" referent="1">
+  <Item class="ReplicatedFirst" referent="1">
+    <Properties>
+      <string name="Name">ReplicatedFirst</string>
+    </Properties>
+    <Item class="LocalScript" referent="2">
+      <Properties>
+        <string name="Name">Intro</string>
+        <string name="Source"><![CDATA[-- Intro (LocalScript)
+-- Location: ReplicatedFirst > Intro
+--
+-- Phase 8: the title screen. Runs before anything else loads:
+--   1. A starry night with "MOUNT OLYMPUS - Rise of the Gods" in shimmering
+--      gold while the game downloads.
+--   2. When the world and your save are ready, the sky clears and the
+--      camera glides around the summit of Olympus.
+--   3. Tap "Enter Olympus" and the camera swoops down to your character.
+-- The rest of the interface is hidden while the title screen is up.
+
+local Players = game:GetService("Players")
+local ReplicatedFirst = game:GetService("ReplicatedFirst")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+pcall(function()
+	ReplicatedFirst:RemoveDefaultLoadingScreen()
+end)
+
+local GOLD = Color3.fromRGB(212, 175, 55)
+local CREAM = Color3.fromRGB(246, 238, 220)
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "IntroScreen"
+gui.IgnoreGuiInset = true
+gui.DisplayOrder = 200
+gui.ResetOnSpawn = false
+gui.Parent = playerGui
+
+local function new(className, props)
+	local inst = Instance.new(className)
+	for k, v in props do
+		if k ~= "Parent" then
+			inst[k] = v
+		end
+	end
+	inst.Parent = props.Parent
+	return inst
+end
+
+-- Night sky backdrop
+local backdrop = new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(14, 12, 30), BorderSizePixel = 0, Parent = gui })
+new("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(40, 30, 80), Color3.fromRGB(10, 8, 22)), Parent = backdrop })
+local stars = {}
+local random = Random.new()
+for _ = 1, 90 do
+	local size = random:NextInteger(1, 3)
+	local star = new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(random:NextNumber(), random:NextNumber() * 0.85),
+		Size = UDim2.fromOffset(size, size), BackgroundColor3 = Color3.fromRGB(255, 250, 230), BorderSizePixel = 0, Parent = backdrop,
+	})
+	new("UICorner", { CornerRadius = UDim.new(1, 0), Parent = star })
+	table.insert(stars, { Frame = star, Phase = random:NextNumber(0, 6.28), Speed = random:NextNumber(0.8, 2.2) })
+end
+
+-- Vignette shown during the fly-over (dark edges, clear centre)
+local vignette = new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Parent = gui })
+new("UIGradient", {
+	Rotation = 90,
+	Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(0.35, 1), NumberSequenceKeypoint.new(0.7, 1), NumberSequenceKeypoint.new(1, 0.2) }),
+	Parent = vignette,
+})
+
+-- Title
+local title = new("TextLabel", {
+	AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.36), Size = UDim2.fromScale(0.86, 0.17),
+	BackgroundTransparency = 1, Font = Enum.Font.Garamond, Text = "MOUNT OLYMPUS", TextScaled = true,
+	TextColor3 = Color3.new(1, 1, 1), TextStrokeTransparency = 1, Parent = gui,
+})
+local titleShine = new("UIGradient", {
+	Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(190, 140, 40)),
+		ColorSequenceKeypoint.new(0.45, Color3.fromRGB(255, 225, 140)),
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 252, 230)),
+		ColorSequenceKeypoint.new(0.55, Color3.fromRGB(255, 225, 140)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(190, 140, 40)),
+	}),
+	Parent = title,
+})
+new("UIStroke", { Color = Color3.fromRGB(60, 35, 10), Thickness = 2, Transparency = 0.2, Parent = title })
+local subtitle = new("TextLabel", {
+	AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.48), Size = UDim2.fromScale(0.5, 0.055),
+	BackgroundTransparency = 1, Font = Enum.Font.Garamond, Text = "R I S E   O F   T H E   G O D S", TextScaled = true,
+	TextColor3 = CREAM, Parent = gui,
+})
+new("UIStroke", { Color = Color3.fromRGB(20, 15, 30), Thickness = 1.5, Transparency = 0.3, Parent = subtitle })
+for _, side in { -1, 1 } do
+	local line = new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5 + side * 0.33, 0.48), Size = UDim2.new(0.12, 0, 0, 2),
+		BackgroundColor3 = GOLD, BorderSizePixel = 0, Parent = gui,
+	})
+	new("UIGradient", { Transparency = NumberSequence.new(if side < 0 then 1 else 0, if side < 0 then 0 else 1), Parent = line })
+end
+
+local status = new("TextLabel", {
+	AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.72), Size = UDim2.fromScale(0.6, 0.035),
+	BackgroundTransparency = 1, Font = Enum.Font.GothamMedium, Text = "Ascending to the heavens...", TextScaled = true,
+	TextColor3 = Color3.fromRGB(200, 190, 220), Parent = gui,
+})
+local enter = new("TextButton", {
+	AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.72), Size = UDim2.fromOffset(300, 64),
+	BackgroundColor3 = GOLD, AutoButtonColor = true, Font = Enum.Font.Garamond, Text = "ENTER OLYMPUS", TextSize = 32,
+	TextColor3 = Color3.fromRGB(40, 25, 10), Visible = false, Parent = gui,
+})
+new("UICorner", { CornerRadius = UDim.new(0, 14), Parent = enter })
+new("UIStroke", { Color = Color3.fromRGB(255, 240, 190), Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = enter })
+new("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(255, 236, 160), Color3.fromRGB(200, 150, 50)), Parent = enter })
+
+-- Animate stars, title shine and the button's pulse
+local active = true
+local renderConnection = RunService.RenderStepped:Connect(function()
+	local t = os.clock()
+	titleShine.Offset = Vector2.new(((t * 0.35) % 2) - 1, 0)
+	for _, s in stars do
+		s.Frame.BackgroundTransparency = 0.25 + 0.6 * (0.5 + 0.5 * math.sin(t * s.Speed + s.Phase))
+	end
+	if enter.Visible then
+		local pulse = 1 + 0.04 * math.sin(t * 3)
+		enter.Size = UDim2.fromOffset(300 * pulse, 64 * pulse)
+	end
+end)
+
+-- Hide the rest of the interface while the title screen is up
+local hidden = {}
+task.spawn(function()
+	while active do
+		for _, other in playerGui:GetChildren() do
+			if other:IsA("ScreenGui") and other ~= gui and other.Enabled then
+				other.Enabled = false
+				hidden[other] = true
+			end
+		end
+		task.wait(0.15)
+	end
+end)
+
+-- If anything goes wrong, never leave the player stuck on the title screen.
+local function cleanup()
+	active = false
+	for other in hidden do
+		if other.Parent then
+			other.Enabled = true
+		end
+	end
+	renderConnection:Disconnect()
+	local camera = Workspace.CurrentCamera
+	if camera then
+		camera.CameraType = Enum.CameraType.Custom
+	end
+	if gui.Parent then
+		gui:Destroy()
+	end
+end
+
+local camera, orbitStart, orbiting, orbitConnection
+local ok, err = pcall(function()
+-- Wait for the world and the save
+if not game:IsLoaded() then
+	game.Loaded:Wait()
+end
+local deadline = os.clock() + 25
+while player:GetAttribute("DataLoaded") ~= true and os.clock() < deadline do
+	task.wait(0.2)
+end
+Workspace:WaitForChild("Hub", 20)
+task.wait(0.5)
+
+-- Fly-over: clear the sky and circle the summit
+camera = Workspace.CurrentCamera
+camera.CameraType = Enum.CameraType.Scriptable
+orbitStart = os.clock()
+orbiting = true
+orbitConnection = RunService.RenderStepped:Connect(function()
+	if not orbiting then
+		return
+	end
+	local t = os.clock() - orbitStart
+	local angle = -0.9 + t * 0.07
+	local position = Vector3.new(math.cos(angle) * 175, 78 + math.sin(t * 0.3) * 6, 40 + math.sin(angle) * 175)
+	camera.CFrame = CFrame.lookAt(position, Vector3.new(0, 16, 30))
+end)
+TweenService:Create(backdrop, TweenInfo.new(2.5), { BackgroundTransparency = 1 }):Play()
+for _, s in stars do
+	TweenService:Create(s.Frame, TweenInfo.new(1.5), { Size = UDim2.fromOffset(0, 0) }):Play()
+end
+TweenService:Create(vignette, TweenInfo.new(2.5), { BackgroundTransparency = 0 }):Play()
+TweenService:Create(title, TweenInfo.new(1.2, Enum.EasingStyle.Quad), { Position = UDim2.fromScale(0.5, 0.2) }):Play()
+TweenService:Create(subtitle, TweenInfo.new(1.2, Enum.EasingStyle.Quad), { Position = UDim2.fromScale(0.5, 0.31) }):Play()
+for _, child in gui:GetChildren() do
+	if child:IsA("Frame") and child.Size.Y.Offset == 2 then
+		TweenService:Create(child, TweenInfo.new(1.2, Enum.EasingStyle.Quad), { Position = UDim2.new(child.Position.X.Scale, 0, 0.31, 0) }):Play()
+	end
+end
+status.Visible = false
+enter.Position = UDim2.fromScale(0.5, 0.82)
+enter.Visible = true
+
+end)
+if not ok then
+	warn("[Intro] " .. tostring(err))
+	cleanup()
+	return
+end
+
+local entered = false
+enter.Activated:Connect(function()
+	if entered then
+		return
+	end
+	entered = true
+	enter.Visible = false
+	local success = pcall(function()
+	pcall(function()
+		local Sfx = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Sfx"))
+		Sfx.Play("Chimes")
+	end)
+	-- Swoop down to the character
+	orbiting = false
+	local character = player.Character or player.CharacterAdded:Wait()
+	local root = character:WaitForChild("HumanoidRootPart", 10)
+	if root then
+		local target = CFrame.lookAt((root.CFrame * CFrame.new(0, 6, 14)).Position, root.Position + Vector3.new(0, 2, 0))
+		local tween = TweenService:Create(camera, TweenInfo.new(1.6, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut), { CFrame = target })
+		tween:Play()
+	end
+	for _, item in gui:GetDescendants() do
+		if item:IsA("TextLabel") or item:IsA("TextButton") then
+			TweenService:Create(item, TweenInfo.new(0.8), { TextTransparency = 1 }):Play()
+		elseif item:IsA("Frame") then
+			TweenService:Create(item, TweenInfo.new(1.2), { BackgroundTransparency = 1 }):Play()
+		elseif item:IsA("UIStroke") then
+			TweenService:Create(item, TweenInfo.new(0.8), { Transparency = 1 }):Play()
+		end
+	end
+	task.wait(1.6)
+	orbitConnection:Disconnect()
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		camera.CameraSubject = humanoid
+	end
+	end)
+	if not success and orbitConnection then
+		orbitConnection:Disconnect()
+	end
+	cleanup()
+end)
+]]></string>
+      </Properties>
+    </Item>
+  </Item>
+  <Item class="ReplicatedStorage" referent="3">
     <Properties>
       <string name="Name">ReplicatedStorage</string>
     </Properties>
-    <Item class="Folder" referent="2">
+    <Item class="Folder" referent="4">
       <Properties>
         <string name="Name">Shared</string>
       </Properties>
-      <Item class="ModuleScript" referent="3">
+      <Item class="ModuleScript" referent="5">
         <Properties>
           <string name="Name">AbilityConfig</string>
           <string name="Source"><![CDATA[-- AbilityConfig (ModuleScript)
@@ -215,7 +477,7 @@ return AbilityConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="4">
+      <Item class="ModuleScript" referent="6">
         <Properties>
           <string name="Name">AimHelper</string>
           <string name="Source"><![CDATA[-- AimHelper (ModuleScript)
@@ -282,7 +544,7 @@ return AimHelper
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="5">
+      <Item class="ModuleScript" referent="7">
         <Properties>
           <string name="Name">ArenaConfig</string>
           <string name="Source"><![CDATA[-- ArenaConfig (ModuleScript)
@@ -451,7 +713,7 @@ return ArenaConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="6">
+      <Item class="ModuleScript" referent="8">
         <Properties>
           <string name="Name">AscensionConfig</string>
           <string name="Source"><![CDATA[-- AscensionConfig (ModuleScript)
@@ -590,7 +852,7 @@ return AscensionConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="7">
+      <Item class="ModuleScript" referent="9">
         <Properties>
           <string name="Name">ChallengeConfig</string>
           <string name="Source"><![CDATA[-- ChallengeConfig (ModuleScript)
@@ -703,7 +965,7 @@ return ChallengeConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="8">
+      <Item class="ModuleScript" referent="10">
         <Properties>
           <string name="Name">CombatConfig</string>
           <string name="Source"><![CDATA[-- CombatConfig (ModuleScript)
@@ -1046,7 +1308,7 @@ return CombatConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="9">
+      <Item class="ModuleScript" referent="11">
         <Properties>
           <string name="Name">GameConfig</string>
           <string name="Source"><![CDATA[-- GameConfig (ModuleScript)
@@ -1147,7 +1409,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v55"
+GameConfig.BuildLabel = "v56"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -1169,7 +1431,7 @@ return GameConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="10">
+      <Item class="ModuleScript" referent="12">
         <Properties>
           <string name="Name">GodConfig</string>
           <string name="Source"><![CDATA[-- GodConfig (ModuleScript)
@@ -1288,11 +1550,11 @@ return GodConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="11">
+      <Item class="Folder" referent="13">
         <Properties>
           <string name="Name">Gods</string>
         </Properties>
-        <Item class="ModuleScript" referent="12">
+        <Item class="ModuleScript" referent="14">
           <Properties>
             <string name="Name">Apollo</string>
             <string name="Source"><![CDATA[-- Apollo (ModuleScript)
@@ -1329,7 +1591,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="13">
+        <Item class="ModuleScript" referent="15">
           <Properties>
             <string name="Name">Ares</string>
             <string name="Source"><![CDATA[-- Ares (ModuleScript)
@@ -1366,7 +1628,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="14">
+        <Item class="ModuleScript" referent="16">
           <Properties>
             <string name="Name">Athena</string>
             <string name="Source"><![CDATA[-- Athena (ModuleScript)
@@ -1403,7 +1665,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="15">
+        <Item class="ModuleScript" referent="17">
           <Properties>
             <string name="Name">Hades</string>
             <string name="Source"><![CDATA[-- Hades (ModuleScript)
@@ -1440,7 +1702,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="16">
+        <Item class="ModuleScript" referent="18">
           <Properties>
             <string name="Name">Poseidon</string>
             <string name="Source"><![CDATA[-- Poseidon (ModuleScript)
@@ -1477,7 +1739,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="17">
+        <Item class="ModuleScript" referent="19">
           <Properties>
             <string name="Name">Zeus</string>
             <string name="Source"><![CDATA[-- Zeus (ModuleScript)
@@ -1520,7 +1782,7 @@ return {
           </Properties>
         </Item>
       </Item>
-      <Item class="ModuleScript" referent="18">
+      <Item class="ModuleScript" referent="20">
         <Properties>
           <string name="Name">MasteryConfig</string>
           <string name="Source"><![CDATA[-- MasteryConfig (ModuleScript)
@@ -1617,7 +1879,7 @@ return MasteryConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="19">
+      <Item class="ModuleScript" referent="21">
         <Properties>
           <string name="Name">Progression</string>
           <string name="Source"><![CDATA[-- Progression (ModuleScript)
@@ -1681,7 +1943,7 @@ return Progression
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="20">
+      <Item class="ModuleScript" referent="22">
         <Properties>
           <string name="Name">QuestConfig</string>
           <string name="Source"><![CDATA[-- QuestConfig (ModuleScript)
@@ -1861,7 +2123,7 @@ return QuestConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="21">
+      <Item class="ModuleScript" referent="23">
         <Properties>
           <string name="Name">RankOutfits</string>
           <string name="Source"><![CDATA[-- RankOutfits (ModuleScript)
@@ -2068,7 +2330,7 @@ return RankOutfits
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="22">
+      <Item class="ModuleScript" referent="24">
         <Properties>
           <string name="Name">Sfx</string>
           <string name="Source"><![CDATA[-- Sfx (ModuleScript)
@@ -2186,7 +2448,7 @@ return Sfx
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="23">
+      <Item class="ModuleScript" referent="25">
         <Properties>
           <string name="Name">SoundConfig</string>
           <string name="Source"><![CDATA[-- SoundConfig (ModuleScript)
@@ -2270,7 +2532,7 @@ return SoundConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="24">
+      <Item class="ModuleScript" referent="26">
         <Properties>
           <string name="Name">SwordAnimator</string>
           <string name="Source"><![CDATA[-- SwordAnimator (ModuleScript, used by the client only)
@@ -2587,7 +2849,7 @@ return SwordAnimator
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="25">
+      <Item class="ModuleScript" referent="27">
         <Properties>
           <string name="Name">SwordBuilder</string>
           <string name="Source"><![CDATA[-- SwordBuilder (ModuleScript)
@@ -2799,7 +3061,7 @@ return SwordBuilder
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="26">
+      <Item class="ModuleScript" referent="28">
         <Properties>
           <string name="Name">SwordPoses</string>
           <string name="Source"><![CDATA[-- SwordPoses (ModuleScript)
@@ -2954,7 +3216,7 @@ return Poses
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="27">
+      <Item class="ModuleScript" referent="29">
         <Properties>
           <string name="Name">TempleConfig</string>
           <string name="Source"><![CDATA[-- TempleConfig (ModuleScript)
@@ -3197,7 +3459,61 @@ return TempleConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="28">
+      <Item class="ModuleScript" referent="30">
+        <Properties>
+          <string name="Name">UITheme</string>
+          <string name="Source"><![CDATA[-- UITheme (ModuleScript)
+-- Location: ReplicatedStorage > Shared > UITheme
+--
+-- Phase 8: the "divine glass" look for every menu. The menus were first
+-- built in a light marble style; client/UIRestyler swaps those colours for
+-- these (dark violet glass, cream text, shimmering gold edges) everywhere,
+-- including menus opened later. To retheme the game, edit the maps below.
+
+local UITheme = {}
+
+local function rgb(r, g, b)
+	return Color3.fromRGB(r, g, b)
+end
+
+UITheme.Colors = {
+	Glass = rgb(30, 26, 48),
+	GlassLight = rgb(52, 46, 76),
+	Cream = rgb(246, 238, 220),
+	Lilac = rgb(196, 186, 214),
+	Gold = rgb(212, 175, 55),
+	GoldBright = rgb(255, 222, 130),
+	Shadow = rgb(10, 8, 18),
+}
+
+-- Old background colour -> new background colour (and transparency).
+UITheme.Backgrounds = {
+	["246,242,232"] = { rgb(30, 26, 48), 0.08 },   -- marble panels
+	["228,220,204"] = { rgb(52, 46, 76), 0.1 },    -- marble rows
+	["240,226,180"] = { rgb(78, 64, 40), 0.05 },   -- prestige row
+	["215,225,240"] = { rgb(40, 52, 80), 0.05 },   -- party bar
+	["200,190,170"] = { rgb(70, 64, 95), 0 },      -- progress bar backs
+	["60,52,44"] = { rgb(40, 34, 56), 0 },         -- XP bar back
+}
+
+-- Old text colour -> new text colour.
+UITheme.Texts = {
+	["58,44,28"] = rgb(246, 238, 220),   -- main text
+	["110,95,75"] = rgb(196, 186, 214),  -- secondary text
+	["140,92,45"] = rgb(232, 196, 110),  -- bronze headings
+	["175,55,35"] = rgb(255, 130, 110),  -- warnings
+	["190,50,40"] = rgb(255, 120, 105),  -- danger
+}
+
+function UITheme.Key(color)
+	return ("%d,%d,%d"):format(math.round(color.R * 255), math.round(color.G * 255), math.round(color.B * 255))
+end
+
+return UITheme
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="31">
         <Properties>
           <string name="Name">WeaponConfig</string>
           <string name="Source"><![CDATA[-- WeaponConfig (ModuleScript)
@@ -3338,11 +3654,11 @@ return WeaponConfig
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="29">
+  <Item class="ServerScriptService" referent="32">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Script" referent="30">
+    <Item class="Script" referent="33">
       <Properties>
         <string name="Name">Main</string>
         <token name="RunContext">0</token>
@@ -3679,11 +3995,11 @@ end)
 ]]></string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="31">
+    <Item class="Folder" referent="34">
       <Properties>
         <string name="Name">Services</string>
       </Properties>
-      <Item class="ModuleScript" referent="32">
+      <Item class="ModuleScript" referent="35">
         <Properties>
           <string name="Name">AbilityService</string>
           <string name="Source"><![CDATA[-- AbilityService (ModuleScript)
@@ -4347,7 +4663,7 @@ return AbilityService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="33">
+      <Item class="ModuleScript" referent="36">
         <Properties>
           <string name="Name">ArenaService</string>
           <string name="Source"><![CDATA[-- ArenaService (ModuleScript)
@@ -5046,7 +5362,7 @@ return ArenaService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="34">
+      <Item class="ModuleScript" referent="37">
         <Properties>
           <string name="Name">AscensionService</string>
           <string name="Source"><![CDATA[-- AscensionService (ModuleScript)
@@ -5396,7 +5712,7 @@ return AscensionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="35">
+      <Item class="ModuleScript" referent="38">
         <Properties>
           <string name="Name">ChallengeService</string>
           <string name="Source"><![CDATA[-- ChallengeService (ModuleScript)
@@ -5597,7 +5913,7 @@ return ChallengeService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="36">
+      <Item class="ModuleScript" referent="39">
         <Properties>
           <string name="Name">CombatService</string>
           <string name="Source"><![CDATA[-- CombatService (ModuleScript)
@@ -6062,7 +6378,7 @@ return CombatService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="37">
+      <Item class="ModuleScript" referent="40">
         <Properties>
           <string name="Name">DataService</string>
           <string name="Source"><![CDATA[-- DataService (ModuleScript)
@@ -6446,7 +6762,7 @@ return DataService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="38">
+      <Item class="ModuleScript" referent="41">
         <Properties>
           <string name="Name">DiagnosticsService</string>
           <string name="Source"><![CDATA[-- DiagnosticsService (ModuleScript)
@@ -6554,7 +6870,7 @@ return DiagnosticsService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="39">
+      <Item class="ModuleScript" referent="42">
         <Properties>
           <string name="Name">EnemyService</string>
           <string name="Source"><![CDATA[-- EnemyService (ModuleScript)
@@ -7740,7 +8056,7 @@ return EnemyService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="40">
+      <Item class="ModuleScript" referent="43">
         <Properties>
           <string name="Name">EnvironmentService</string>
           <string name="Source"><![CDATA[-- EnvironmentService (ModuleScript)
@@ -8032,7 +8348,7 @@ return EnvironmentService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="41">
+      <Item class="ModuleScript" referent="44">
         <Properties>
           <string name="Name">GameEvents</string>
           <string name="Source"><![CDATA[-- GameEvents (ModuleScript)
@@ -8066,7 +8382,7 @@ return GameEvents
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="42">
+      <Item class="ModuleScript" referent="45">
         <Properties>
           <string name="Name">GodService</string>
           <string name="Source"><![CDATA[-- GodService (ModuleScript)
@@ -8531,7 +8847,7 @@ return GodService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="43">
+      <Item class="ModuleScript" referent="46">
         <Properties>
           <string name="Name">HubDecor</string>
           <string name="Source"><![CDATA[-- HubDecor (ModuleScript)
@@ -9301,7 +9617,7 @@ return HubDecor
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="44">
+      <Item class="ModuleScript" referent="47">
         <Properties>
           <string name="Name">InventoryService</string>
           <string name="Source"><![CDATA[-- InventoryService (ModuleScript)
@@ -9650,7 +9966,7 @@ return InventoryService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="45">
+      <Item class="ModuleScript" referent="48">
         <Properties>
           <string name="Name">MasteryService</string>
           <string name="Source"><![CDATA[-- MasteryService (ModuleScript)
@@ -10117,7 +10433,7 @@ return MasteryService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="46">
+      <Item class="ModuleScript" referent="49">
         <Properties>
           <string name="Name">PlotService</string>
           <string name="Source"><![CDATA[-- PlotService (ModuleScript)
@@ -10245,7 +10561,7 @@ return PlotService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="47">
+      <Item class="ModuleScript" referent="50">
         <Properties>
           <string name="Name">ProgressionService</string>
           <string name="Source"><![CDATA[-- ProgressionService (ModuleScript)
@@ -10524,7 +10840,7 @@ return ProgressionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="48">
+      <Item class="ModuleScript" referent="51">
         <Properties>
           <string name="Name">QuestService</string>
           <string name="Source"><![CDATA[-- QuestService (ModuleScript)
@@ -10827,7 +11143,7 @@ return QuestService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="49">
+      <Item class="ModuleScript" referent="52">
         <Properties>
           <string name="Name">TempleModels</string>
           <string name="Source"><![CDATA[-- TempleModels (ModuleScript)
@@ -11439,7 +11755,7 @@ return TempleModels
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="50">
+      <Item class="ModuleScript" referent="53">
         <Properties>
           <string name="Name">TempleService</string>
           <string name="Source"><![CDATA[-- TempleService (ModuleScript)
@@ -11895,7 +12211,7 @@ return TempleService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="51">
+      <Item class="ModuleScript" referent="54">
         <Properties>
           <string name="Name">WorldBuilder</string>
           <string name="Source"><![CDATA[-- WorldBuilder (ModuleScript)
@@ -12134,22 +12450,22 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="SoundService" referent="52">
+  <Item class="SoundService" referent="55">
     <Properties>
       <string name="Name">SoundService</string>
       <bool name="RespectFilteringEnabled">true</bool>
     </Properties>
   </Item>
-  <Item class="StarterPlayer" referent="53">
+  <Item class="StarterPlayer" referent="56">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <token name="AvatarJointUpgrade_SerializedRollout">1</token>
     </Properties>
-    <Item class="StarterCharacterScripts" referent="54">
+    <Item class="StarterCharacterScripts" referent="57">
       <Properties>
         <string name="Name">StarterCharacterScripts</string>
       </Properties>
-      <Item class="Script" referent="55">
+      <Item class="Script" referent="58">
         <Properties>
           <string name="Name">Health</string>
           <token name="RunContext">0</token>
@@ -12163,11 +12479,11 @@ return WorldBuilder
         </Properties>
       </Item>
     </Item>
-    <Item class="StarterPlayerScripts" referent="56">
+    <Item class="StarterPlayerScripts" referent="59">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="57">
+      <Item class="LocalScript" referent="60">
         <Properties>
           <string name="Name">AbilityController</string>
           <string name="Source"><![CDATA[-- AbilityController (LocalScript)
@@ -12717,7 +13033,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="58">
+      <Item class="LocalScript" referent="61">
         <Properties>
           <string name="Name">AimDot</string>
           <string name="Source"><![CDATA[-- AimDot (LocalScript)
@@ -12772,7 +13088,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="59">
+      <Item class="LocalScript" referent="62">
         <Properties>
           <string name="Name">ArenaUI</string>
           <string name="Source"><![CDATA[-- ArenaUI (LocalScript)
@@ -13129,7 +13445,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="60">
+      <Item class="LocalScript" referent="63">
         <Properties>
           <string name="Name">AscensionUI</string>
           <string name="Source"><![CDATA[-- AscensionUI (LocalScript)
@@ -13441,7 +13757,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="61">
+      <Item class="LocalScript" referent="64">
         <Properties>
           <string name="Name">AudioController</string>
           <string name="Source"><![CDATA[-- AudioController (LocalScript)
@@ -13764,7 +14080,7 @@ toggle("Effects", "SfxVolume", 100)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="62">
+      <Item class="LocalScript" referent="65">
         <Properties>
           <string name="Name">CombatController</string>
           <string name="Source"><![CDATA[-- CombatController (LocalScript)
@@ -14412,7 +14728,7 @@ updateEnabled()
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="63">
+      <Item class="LocalScript" referent="66">
         <Properties>
           <string name="Name">DecorAnimator</string>
           <string name="Source"><![CDATA[-- DecorAnimator (LocalScript)
@@ -14492,7 +14808,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="64">
+      <Item class="LocalScript" referent="67">
         <Properties>
           <string name="Name">Diagnostics</string>
           <string name="Source"><![CDATA[-- Diagnostics (LocalScript)
@@ -14593,7 +14909,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="65">
+      <Item class="LocalScript" referent="68">
         <Properties>
           <string name="Name">GodUI</string>
           <string name="Source"><![CDATA[-- GodUI (LocalScript)
@@ -15172,7 +15488,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="66">
+      <Item class="LocalScript" referent="69">
         <Properties>
           <string name="Name">HUDController</string>
           <string name="Source"><![CDATA[-- HUDController (LocalScript)
@@ -15297,10 +15613,9 @@ create("TextLabel", {
 	Parent = loadingFrame,
 })
 
+-- Phase 8: the title screen (ReplicatedFirst > Intro) replaces this one.
 local function updateLoading()
-	if player:GetAttribute("DataLoaded") == true then
-		loadingGui.Enabled = false
-	end
+	loadingGui.Enabled = false
 end
 player:GetAttributeChangedSignal("DataLoaded"):Connect(updateLoading)
 updateLoading()
@@ -15361,7 +15676,7 @@ local rankBadge = create("TextLabel", {
 	TextColor3 = THEME.White,
 	TextStrokeTransparency = 0.6,
 	Parent = statsPanel,
-}, { corner(6) })
+}, { corner(6), create("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(170, 170, 180)) }) })
 
 local xpBack = create("Frame", {
 	Name = "XPBar",
@@ -15376,7 +15691,10 @@ local xpFill = create("Frame", {
 	Size = UDim2.fromScale(0, 1),
 	BackgroundColor3 = THEME.Gold,
 	Parent = xpBack,
-}, { corner(6) })
+}, {
+	corner(6),
+	create("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(255, 236, 150), Color3.fromRGB(190, 140, 40)) }),
+})
 
 local xpText = create("TextLabel", {
 	Name = "XPText",
@@ -15422,6 +15740,7 @@ local currencyPanel = create("Frame", {
 })
 
 local currencyLabels = {}
+local CURRENCY_ICONS = { Gold = "🪙", DivineFavor = "✨", Ambrosia = "🍯" }
 for i, name in GameConfig.Currencies do
 	local info = GameConfig.CurrencyInfo[name]
 	local row = create("Frame", {
@@ -15431,13 +15750,16 @@ for i, name in GameConfig.Currencies do
 		LayoutOrder = i,
 		Parent = currencyPanel,
 	})
-	create("Frame", {
+	create("TextLabel", {
 		Name = "Icon",
-		Position = UDim2.new(0, 0, 0.5, -8),
-		Size = UDim2.fromOffset(16, 16),
-		BackgroundColor3 = info.Color,
+		Position = UDim2.new(0, -2, 0.5, -11),
+		Size = UDim2.fromOffset(22, 22),
+		BackgroundTransparency = 1,
+		Text = CURRENCY_ICONS[name] or "●",
+		TextScaled = true,
+		TextColor3 = info.Color,
 		Parent = row,
-	}, { corner(8), stroke(THEME.Bronze, 1) })
+	})
 	create("TextLabel", {
 		Name = "Name",
 		Position = UDim2.fromOffset(24, 0),
@@ -15649,7 +15971,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="67">
+      <Item class="LocalScript" referent="70">
         <Properties>
           <string name="Name">MasteryUI</string>
           <string name="Source"><![CDATA[-- MasteryUI (LocalScript)
@@ -15775,7 +16097,7 @@ end
 --------------------------------------------------------------------------
 local openButton = button({
 	Position = UDim2.fromOffset(12, 306), Size = UDim2.fromOffset(290, 40),
-	BackgroundColor3 = THEME.Mastery, Text = "Divine Mastery", TextSize = 17, Parent = gui,
+	BackgroundColor3 = THEME.Mastery, Text = "✨  Divine Mastery", TextSize = 17, Parent = gui,
 })
 stroke(THEME.Bronze, 2).Parent = openButton
 
@@ -15980,7 +16302,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="68">
+      <Item class="LocalScript" referent="71">
         <Properties>
           <string name="Name">QuestUI</string>
           <string name="Source"><![CDATA[-- QuestUI (LocalScript)
@@ -16111,7 +16433,7 @@ updateEnabled()
 --------------------------------------------------------------------------
 local openButton = button({
 	Position = UDim2.fromOffset(12, 258), Size = UDim2.fromOffset(290, 40),
-	BackgroundColor3 = THEME.Quest, Text = "Quests", TextSize = 17, Parent = gui,
+	BackgroundColor3 = THEME.Quest, Text = "📜  Quests", TextSize = 17, Parent = gui,
 })
 stroke(THEME.Bronze, 2).Parent = openButton
 
@@ -16256,7 +16578,7 @@ local function refresh()
 			readyCount += 1
 		end
 	end
-	openButton.Text = if readyCount > 0 then ("Quests  (%d!)"):format(readyCount) else "Quests"
+	openButton.Text = if readyCount > 0 then ("📜  Quests  (%d!)"):format(readyCount) else "📜  Quests"
 	openButton.BackgroundColor3 = if readyCount > 0 then THEME.Ready else THEME.Quest
 end
 
@@ -16281,7 +16603,7 @@ refresh()
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="69">
+      <Item class="LocalScript" referent="72">
         <Properties>
           <string name="Name">TempleUI</string>
           <string name="Source"><![CDATA[-- TempleUI (LocalScript)
@@ -16401,7 +16723,7 @@ local openButton = create("TextButton", {
 	Position = UDim2.fromOffset(12, 162),
 	Size = UDim2.fromOffset(290, 40),
 	BackgroundColor3 = THEME.Gold,
-	Text = "Temple Upgrades",
+	Text = "🏛  Temple Upgrades",
 	Font = BODY_FONT,
 	TextSize = 17,
 	TextColor3 = THEME.Text,
@@ -16696,7 +17018,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="70">
+      <Item class="LocalScript" referent="73">
         <Properties>
           <string name="Name">TitanGateUI</string>
           <string name="Source"><![CDATA[-- TitanGateUI (LocalScript)
@@ -16884,7 +17206,165 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="71">
+      <Item class="LocalScript" referent="74">
+        <Properties>
+          <string name="Name">UIRestyler</string>
+          <string name="Source"><![CDATA[-- UIRestyler (LocalScript)
+-- Location: StarterPlayer > StarterPlayerScripts > UIRestyler
+--
+-- Phase 8: gives every menu the same "divine glass" look (Shared/UITheme):
+-- dark violet glass panels with a soft top highlight, cream text, gold
+-- edges with a slow shimmer, and gently shaded buttons. Works on menus
+-- created at any time, and keeps up when menus change colours later.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local UITheme = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("UITheme"))
+
+local SKIP_GUIS = { CombatHUD = true, CombatTouchButtons = true, AbilityButtons = true, IncarnationUI = true, AimDot = true, IntroScreen = true }
+local GOLD_KEY = UITheme.Key(UITheme.Colors.Gold)
+
+local shimmering = {} -- UIGradients on gold strokes, rotated slowly
+local hooked = setmetatable({}, { __mode = "k" })
+
+local function skip(item)
+	local screen = item:FindFirstAncestorWhichIsA("ScreenGui")
+	return screen ~= nil and SKIP_GUIS[screen.Name] == true
+end
+
+local function restyleBackground(item)
+	local mapped = UITheme.Backgrounds[UITheme.Key(item.BackgroundColor3)]
+	if mapped then
+		item.BackgroundColor3 = mapped[1]
+		if item.BackgroundTransparency < 0.5 then
+			item.BackgroundTransparency = math.max(item.BackgroundTransparency, mapped[2])
+		end
+		-- Panels (with an edge) get a soft highlight at the top
+		if item:FindFirstChildOfClass("UIStroke") and not item:FindFirstChild("GlassShade") then
+			local shade = Instance.new("UIGradient")
+			shade.Name = "GlassShade"
+			shade.Rotation = 90
+			shade.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(170, 160, 200))
+			shade.Parent = item
+		end
+	end
+end
+
+-- Colours that count as "dark glass" behind text (old marble ones get
+-- converted to glass, so they count too).
+local DARK_BACKS = {}
+for key, mapped in UITheme.Backgrounds do
+	DARK_BACKS[key] = true
+	DARK_BACKS[UITheme.Key(mapped[1])] = true
+end
+
+-- Only lighten text that sits on a glass panel (not on gold/coloured buttons).
+local function onGlass(item)
+	local node = item
+	while node and node:IsA("GuiObject") do
+		if node.BackgroundTransparency < 0.5 then
+			return DARK_BACKS[UITheme.Key(node.BackgroundColor3)] == true
+		end
+		node = node.Parent
+	end
+	return true
+end
+
+local function restyleText(item)
+	local mapped = UITheme.Texts[UITheme.Key(item.TextColor3)]
+	if mapped and onGlass(item) then
+		item.TextColor3 = mapped
+	end
+end
+
+local function restyleStroke(stroke)
+	if UITheme.Key(stroke.Color) == GOLD_KEY and not stroke:FindFirstChild("Shimmer") then
+		stroke.Color = Color3.new(1, 1, 1)
+		local shimmer = Instance.new("UIGradient")
+		shimmer.Name = "Shimmer"
+		shimmer.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(170, 130, 40)),
+			ColorSequenceKeypoint.new(0.45, Color3.fromRGB(255, 225, 140)),
+			ColorSequenceKeypoint.new(0.55, Color3.fromRGB(255, 248, 215)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(170, 130, 40)),
+		})
+		shimmer.Parent = stroke
+		table.insert(shimmering, shimmer)
+		-- If a script later recolours the stroke (e.g. a different state), drop the shimmer.
+		stroke:GetPropertyChangedSignal("Color"):Connect(function()
+			if stroke.Color ~= Color3.new(1, 1, 1) and shimmer.Parent then
+				shimmer:Destroy()
+			end
+		end)
+	end
+end
+
+local function restyleButton(button)
+	if button:IsA("TextButton") and not button:FindFirstChildOfClass("UIGradient") and button.BackgroundTransparency < 0.9 then
+		local shade = Instance.new("UIGradient")
+		shade.Name = "ButtonShade"
+		shade.Rotation = 90
+		shade.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(190, 185, 200))
+		shade.Parent = button
+	end
+end
+
+local function hook(item)
+	if hooked[item] or skip(item) then
+		return
+	end
+	if item:IsA("GuiObject") then
+		hooked[item] = true
+		restyleBackground(item)
+		item:GetPropertyChangedSignal("BackgroundColor3"):Connect(function()
+			restyleBackground(item)
+		end)
+		if item:IsA("TextLabel") or item:IsA("TextButton") or item:IsA("TextBox") then
+			restyleText(item)
+			item:GetPropertyChangedSignal("TextColor3"):Connect(function()
+				restyleText(item)
+			end)
+		end
+		if item:IsA("GuiButton") then
+			restyleButton(item)
+		end
+	elseif item:IsA("UIStroke") then
+		hooked[item] = true
+		restyleStroke(item)
+		local parent = item.Parent
+		if parent and parent:IsA("GuiObject") then
+			restyleBackground(parent) -- now that it has an edge, it may get its highlight
+		end
+	end
+end
+
+for _, item in playerGui:GetDescendants() do
+	hook(item)
+end
+playerGui.DescendantAdded:Connect(function(item)
+	task.defer(hook, item) -- after the creating script sets its properties
+end)
+
+-- Slow golden shimmer along the edges
+RunService.RenderStepped:Connect(function()
+	local angle = (os.clock() * 40) % 360
+	for i = #shimmering, 1, -1 do
+		local shimmer = shimmering[i]
+		if shimmer.Parent then
+			shimmer.Rotation = angle
+		else
+			table.remove(shimmering, i)
+		end
+	end
+end)
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="LocalScript" referent="75">
         <Properties>
           <string name="Name">WeaponUI</string>
           <string name="Source"><![CDATA[-- WeaponUI (LocalScript)
@@ -16986,7 +17466,7 @@ updateEnabled()
 -- Button under "Temple Upgrades"
 local openButton = button({
 	Position = UDim2.fromOffset(12, 210), Size = UDim2.fromOffset(290, 40),
-	BackgroundColor3 = THEME.Forge, Text = "Weapons", TextSize = 17, Parent = gui,
+	BackgroundColor3 = THEME.Forge, Text = "⚔  Weapons", TextSize = 17, Parent = gui,
 })
 stroke(THEME.Bronze, 2).Parent = openButton
 
@@ -17170,7 +17650,7 @@ end)
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="72">
+  <Item class="Workspace" referent="76">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="FallenPartsDestroyHeight">-1500</float>

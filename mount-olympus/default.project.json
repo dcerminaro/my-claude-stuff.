@@ -61,6 +61,9 @@
         },
         "DecorAnimator": {
           "$path": "src/client/DecorAnimator.client.luau"
+        },
+        "UIRestyler": {
+          "$path": "src/client/UIRestyler.client.luau"
         }
       },
       "StarterCharacterScripts": {
@@ -85,6 +88,11 @@
     "SoundService": {
       "$properties": {
         "RespectFilteringEnabled": true
+      }
+    },
+    "ReplicatedFirst": {
+      "Intro": {
+        "$path": "src/first/Intro.client.luau"
       }
     }
   }
