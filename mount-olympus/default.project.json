@@ -64,6 +64,9 @@
         },
         "UIRestyler": {
           "$path": "src/client/UIRestyler.client.luau"
+        },
+        "CombatJuice": {
+          "$path": "src/client/CombatJuice.client.luau"
         }
       },
       "StarterCharacterScripts": {

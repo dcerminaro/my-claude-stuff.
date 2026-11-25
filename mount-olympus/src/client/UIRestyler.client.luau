@@ -14,7 +14,7 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local UITheme = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("UITheme"))
 
-local SKIP_GUIS = { CombatHUD = true, CombatTouchButtons = true, AbilityButtons = true, IncarnationUI = true, AimDot = true, IntroScreen = true }
+local SKIP_GUIS = { CombatHUD = true, CombatTouchButtons = true, AbilityButtons = true, IncarnationUI = true, AimDot = true, IntroScreen = true, CombatJuice = true }
 local GOLD_KEY = UITheme.Key(UITheme.Colors.Gold)
 
 local shimmering = {} -- UIGradients on gold strokes, rotated slowly
