@@ -27,6 +27,8 @@ local AbilityConfig = require(Shared:WaitForChild("AbilityConfig"))
 local GodConfig = require(Shared:WaitForChild("GodConfig"))
 local SwordAnimator = require(Shared:WaitForChild("SwordAnimator"))
 
+local AimHelper = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AimHelper"))
+
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local abilityRemote = Remotes:WaitForChild("UseAbility")
 local fxRemote = Remotes:WaitForChild("CombatFX")
@@ -78,10 +80,12 @@ local function useSlot(slot)
 		return
 	end
 	localReadyAt[slot] = now + 0.5
+	local character = player.Character
+	local aim = AimHelper.FaceAim(character and character:FindFirstChild("HumanoidRootPart")) -- face the centre dot
 	if cfg.Move then
 		SwordAnimator.Play(player.Character, cfg.Move)
 	end
-	abilityRemote:FireServer(slot)
+	abilityRemote:FireServer(slot, aim)
 end
 
 --------------------------------------------------------------------------

@@ -34,6 +34,8 @@ local function weaponType()
 	return WeaponConfig.Types[player:GetAttribute("WeaponType") or "Sword"] or WeaponConfig.Types.Sword
 end
 
+local AimHelper = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AimHelper"))
+
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local attackRemote = Remotes:WaitForChild("CombatAttack")
 local blockRemote = Remotes:WaitForChild("CombatBlock")
@@ -316,6 +318,7 @@ local function attack()
 	end
 	nextAttackAt = now + (player:GetAttribute("WeaponCooldown") or CFG.BasicAttack.Cooldown)
 	local _, _, root = getParts()
+	local aim = AimHelper.FaceAim(root) -- in fighting areas: face the centre dot
 
 	-- Combo: slash, slash, lunge. Starts over after a short pause.
 	if now - lastAttackAt > COMBO_RESET then
@@ -326,7 +329,7 @@ local function attack()
 	SwordAnimator.Play(player.Character, weaponType().Combo[comboIndex] or SwordPoses.ComboOrder[comboIndex])
 	predictHits(root)
 	flashTrail()
-	attackRemote:FireServer(comboIndex)
+	attackRemote:FireServer(comboIndex, aim)
 end
 
 local function setBlock(on)

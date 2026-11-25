@@ -211,6 +211,73 @@ return AbilityConfig
       </Item>
       <Item class="ModuleScript" referent="3">
         <Properties>
+          <string name="Name">AimHelper</string>
+          <string name="Source"><![CDATA[-- AimHelper (ModuleScript)
+-- Location: ReplicatedStorage > Shared > AimHelper
+--
+-- Shared by AimDot, CombatController and AbilityController (client only).
+-- In a fighting area your attacks go where the centre of the screen points
+-- (the white dot), so the character turns to face the camera's direction
+-- right before an attack.
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+
+local CombatConfig = require(script.Parent:WaitForChild("CombatConfig"))
+
+local AimHelper = {}
+
+local field = CombatConfig.PracticeField
+
+-- In an arena / trial / challenge run, or on the Practice Field.
+function AimHelper.InFightingArea(root)
+	local player = Players.LocalPlayer
+	local runId = player:GetAttribute("ArenaRunId")
+	if runId ~= nil and runId ~= "" and runId ~= 0 then
+		return true
+	end
+	if not root then
+		return false
+	end
+	local offset = root.Position - field.Center
+	return math.abs(offset.X) <= field.Size.X / 2 and math.abs(offset.Z) <= field.Size.Z / 2 and math.abs(offset.Y) < 25
+end
+
+-- The flat (no up/down) direction the camera looks, or nil.
+function AimHelper.CameraDirection()
+	local camera = Workspace.CurrentCamera
+	if not camera then
+		return nil
+	end
+	local look = camera.CFrame.LookVector
+	look = Vector3.new(look.X, 0, look.Z)
+	if look.Magnitude < 0.05 then
+		return nil
+	end
+	return look.Unit
+end
+
+-- Turns the character to face the dot. Returns the aim direction to send to
+-- the server, or nil when not in a fighting area (attacks go where you face).
+function AimHelper.FaceAim(root)
+	if not root or not AimHelper.InFightingArea(root) then
+		return nil
+	end
+	local direction = AimHelper.CameraDirection()
+	if not direction then
+		return nil
+	end
+	local position = root.Position
+	root.CFrame = CFrame.lookAt(position, position + direction)
+	return direction
+end
+
+return AimHelper
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="4">
+        <Properties>
           <string name="Name">ArenaConfig</string>
           <string name="Source"><![CDATA[-- ArenaConfig (ModuleScript)
 -- Location: ReplicatedStorage > Shared > ArenaConfig
@@ -378,7 +445,7 @@ return ArenaConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="4">
+      <Item class="ModuleScript" referent="5">
         <Properties>
           <string name="Name">AscensionConfig</string>
           <string name="Source"><![CDATA[-- AscensionConfig (ModuleScript)
@@ -509,7 +576,7 @@ return AscensionConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="5">
+      <Item class="ModuleScript" referent="6">
         <Properties>
           <string name="Name">ChallengeConfig</string>
           <string name="Source"><![CDATA[-- ChallengeConfig (ModuleScript)
@@ -622,7 +689,7 @@ return ChallengeConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="6">
+      <Item class="ModuleScript" referent="7">
         <Properties>
           <string name="Name">CombatConfig</string>
           <string name="Source"><![CDATA[-- CombatConfig (ModuleScript)
@@ -960,7 +1027,7 @@ return CombatConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="7">
+      <Item class="ModuleScript" referent="8">
         <Properties>
           <string name="Name">GameConfig</string>
           <string name="Source"><![CDATA[-- GameConfig (ModuleScript)
@@ -1061,7 +1128,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v41"
+GameConfig.BuildLabel = "v43"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -1083,7 +1150,7 @@ return GameConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="8">
+      <Item class="ModuleScript" referent="9">
         <Properties>
           <string name="Name">GodConfig</string>
           <string name="Source"><![CDATA[-- GodConfig (ModuleScript)
@@ -1202,11 +1269,11 @@ return GodConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="9">
+      <Item class="Folder" referent="10">
         <Properties>
           <string name="Name">Gods</string>
         </Properties>
-        <Item class="ModuleScript" referent="10">
+        <Item class="ModuleScript" referent="11">
           <Properties>
             <string name="Name">Apollo</string>
             <string name="Source"><![CDATA[-- Apollo (ModuleScript)
@@ -1243,7 +1310,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="11">
+        <Item class="ModuleScript" referent="12">
           <Properties>
             <string name="Name">Ares</string>
             <string name="Source"><![CDATA[-- Ares (ModuleScript)
@@ -1280,7 +1347,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="12">
+        <Item class="ModuleScript" referent="13">
           <Properties>
             <string name="Name">Athena</string>
             <string name="Source"><![CDATA[-- Athena (ModuleScript)
@@ -1317,7 +1384,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="13">
+        <Item class="ModuleScript" referent="14">
           <Properties>
             <string name="Name">Hades</string>
             <string name="Source"><![CDATA[-- Hades (ModuleScript)
@@ -1354,7 +1421,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="14">
+        <Item class="ModuleScript" referent="15">
           <Properties>
             <string name="Name">Poseidon</string>
             <string name="Source"><![CDATA[-- Poseidon (ModuleScript)
@@ -1391,7 +1458,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="15">
+        <Item class="ModuleScript" referent="16">
           <Properties>
             <string name="Name">Zeus</string>
             <string name="Source"><![CDATA[-- Zeus (ModuleScript)
@@ -1434,7 +1501,7 @@ return {
           </Properties>
         </Item>
       </Item>
-      <Item class="ModuleScript" referent="16">
+      <Item class="ModuleScript" referent="17">
         <Properties>
           <string name="Name">Progression</string>
           <string name="Source"><![CDATA[-- Progression (ModuleScript)
@@ -1498,7 +1565,7 @@ return Progression
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="17">
+      <Item class="ModuleScript" referent="18">
         <Properties>
           <string name="Name">QuestConfig</string>
           <string name="Source"><![CDATA[-- QuestConfig (ModuleScript)
@@ -1662,7 +1729,7 @@ return QuestConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="18">
+      <Item class="ModuleScript" referent="19">
         <Properties>
           <string name="Name">RankOutfits</string>
           <string name="Source"><![CDATA[-- RankOutfits (ModuleScript)
@@ -1869,7 +1936,7 @@ return RankOutfits
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="19">
+      <Item class="ModuleScript" referent="20">
         <Properties>
           <string name="Name">SwordAnimator</string>
           <string name="Source"><![CDATA[-- SwordAnimator (ModuleScript, used by the client only)
@@ -2186,7 +2253,7 @@ return SwordAnimator
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="20">
+      <Item class="ModuleScript" referent="21">
         <Properties>
           <string name="Name">SwordBuilder</string>
           <string name="Source"><![CDATA[-- SwordBuilder (ModuleScript)
@@ -2398,7 +2465,7 @@ return SwordBuilder
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="21">
+      <Item class="ModuleScript" referent="22">
         <Properties>
           <string name="Name">SwordPoses</string>
           <string name="Source"><![CDATA[-- SwordPoses (ModuleScript)
@@ -2553,7 +2620,7 @@ return Poses
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="22">
+      <Item class="ModuleScript" referent="23">
         <Properties>
           <string name="Name">TempleConfig</string>
           <string name="Source"><![CDATA[-- TempleConfig (ModuleScript)
@@ -2723,7 +2790,7 @@ return TempleConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="23">
+      <Item class="ModuleScript" referent="24">
         <Properties>
           <string name="Name">WeaponConfig</string>
           <string name="Source"><![CDATA[-- WeaponConfig (ModuleScript)
@@ -2864,11 +2931,11 @@ return WeaponConfig
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="24">
+  <Item class="ServerScriptService" referent="25">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Script" referent="25">
+    <Item class="Script" referent="26">
       <Properties>
         <string name="Name">Main</string>
         <token name="RunContext">0</token>
@@ -3166,11 +3233,11 @@ end)
 ]]></string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="26">
+    <Item class="Folder" referent="27">
       <Properties>
         <string name="Name">Services</string>
       </Properties>
-      <Item class="ModuleScript" referent="27">
+      <Item class="ModuleScript" referent="28">
         <Properties>
           <string name="Name">AbilityService</string>
           <string name="Source"><![CDATA[-- AbilityService (ModuleScript)
@@ -3189,6 +3256,7 @@ end)
 -- Visuals are drawn on every device from CombatFX events.
 
 local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
+local CombatService = require(script.Parent:WaitForChild("CombatService"))
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -3761,8 +3829,9 @@ function AbilityService.Init(dataService, progressionService, templeService, ene
 	end)
 
 	if abilityRemote then
-		abilityRemote.OnServerEvent:Connect(function(player, slot)
+		abilityRemote.OnServerEvent:Connect(function(player, slot, aim)
 			if slot == "Q" or slot == "E" or slot == "R" or slot == "Form" then
+				CombatService.ApplyAim(player, aim) -- face the aim dot (fighting areas only)
 				AbilityService.UseAbility(player, slot)
 			end
 		end)
@@ -3788,7 +3857,7 @@ return AbilityService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="28">
+      <Item class="ModuleScript" referent="29">
         <Properties>
           <string name="Name">ArenaService</string>
           <string name="Source"><![CDATA[-- ArenaService (ModuleScript)
@@ -4487,7 +4556,7 @@ return ArenaService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="29">
+      <Item class="ModuleScript" referent="30">
         <Properties>
           <string name="Name">AscensionService</string>
           <string name="Source"><![CDATA[-- AscensionService (ModuleScript)
@@ -4837,7 +4906,7 @@ return AscensionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="30">
+      <Item class="ModuleScript" referent="31">
         <Properties>
           <string name="Name">ChallengeService</string>
           <string name="Source"><![CDATA[-- ChallengeService (ModuleScript)
@@ -5038,7 +5107,7 @@ return ChallengeService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="31">
+      <Item class="ModuleScript" referent="32">
         <Properties>
           <string name="Name">CombatService</string>
           <string name="Source"><![CDATA[-- CombatService (ModuleScript)
@@ -5208,7 +5277,25 @@ end
 --------------------------------------------------------------------------
 -- combo = which swing of the combo the client played (1-3), only used so
 -- other players see the same animation.
-function CombatService.BasicAttack(player, combo)
+-- Aim dot: in fighting areas the client sends the direction its camera
+-- looks; the character is turned that way before the attack is worked out,
+-- so every "the way you face" attack goes where the centre dot points.
+function CombatService.ApplyAim(player, aim)
+	if typeof(aim) ~= "Vector3" or aim ~= aim then
+		return -- not sent (outside fighting areas) or invalid
+	end
+	local direction = Vector3.new(aim.X, 0, aim.Z)
+	if direction.Magnitude < 0.1 or direction.Magnitude > 10 then
+		return
+	end
+	local _, humanoid, root = getParts(player)
+	if root and humanoid and humanoid.Health > 0 then
+		local position = root.Position
+		root.CFrame = CFrame.lookAt(position, position + direction.Unit)
+	end
+end
+
+function CombatService.BasicAttack(player, combo, aim)
 	local st = state[player]
 	local _, _, root = getParts(player)
 	if not st or not root or st.Blocking then
@@ -5218,6 +5305,7 @@ function CombatService.BasicAttack(player, combo)
 	if now < st.NextAttackAt then
 		return 0
 	end
+	CombatService.ApplyAim(player, aim)
 	local attack = CFG.BasicAttack
 	-- Phase 7C: the equipped weapon decides reach, swing, speed and damage.
 	local weapon = if weaponProvider then weaponProvider(player) else nil
@@ -5350,8 +5438,8 @@ function CombatService.Init(templeService, enemyService, fxRemoteEvent, remotes)
 	setupCollisionGroups()
 
 	if remotes then
-		remotes.Attack.OnServerEvent:Connect(function(player, combo)
-			CombatService.BasicAttack(player, combo)
+		remotes.Attack.OnServerEvent:Connect(function(player, combo, aim)
+			CombatService.BasicAttack(player, combo, aim)
 		end)
 		remotes.Block.OnServerEvent:Connect(function(player, on)
 			if type(on) == "boolean" then
@@ -5484,7 +5572,7 @@ return CombatService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="32">
+      <Item class="ModuleScript" referent="33">
         <Properties>
           <string name="Name">DataService</string>
           <string name="Source"><![CDATA[-- DataService (ModuleScript)
@@ -5866,7 +5954,7 @@ return DataService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="33">
+      <Item class="ModuleScript" referent="34">
         <Properties>
           <string name="Name">DiagnosticsService</string>
           <string name="Source"><![CDATA[-- DiagnosticsService (ModuleScript)
@@ -5974,7 +6062,7 @@ return DiagnosticsService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="34">
+      <Item class="ModuleScript" referent="35">
         <Properties>
           <string name="Name">EnemyService</string>
           <string name="Source"><![CDATA[-- EnemyService (ModuleScript)
@@ -7154,7 +7242,7 @@ return EnemyService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="35">
+      <Item class="ModuleScript" referent="36">
         <Properties>
           <string name="Name">GameEvents</string>
           <string name="Source"><![CDATA[-- GameEvents (ModuleScript)
@@ -7188,7 +7276,7 @@ return GameEvents
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="36">
+      <Item class="ModuleScript" referent="37">
         <Properties>
           <string name="Name">GodService</string>
           <string name="Source"><![CDATA[-- GodService (ModuleScript)
@@ -7647,7 +7735,7 @@ return GodService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="37">
+      <Item class="ModuleScript" referent="38">
         <Properties>
           <string name="Name">InventoryService</string>
           <string name="Source"><![CDATA[-- InventoryService (ModuleScript)
@@ -7996,7 +8084,7 @@ return InventoryService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="38">
+      <Item class="ModuleScript" referent="39">
         <Properties>
           <string name="Name">PlotService</string>
           <string name="Source"><![CDATA[-- PlotService (ModuleScript)
@@ -8124,7 +8212,7 @@ return PlotService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="39">
+      <Item class="ModuleScript" referent="40">
         <Properties>
           <string name="Name">ProgressionService</string>
           <string name="Source"><![CDATA[-- ProgressionService (ModuleScript)
@@ -8403,7 +8491,7 @@ return ProgressionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="40">
+      <Item class="ModuleScript" referent="41">
         <Properties>
           <string name="Name">QuestService</string>
           <string name="Source"><![CDATA[-- QuestService (ModuleScript)
@@ -8701,7 +8789,7 @@ return QuestService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="41">
+      <Item class="ModuleScript" referent="42">
         <Properties>
           <string name="Name">TempleModels</string>
           <string name="Source"><![CDATA[-- TempleModels (ModuleScript)
@@ -9183,7 +9271,7 @@ return TempleModels
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="42">
+      <Item class="ModuleScript" referent="43">
         <Properties>
           <string name="Name">TempleService</string>
           <string name="Source"><![CDATA[-- TempleService (ModuleScript)
@@ -9592,7 +9680,7 @@ return TempleService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="43">
+      <Item class="ModuleScript" referent="44">
         <Properties>
           <string name="Name">WorldBuilder</string>
           <string name="Source"><![CDATA[-- WorldBuilder (ModuleScript)
@@ -9832,16 +9920,16 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="44">
+  <Item class="StarterPlayer" referent="45">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <token name="AvatarJointUpgrade_SerializedRollout">1</token>
     </Properties>
-    <Item class="StarterCharacterScripts" referent="45">
+    <Item class="StarterCharacterScripts" referent="46">
       <Properties>
         <string name="Name">StarterCharacterScripts</string>
       </Properties>
-      <Item class="Script" referent="46">
+      <Item class="Script" referent="47">
         <Properties>
           <string name="Name">Health</string>
           <token name="RunContext">0</token>
@@ -9855,11 +9943,11 @@ return WorldBuilder
         </Properties>
       </Item>
     </Item>
-    <Item class="StarterPlayerScripts" referent="47">
+    <Item class="StarterPlayerScripts" referent="48">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="48">
+      <Item class="LocalScript" referent="49">
         <Properties>
           <string name="Name">AbilityController</string>
           <string name="Source"><![CDATA[-- AbilityController (LocalScript)
@@ -9890,6 +9978,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AbilityConfig = require(Shared:WaitForChild("AbilityConfig"))
 local GodConfig = require(Shared:WaitForChild("GodConfig"))
 local SwordAnimator = require(Shared:WaitForChild("SwordAnimator"))
+
+local AimHelper = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AimHelper"))
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local abilityRemote = Remotes:WaitForChild("UseAbility")
@@ -9942,10 +10032,12 @@ local function useSlot(slot)
 		return
 	end
 	localReadyAt[slot] = now + 0.5
+	local character = player.Character
+	local aim = AimHelper.FaceAim(character and character:FindFirstChild("HumanoidRootPart")) -- face the centre dot
 	if cfg.Move then
 		SwordAnimator.Play(player.Character, cfg.Move)
 	end
-	abilityRemote:FireServer(slot)
+	abilityRemote:FireServer(slot, aim)
 end
 
 --------------------------------------------------------------------------
@@ -10405,40 +10497,37 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="49">
+      <Item class="LocalScript" referent="50">
         <Properties>
           <string name="Name">AimDot</string>
           <string name="Source"><![CDATA[-- AimDot (LocalScript)
 -- Location: StarterPlayer > StarterPlayerScripts > AimDot
 --
--- A small white dot showing where your weapon attacks land: straight ahead
--- (attacks go the way your character faces) at your weapon's reach, or on the
--- first thing in the way. Bows reach much further than swords.
+-- A small white dot fixed in the centre of the screen. In a fighting area your
+-- attacks (swings, arrows, abilities) go where it points: the character turns
+-- to face it as you attack (see Shared/AimHelper).
 -- Only shown when a weapon is in your hand AND you are in a fighting area
--- (an arena / trial run, or on the Practice Field).
+-- (an arena / trial / challenge run, or on the Practice Field).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
 
 local player = Players.LocalPlayer
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local WeaponConfig = require(Shared:WaitForChild("WeaponConfig"))
-local CombatConfig = require(Shared:WaitForChild("CombatConfig"))
+local AimHelper = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AimHelper"))
 
 local DOT_SIZE = 10
-local field = CombatConfig.PracticeField
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "AimDot"
 gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
+gui.IgnoreGuiInset = true -- true centre of the screen
 gui.DisplayOrder = 5
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local dot = Instance.new("Frame")
 dot.AnchorPoint = Vector2.new(0.5, 0.5)
+dot.Position = UDim2.fromScale(0.5, 0.5)
 dot.Size = UDim2.fromOffset(DOT_SIZE, DOT_SIZE)
 dot.BackgroundColor3 = Color3.new(1, 1, 1)
 dot.BorderSizePixel = 0
@@ -10453,54 +10542,17 @@ outline.Transparency = 0.5
 outline.Thickness = 1
 outline.Parent = dot
 
-local rayParams = RaycastParams.new()
-rayParams.FilterType = Enum.RaycastFilterType.Exclude
-rayParams.RespectCanCollide = true -- ignore see-through effects and markers
-
-local function inFightingArea(root)
-	local runId = player:GetAttribute("ArenaRunId")
-	if runId ~= nil and runId ~= "" and runId ~= 0 then
-		return true
-	end
-	local offset = root.Position - field.Center
-	return math.abs(offset.X) <= field.Size.X / 2 and math.abs(offset.Z) <= field.Size.Z / 2 and math.abs(offset.Y) < 25
-end
-
 RunService.RenderStepped:Connect(function()
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	local camera = Workspace.CurrentCamera
-	if not root or not humanoid or humanoid.Health <= 0 or not camera
-		or not character:FindFirstChild("DivineSword") or not inFightingArea(root) then
-		dot.Visible = false
-		return
-	end
-
-	local weapon = WeaponConfig.Types[player:GetAttribute("WeaponType") or "Sword"] or WeaponConfig.Types.Sword
-	local look = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
-	if look.Magnitude < 0.01 then
-		dot.Visible = false
-		return
-	end
-	look = look.Unit
-	local origin = root.Position + Vector3.new(0, 0.5, 0)
-	rayParams.FilterDescendantsInstances = { character }
-	local hit = Workspace:Raycast(origin, look * weapon.Range, rayParams)
-	local target = if hit then hit.Position else origin + look * weapon.Range
-
-	local screen, onScreen = camera:WorldToViewportPoint(target)
-	if not onScreen then
-		dot.Visible = false
-		return
-	end
-	dot.Position = UDim2.fromOffset(screen.X, screen.Y)
-	dot.Visible = true
+	dot.Visible = root ~= nil and humanoid ~= nil and humanoid.Health > 0
+		and character:FindFirstChild("DivineSword") ~= nil and AimHelper.InFightingArea(root)
 end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="50">
+      <Item class="LocalScript" referent="51">
         <Properties>
           <string name="Name">ArenaUI</string>
           <string name="Source"><![CDATA[-- ArenaUI (LocalScript)
@@ -10857,7 +10909,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="51">
+      <Item class="LocalScript" referent="52">
         <Properties>
           <string name="Name">AscensionUI</string>
           <string name="Source"><![CDATA[-- AscensionUI (LocalScript)
@@ -11169,7 +11221,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="52">
+      <Item class="LocalScript" referent="53">
         <Properties>
           <string name="Name">CombatController</string>
           <string name="Source"><![CDATA[-- CombatController (LocalScript)
@@ -11207,6 +11259,8 @@ local WeaponConfig = require(Shared:WaitForChild("WeaponConfig"))
 local function weaponType()
 	return WeaponConfig.Types[player:GetAttribute("WeaponType") or "Sword"] or WeaponConfig.Types.Sword
 end
+
+local AimHelper = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AimHelper"))
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local attackRemote = Remotes:WaitForChild("CombatAttack")
@@ -11490,6 +11544,7 @@ local function attack()
 	end
 	nextAttackAt = now + (player:GetAttribute("WeaponCooldown") or CFG.BasicAttack.Cooldown)
 	local _, _, root = getParts()
+	local aim = AimHelper.FaceAim(root) -- in fighting areas: face the centre dot
 
 	-- Combo: slash, slash, lunge. Starts over after a short pause.
 	if now - lastAttackAt > COMBO_RESET then
@@ -11500,7 +11555,7 @@ local function attack()
 	SwordAnimator.Play(player.Character, weaponType().Combo[comboIndex] or SwordPoses.ComboOrder[comboIndex])
 	predictHits(root)
 	flashTrail()
-	attackRemote:FireServer(comboIndex)
+	attackRemote:FireServer(comboIndex, aim)
 end
 
 local function setBlock(on)
@@ -11811,7 +11866,7 @@ updateEnabled()
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="53">
+      <Item class="LocalScript" referent="54">
         <Properties>
           <string name="Name">Diagnostics</string>
           <string name="Source"><![CDATA[-- Diagnostics (LocalScript)
@@ -11912,7 +11967,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="54">
+      <Item class="LocalScript" referent="55">
         <Properties>
           <string name="Name">GodUI</string>
           <string name="Source"><![CDATA[-- GodUI (LocalScript)
@@ -12491,7 +12546,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="55">
+      <Item class="LocalScript" referent="56">
         <Properties>
           <string name="Name">HUDController</string>
           <string name="Source"><![CDATA[-- HUDController (LocalScript)
@@ -12968,7 +13023,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="56">
+      <Item class="LocalScript" referent="57">
         <Properties>
           <string name="Name">QuestUI</string>
           <string name="Source"><![CDATA[-- QuestUI (LocalScript)
@@ -13268,7 +13323,7 @@ refresh()
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="57">
+      <Item class="LocalScript" referent="58">
         <Properties>
           <string name="Name">TempleUI</string>
           <string name="Source"><![CDATA[-- TempleUI (LocalScript)
@@ -13623,7 +13678,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="58">
+      <Item class="LocalScript" referent="59">
         <Properties>
           <string name="Name">TitanGateUI</string>
           <string name="Source"><![CDATA[-- TitanGateUI (LocalScript)
@@ -13811,7 +13866,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="59">
+      <Item class="LocalScript" referent="60">
         <Properties>
           <string name="Name">WeaponUI</string>
           <string name="Source"><![CDATA[-- WeaponUI (LocalScript)

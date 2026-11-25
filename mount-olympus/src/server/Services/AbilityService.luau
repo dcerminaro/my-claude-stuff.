@@ -14,6 +14,7 @@
 -- Visuals are drawn on every device from CombatFX events.
 
 local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
+local CombatService = require(script.Parent:WaitForChild("CombatService"))
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -586,8 +587,9 @@ function AbilityService.Init(dataService, progressionService, templeService, ene
 	end)
 
 	if abilityRemote then
-		abilityRemote.OnServerEvent:Connect(function(player, slot)
+		abilityRemote.OnServerEvent:Connect(function(player, slot, aim)
 			if slot == "Q" or slot == "E" or slot == "R" or slot == "Form" then
+				CombatService.ApplyAim(player, aim) -- face the aim dot (fighting areas only)
 				AbilityService.UseAbility(player, slot)
 			end
 		end)

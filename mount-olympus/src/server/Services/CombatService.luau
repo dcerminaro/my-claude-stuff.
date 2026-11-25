@@ -165,7 +165,25 @@ end
 --------------------------------------------------------------------------
 -- combo = which swing of the combo the client played (1-3), only used so
 -- other players see the same animation.
-function CombatService.BasicAttack(player, combo)
+-- Aim dot: in fighting areas the client sends the direction its camera
+-- looks; the character is turned that way before the attack is worked out,
+-- so every "the way you face" attack goes where the centre dot points.
+function CombatService.ApplyAim(player, aim)
+	if typeof(aim) ~= "Vector3" or aim ~= aim then
+		return -- not sent (outside fighting areas) or invalid
+	end
+	local direction = Vector3.new(aim.X, 0, aim.Z)
+	if direction.Magnitude < 0.1 or direction.Magnitude > 10 then
+		return
+	end
+	local _, humanoid, root = getParts(player)
+	if root and humanoid and humanoid.Health > 0 then
+		local position = root.Position
+		root.CFrame = CFrame.lookAt(position, position + direction.Unit)
+	end
+end
+
+function CombatService.BasicAttack(player, combo, aim)
 	local st = state[player]
 	local _, _, root = getParts(player)
 	if not st or not root or st.Blocking then
@@ -175,6 +193,7 @@ function CombatService.BasicAttack(player, combo)
 	if now < st.NextAttackAt then
 		return 0
 	end
+	CombatService.ApplyAim(player, aim)
 	local attack = CFG.BasicAttack
 	-- Phase 7C: the equipped weapon decides reach, swing, speed and damage.
 	local weapon = if weaponProvider then weaponProvider(player) else nil
@@ -307,8 +326,8 @@ function CombatService.Init(templeService, enemyService, fxRemoteEvent, remotes)
 	setupCollisionGroups()
 
 	if remotes then
-		remotes.Attack.OnServerEvent:Connect(function(player, combo)
-			CombatService.BasicAttack(player, combo)
+		remotes.Attack.OnServerEvent:Connect(function(player, combo, aim)
+			CombatService.BasicAttack(player, combo, aim)
 		end)
 		remotes.Block.OnServerEvent:Connect(function(player, on)
 			if type(on) == "boolean" then
