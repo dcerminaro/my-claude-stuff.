@@ -53,6 +53,10 @@ A Greek mythology RPG / temple tycoon for Roblox.
 | `src/shared/MasteryConfig.luau`, `AimHelper.luau` | ReplicatedStorage › Shared › (same names) | ModuleScript |
 | `src/server/Services/MasteryService.luau` | ServerScriptService › Services › MasteryService | ModuleScript |
 | `src/client/MasteryUI.client.luau` | StarterPlayer › StarterPlayerScripts › MasteryUI | LocalScript |
+| `src/shared/SoundConfig.luau`, `Sfx.luau`, `UITheme.luau` | ReplicatedStorage › Shared › (same names) | ModuleScript |
+| `src/server/Services/EnvironmentService.luau`, `HubDecor.luau` | ServerScriptService › Services › (same names) | ModuleScript |
+| `src/client/AudioController`, `UIRestyler`, `DecorAnimator`, `CombatJuice` (`.client.luau`) | StarterPlayer › StarterPlayerScripts › (same names) | LocalScript |
+| `src/first/Intro.client.luau` | ReplicatedFirst › Intro | LocalScript |
 | `src/client/HUDController.client.luau` | StarterPlayer › StarterPlayerScripts › HUDController | LocalScript |
 | `src/client/TempleUI.client.luau` | StarterPlayer › StarterPlayerScripts › TempleUI | LocalScript |
 | `src/client/GodUI.client.luau` | StarterPlayer › StarterPlayerScripts › GodUI | LocalScript |

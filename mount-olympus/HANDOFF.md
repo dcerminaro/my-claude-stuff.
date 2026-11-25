@@ -52,7 +52,8 @@ Follow the master specification in **Part C** exactly, including its section 19
 | 5. Arenas | **Accepted** — developer said "move on to phase 6" (v25) |
 | 6. Ascension | **Accepted** — developer: "we can work on how it looks later, next phase" (v30) |
 | 7. Content Expansion | In progress: 7A gods (v33) · 7B arenas/bosses/trials (v35) · 7C weapons/forge (v36) · 7D quests (v39) · **7E part 1 (aim dot, Titan Gate / Olympian Challenges) server-tested, live (v43)** · **7E part 2 Divine Citadel + Temple Prestige + boss/trial nerf server-tested, live (v45)** · **7E part 3 Divine Mastery + Incarnations server-tested, live (v47)**. Phase 7 complete pending developer check. |
-| 5–8 | Not started |
+| 7 (overall) | **Accepted** — developer moved on to Phase 8 |
+| 8. Polish | In progress, live (v51-v65): 8A sky/lighting/mountain/cloud sea/music/SFX · 8B plaza decor, god statues, gateways, summit nature, sky islands · 8C title screen, divine-glass UI theme, icons · 8D sky-colosseum arenas, decorated temple plots · 8E combat feedback · 8F hub building architecture · 8G enemy weapons/eyes/armour. Server-tested; client visuals need the developer's check. |
 
 ### How to set up Phase 1 on a Mac (or Windows PC)
 1. Install Roblox Studio from create.roblox.com and sign in.
@@ -507,6 +508,43 @@ environment, so a session can `rojo build` and publish via
    applied through new `AbilityService.AddBuff`), aura/fire/halo/light on
    the character, big title on screen. No charging while transformed.
    Character size is NOT changed (it would fight the rank looks system).
+
+### Design decisions made in Phase 8 (polish)
+1. **No uploaded assets:** the Open Cloud key can publish places but not upload
+   images/audio ("User not authenticated" on the Assets API), so everything is
+   built from parts, terrain and Roblox's own licensed libraries.
+2. **Environment** (`Services/EnvironmentService`): golden-hour Lighting
+   (Future tech set in default.project.json), Atmosphere, Bloom, SunRays,
+   ColorCorrection, sky Clouds. Terrain: summit plateau (radius 390 around
+   (0, 0, 90), grass top 2 studs under the floors), craggy cliffs down to the
+   cloud sea, 7 distant snowy peaks (~5.8M cells, generated in ~3 s, fixed
+   seed). Cloud sea of flattened balls + floor tiles at Y = -270.
+3. **Audio** (`Shared/SoundConfig`, `Shared/Sfx`, `client/AudioController`):
+   APM / DistroKid tracks (licensed for all experiences) in Olympus / Battle /
+   Boss zones with crossfades; ProSoundEffects + Roblox UI sounds for combat,
+   abilities, rewards, waves, boss roars and clicks. Music/Effects toggles
+   (bottom left) saved in `data.Settings` via the `SettingsAction` remote.
+4. **Hub decor** (`Services/HubDecor`, built after the hub buildings): plaza
+   inlays and foundation, Heart of Olympus fountain (orb + spinning rings),
+   6 god statues (posed R15 rigs solved joint-by-joint, anchored marble, scale
+   4.2), gateways and lamp-lit paths, ~230 trees/ruins/flowers/boulders,
+   8 bobbing sky islands with light-falls, plot decoration, building
+   architecture. Motion is client-side (`client/DecorAnimator`, tags
+   OlympusSpin / OlympusBob).
+5. **UI**: `ReplicatedFirst/Intro` title screen (stars, gold title, camera
+   fly-over, "Enter Olympus"; hides other UI meanwhile, with a fail-safe).
+   `client/UIRestyler` + `Shared/UITheme` convert the marble theme to dark
+   glass at runtime (text only recoloured on glass backgrounds).
+6. **Combat feedback** (`client/CombatJuice`): camera shake via
+   Humanoid.CameraOffset, hurt / low-health / level-up screen-edge flashes,
+   level-up ring and sparkles.
+7. **Enemies**: real weapon models from SwordBuilder (`ENEMY_WEAPONS` in
+   EnemyService; main part renamed "Weapon" so the wind-up glow works),
+   glowing eyes instead of faces, pauldrons for helmeted soldiers, capes for
+   bosses below scale 1.9, boss auras. Preview: `docs/enemies-preview.png`.
+8. **Testing trick:** server scripts don't run in Luau execution sessions, so
+   a test copy of the place exposes Main as a ModuleScript ("MainTest") and
+   the session requires it to run the real startup (saved, never published).
 
 ### Ideas from the developer for later (not built yet)
 - **Rank outfits and physique (Phase 6, Ascension):** each ascension rank gets
