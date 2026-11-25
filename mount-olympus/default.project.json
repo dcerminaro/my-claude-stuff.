@@ -55,6 +55,9 @@
         },
         "MasteryUI": {
           "$path": "src/client/MasteryUI.client.luau"
+        },
+        "AudioController": {
+          "$path": "src/client/AudioController.client.luau"
         }
       },
       "StarterCharacterScripts": {
@@ -64,6 +67,21 @@
       },
       "$properties": {
         "AvatarJointUpgrade": "Disabled"
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "Technology": "Future"
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "FallenPartsDestroyHeight": -1500
+      }
+    },
+    "SoundService": {
+      "$properties": {
+        "RespectFilteringEnabled": true
       }
     }
   }

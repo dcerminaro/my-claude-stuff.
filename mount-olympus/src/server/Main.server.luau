@@ -32,6 +32,7 @@ local GameEvents = require(Services:WaitForChild("GameEvents"))
 local QuestService = require(Services:WaitForChild("QuestService"))
 local ChallengeService = require(Services:WaitForChild("ChallengeService"))
 local MasteryService = require(Services:WaitForChild("MasteryService"))
+local EnvironmentService = require(Services:WaitForChild("EnvironmentService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -76,12 +77,14 @@ local weaponRemote = newRemote("WeaponAction") -- client -> server equip / craft
 local questRemote = newRemote("QuestAction") -- client -> server "claim this quest"
 local challengeRemote = newRemote("ChallengeAction") -- client -> server "start this Titan Gate challenge"
 local incarnationRemote = newRemote("IncarnationAction") -- client -> server "transform now"
+local settingsRemote = newRemote("SettingsAction") -- client -> server music / effects volume
 
 remotes.Parent = ReplicatedStorage
 
 --------------------------------------------------------------------------
 -- 2. Start systems
 --------------------------------------------------------------------------
+EnvironmentService.Build() -- Phase 8: sky, mountain, cloud sea
 WorldBuilder.Build()
 DataService.Init()
 ProgressionService.Init(DataService, notifyRemote)
@@ -101,6 +104,26 @@ ArenaService.BuildGate()
 ChallengeService.Init(DataService, ArenaService, notifyRemote, challengeRemote)
 ChallengeService.BuildGate()
 MasteryService.Init(DataService, ProgressionService, AbilityService, GameEvents, notifyRemote, fxRemote, incarnationRemote)
+
+-- Phase 8: music / effects volume (saved in data.Settings, shown as attributes)
+local function pushSettings(player)
+	local data = DataService.GetData(player)
+	if data and type(data.Settings) == "table" then
+		player:SetAttribute("MusicVolume", tonumber(data.Settings.MusicVolume) or 0.5)
+		player:SetAttribute("SfxVolume", tonumber(data.Settings.SfxVolume) or 0.8)
+	end
+end
+settingsRemote.OnServerEvent:Connect(function(player, key, value)
+	local data = DataService.GetData(player)
+	if not data or (key ~= "MusicVolume" and key ~= "SfxVolume") or type(value) ~= "number" or value ~= value then
+		return
+	end
+	if type(data.Settings) ~= "table" then
+		data.Settings = {}
+	end
+	data.Settings[key] = math.clamp(value, 0, 1)
+	pushSettings(player)
+end)
 AscensionService.Init(DataService, ProgressionService, ArenaService, notifyRemote, fxRemote, ascensionRemote, if GameConfig.Debug.Diagnostics then DiagnosticsService else nil)
 AscensionService.BuildChamber()
 InventoryService.Init(DataService, ProgressionService, notifyRemote, weaponRemote)
@@ -226,6 +249,7 @@ local function onPlayerAdded(player)
 	QuestService.SetupPlayer(player)
 	ChallengeService.SetupPlayer(player)
 	MasteryService.SetupPlayer(player)
+	pushSettings(player)
 	player:SetAttribute("DataLoaded", true)
 	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
 end

@@ -35,6 +35,7 @@ local function weaponType()
 end
 
 local AimHelper = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AimHelper"))
+local Sfx = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Sfx"))
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local attackRemote = Remotes:WaitForChild("CombatAttack")
@@ -330,6 +331,7 @@ local function attack()
 	predictHits(root)
 	flashTrail()
 	attackRemote:FireServer(comboIndex, aim)
+	Sfx.Play(if weaponType().Ranged then "Arrow" else (if comboIndex == 3 then "HeavySwing" else "Swing"))
 end
 
 local function setBlock(on)
@@ -376,6 +378,7 @@ local function dash()
 
 	burst(root.Position, godColor(), 16, 8)
 	dashRemote:FireServer(direction) -- the server uses it for god dash abilities
+	Sfx.Play("Dash")
 end
 
 --------------------------------------------------------------------------

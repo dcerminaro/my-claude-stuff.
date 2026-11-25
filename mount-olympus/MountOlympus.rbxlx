@@ -1,13 +1,19 @@
 <roblox version="4">
-  <Item class="ReplicatedStorage" referent="0">
+  <Item class="Lighting" referent="0">
+    <Properties>
+      <string name="Name">Lighting</string>
+      <token name="Technology">4</token>
+    </Properties>
+  </Item>
+  <Item class="ReplicatedStorage" referent="1">
     <Properties>
       <string name="Name">ReplicatedStorage</string>
     </Properties>
-    <Item class="Folder" referent="1">
+    <Item class="Folder" referent="2">
       <Properties>
         <string name="Name">Shared</string>
       </Properties>
-      <Item class="ModuleScript" referent="2">
+      <Item class="ModuleScript" referent="3">
         <Properties>
           <string name="Name">AbilityConfig</string>
           <string name="Source"><![CDATA[-- AbilityConfig (ModuleScript)
@@ -209,7 +215,7 @@ return AbilityConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="3">
+      <Item class="ModuleScript" referent="4">
         <Properties>
           <string name="Name">AimHelper</string>
           <string name="Source"><![CDATA[-- AimHelper (ModuleScript)
@@ -276,7 +282,7 @@ return AimHelper
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="4">
+      <Item class="ModuleScript" referent="5">
         <Properties>
           <string name="Name">ArenaConfig</string>
           <string name="Source"><![CDATA[-- ArenaConfig (ModuleScript)
@@ -445,7 +451,7 @@ return ArenaConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="5">
+      <Item class="ModuleScript" referent="6">
         <Properties>
           <string name="Name">AscensionConfig</string>
           <string name="Source"><![CDATA[-- AscensionConfig (ModuleScript)
@@ -584,7 +590,7 @@ return AscensionConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="6">
+      <Item class="ModuleScript" referent="7">
         <Properties>
           <string name="Name">ChallengeConfig</string>
           <string name="Source"><![CDATA[-- ChallengeConfig (ModuleScript)
@@ -697,7 +703,7 @@ return ChallengeConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="7">
+      <Item class="ModuleScript" referent="8">
         <Properties>
           <string name="Name">CombatConfig</string>
           <string name="Source"><![CDATA[-- CombatConfig (ModuleScript)
@@ -1040,7 +1046,7 @@ return CombatConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="8">
+      <Item class="ModuleScript" referent="9">
         <Properties>
           <string name="Name">GameConfig</string>
           <string name="Source"><![CDATA[-- GameConfig (ModuleScript)
@@ -1141,7 +1147,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v47"
+GameConfig.BuildLabel = "v51"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -1163,7 +1169,7 @@ return GameConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="9">
+      <Item class="ModuleScript" referent="10">
         <Properties>
           <string name="Name">GodConfig</string>
           <string name="Source"><![CDATA[-- GodConfig (ModuleScript)
@@ -1282,11 +1288,11 @@ return GodConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="10">
+      <Item class="Folder" referent="11">
         <Properties>
           <string name="Name">Gods</string>
         </Properties>
-        <Item class="ModuleScript" referent="11">
+        <Item class="ModuleScript" referent="12">
           <Properties>
             <string name="Name">Apollo</string>
             <string name="Source"><![CDATA[-- Apollo (ModuleScript)
@@ -1323,7 +1329,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="12">
+        <Item class="ModuleScript" referent="13">
           <Properties>
             <string name="Name">Ares</string>
             <string name="Source"><![CDATA[-- Ares (ModuleScript)
@@ -1360,7 +1366,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="13">
+        <Item class="ModuleScript" referent="14">
           <Properties>
             <string name="Name">Athena</string>
             <string name="Source"><![CDATA[-- Athena (ModuleScript)
@@ -1397,7 +1403,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="14">
+        <Item class="ModuleScript" referent="15">
           <Properties>
             <string name="Name">Hades</string>
             <string name="Source"><![CDATA[-- Hades (ModuleScript)
@@ -1434,7 +1440,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="15">
+        <Item class="ModuleScript" referent="16">
           <Properties>
             <string name="Name">Poseidon</string>
             <string name="Source"><![CDATA[-- Poseidon (ModuleScript)
@@ -1471,7 +1477,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="16">
+        <Item class="ModuleScript" referent="17">
           <Properties>
             <string name="Name">Zeus</string>
             <string name="Source"><![CDATA[-- Zeus (ModuleScript)
@@ -1514,7 +1520,7 @@ return {
           </Properties>
         </Item>
       </Item>
-      <Item class="ModuleScript" referent="17">
+      <Item class="ModuleScript" referent="18">
         <Properties>
           <string name="Name">MasteryConfig</string>
           <string name="Source"><![CDATA[-- MasteryConfig (ModuleScript)
@@ -1611,7 +1617,7 @@ return MasteryConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="18">
+      <Item class="ModuleScript" referent="19">
         <Properties>
           <string name="Name">Progression</string>
           <string name="Source"><![CDATA[-- Progression (ModuleScript)
@@ -1675,7 +1681,7 @@ return Progression
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="19">
+      <Item class="ModuleScript" referent="20">
         <Properties>
           <string name="Name">QuestConfig</string>
           <string name="Source"><![CDATA[-- QuestConfig (ModuleScript)
@@ -1855,7 +1861,7 @@ return QuestConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="20">
+      <Item class="ModuleScript" referent="21">
         <Properties>
           <string name="Name">RankOutfits</string>
           <string name="Source"><![CDATA[-- RankOutfits (ModuleScript)
@@ -2062,7 +2068,209 @@ return RankOutfits
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="21">
+      <Item class="ModuleScript" referent="22">
+        <Properties>
+          <string name="Name">Sfx</string>
+          <string name="Source"><![CDATA[-- Sfx (ModuleScript)
+-- Location: ReplicatedStorage > Shared > Sfx
+--
+-- Phase 8: plays sound effects on the client (names from SoundConfig.Effects).
+--   Sfx.Play(name)                 -> a 2D sound (UI, your own actions)
+--   Sfx.Play(name, position)       -> a 3D sound in the world at `position`
+--   Sfx.Play(name, nil, volumeScale)
+-- Respects the player's "SfxVolume" attribute and limits how many sounds
+-- play at once so big fights stay pleasant.
+
+local Players = game:GetService("Players")
+local SoundService = game:GetService("SoundService")
+local Workspace = game:GetService("Workspace")
+local Debris = game:GetService("Debris")
+
+local SoundConfig = require(script.Parent:WaitForChild("SoundConfig"))
+
+local Sfx = {}
+
+local MAX_PER_WINDOW = 10
+local WINDOW = 0.25
+local recent = {}
+local random = Random.new()
+local templates = {}
+
+local function template(name)
+	local cfg = SoundConfig.Effects[name]
+	if not cfg then
+		return nil
+	end
+	local sound = templates[name]
+	if not sound then
+		sound = Instance.new("Sound")
+		sound.Name = "Sfx_" .. name
+		sound.SoundId = cfg.Id
+		sound.Volume = cfg.Volume
+		sound.RollOffMinDistance = 12
+		sound.RollOffMaxDistance = 180
+		templates[name] = sound
+	end
+	return sound, cfg
+end
+
+local function allowed()
+	local now = os.clock()
+	local i = 1
+	while i <= #recent do
+		if now - recent[i] > WINDOW then
+			table.remove(recent, i)
+		else
+			i += 1
+		end
+	end
+	if #recent >= MAX_PER_WINDOW then
+		return false
+	end
+	table.insert(recent, now)
+	return true
+end
+
+function Sfx.Play(name, position, volumeScale)
+	local player = Players.LocalPlayer
+	local setting = player and player:GetAttribute("SfxVolume")
+	local master = if type(setting) == "number" then setting else 0.8
+	if master <= 0 or not allowed() then
+		return
+	end
+	local base, cfg = template(name)
+	if not base then
+		return
+	end
+	local sound = base:Clone()
+	sound.Volume = cfg.Volume * master * (volumeScale or 1) * 1.25
+	local pitch = cfg.Pitch
+	if type(pitch) == "table" then
+		sound.PlaybackSpeed = random:NextNumber(pitch[1], pitch[2])
+	elseif type(pitch) == "number" then
+		sound.PlaybackSpeed = pitch
+	end
+	if typeof(position) == "Vector3" then
+		local attachment = Instance.new("Attachment")
+		attachment.Name = "SfxPoint"
+		attachment.WorldPosition = position
+		attachment.Parent = Workspace.Terrain
+		sound.Parent = attachment
+		sound:Play()
+		Debris:AddItem(attachment, 8)
+	else
+		sound.Parent = SoundService
+		sound:Play()
+		Debris:AddItem(sound, 8)
+	end
+end
+
+-- Makes sure the sounds are downloaded early (call once on the client).
+function Sfx.Preload()
+	local ContentProvider = game:GetService("ContentProvider")
+	local list = {}
+	for name in SoundConfig.Effects do
+		local sound = template(name)
+		if sound then
+			table.insert(list, sound)
+		end
+	end
+	task.spawn(function()
+		pcall(function()
+			ContentProvider:PreloadAsync(list)
+		end)
+	end)
+end
+
+return Sfx
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="23">
+        <Properties>
+          <string name="Name">SoundConfig</string>
+          <string name="Source"><![CDATA[-- SoundConfig (ModuleScript)
+-- Location: ReplicatedStorage > Shared > SoundConfig
+--
+-- Phase 8: music and sound effects. All tracks are from Roblox's licensed
+-- libraries (APM Music, DistroKid, ProSoundEffects, Roblox UI sounds), which
+-- any experience may use. To change a sound, replace its id.
+
+local SoundConfig = {}
+
+local function id(n)
+	return "rbxassetid://" .. n
+end
+
+-- Music playlists (shuffled, crossfaded). Volume is multiplied by the
+-- player's Music setting.
+SoundConfig.Music = {
+	-- Ethereal, floating: the plaza, temples and practice field.
+	Olympus = {
+		Volume = 0.35,
+		Tracks = {
+			id(9043657051),      -- Star Chasing (Underscore): soaring ethereal strings and bells
+			id(1837463526),      -- Ethereal Drone: celestial ambient synth textures
+			id(9043678446),      -- Arcturus (Underscore): swirling, graceful
+			id(111151323492777), -- Floating Through Silence
+			id(106135664783553), -- Clouds Unfurl
+		},
+	},
+	-- Arena waves.
+	Battle = {
+		Volume = 0.4,
+		Tracks = {
+			id(122783941148304), -- Heroic Orchestral Battle Music
+			id(1842337366),      -- Might of Arms
+			id(1842960322),      -- Shoulders Of Giants
+		},
+	},
+	-- When a boss is on the field.
+	Boss = {
+		Volume = 0.45,
+		Tracks = {
+			id(128007000574959), -- Epic Boss Battle
+			id(80766740746561),  -- Rise of Vaurinox (epic boss battle film score)
+			id(76918130388475),  -- Last Stand
+		},
+	},
+}
+
+-- Soft wind on the mountain top (looped under the Olympus music).
+SoundConfig.Ambience = { Id = id(9114057128), Volume = 0.12 } -- Desert Wind, light gusts
+
+-- Sound effects. Volume is multiplied by the player's Effects setting.
+-- Pitch can be a number or { min, max } for variety.
+SoundConfig.Effects = {
+	Swing = { Id = id(9126229255), Volume = 0.45, Pitch = { 0.95, 1.15 } },  -- fast airy whoosh
+	HeavySwing = { Id = id(9120972321), Volume = 0.5, Pitch = { 0.8, 0.9 } }, -- slicing air
+	Hit = { Id = id(9113530386), Volume = 0.45, Pitch = { 0.9, 1.1 } },       -- body impact
+	Crit = { Id = id(9125672726), Volume = 0.5, Pitch = { 1.0, 1.1 } },       -- metal impact
+	Block = { Id = id(9119072660), Volume = 0.55, Pitch = { 0.95, 1.05 } },   -- shield clang
+	Hurt = { Id = id(9119072674), Volume = 0.35, Pitch = { 0.7, 0.8 } },
+	Dash = { Id = id(9125807267), Volume = 0.4, Pitch = { 1.0, 1.1 } },       -- rising whoosh
+	Arrow = { Id = id(9113166206), Volume = 0.45 },
+	Death = { Id = id(9113470802), Volume = 0.45 },                           -- heavy body fall
+	Thunder = { Id = id(9120016256), Volume = 0.5 },
+	Fire = { Id = id(9117985933), Volume = 0.5 },
+	Slam = { Id = id(9118588626), Volume = 0.55, Pitch = { 0.8, 0.9 } },
+	Magic = { Id = id(9116394545), Volume = 0.5 },                            -- soft chiming magic
+	Heal = { Id = id(9116395089), Volume = 0.5 },
+	Water = { Id = id(9125703162), Volume = 0.5 },
+	Whoosh = { Id = id(9126228631), Volume = 0.45 },
+	Chimes = { Id = id(9119447936), Volume = 0.5 },                           -- level up / quest
+	Coins = { Id = id(9113849492), Volume = 0.45 },
+	Gong = { Id = id(9114630316), Volume = 0.5 },                             -- arena waves, boss
+	Roar = { Id = id(9113980319), Volume = 0.6, Pitch = { 0.8, 0.9 } },       -- boss appears
+	Click = { Id = id(15675059323), Volume = 0.4 },                           -- UI buttons
+	UIWhoosh = { Id = id(15674975792), Volume = 0.3 },                        -- menus opening
+}
+
+return SoundConfig
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="24">
         <Properties>
           <string name="Name">SwordAnimator</string>
           <string name="Source"><![CDATA[-- SwordAnimator (ModuleScript, used by the client only)
@@ -2379,7 +2587,7 @@ return SwordAnimator
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="22">
+      <Item class="ModuleScript" referent="25">
         <Properties>
           <string name="Name">SwordBuilder</string>
           <string name="Source"><![CDATA[-- SwordBuilder (ModuleScript)
@@ -2591,7 +2799,7 @@ return SwordBuilder
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="23">
+      <Item class="ModuleScript" referent="26">
         <Properties>
           <string name="Name">SwordPoses</string>
           <string name="Source"><![CDATA[-- SwordPoses (ModuleScript)
@@ -2746,7 +2954,7 @@ return Poses
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="24">
+      <Item class="ModuleScript" referent="27">
         <Properties>
           <string name="Name">TempleConfig</string>
           <string name="Source"><![CDATA[-- TempleConfig (ModuleScript)
@@ -2989,7 +3197,7 @@ return TempleConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="25">
+      <Item class="ModuleScript" referent="28">
         <Properties>
           <string name="Name">WeaponConfig</string>
           <string name="Source"><![CDATA[-- WeaponConfig (ModuleScript)
@@ -3130,11 +3338,11 @@ return WeaponConfig
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="26">
+  <Item class="ServerScriptService" referent="29">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Script" referent="27">
+    <Item class="Script" referent="30">
       <Properties>
         <string name="Name">Main</string>
         <token name="RunContext">0</token>
@@ -3172,6 +3380,7 @@ local GameEvents = require(Services:WaitForChild("GameEvents"))
 local QuestService = require(Services:WaitForChild("QuestService"))
 local ChallengeService = require(Services:WaitForChild("ChallengeService"))
 local MasteryService = require(Services:WaitForChild("MasteryService"))
+local EnvironmentService = require(Services:WaitForChild("EnvironmentService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -3216,12 +3425,14 @@ local weaponRemote = newRemote("WeaponAction") -- client -> server equip / craft
 local questRemote = newRemote("QuestAction") -- client -> server "claim this quest"
 local challengeRemote = newRemote("ChallengeAction") -- client -> server "start this Titan Gate challenge"
 local incarnationRemote = newRemote("IncarnationAction") -- client -> server "transform now"
+local settingsRemote = newRemote("SettingsAction") -- client -> server music / effects volume
 
 remotes.Parent = ReplicatedStorage
 
 --------------------------------------------------------------------------
 -- 2. Start systems
 --------------------------------------------------------------------------
+EnvironmentService.Build() -- Phase 8: sky, mountain, cloud sea
 WorldBuilder.Build()
 DataService.Init()
 ProgressionService.Init(DataService, notifyRemote)
@@ -3241,6 +3452,26 @@ ArenaService.BuildGate()
 ChallengeService.Init(DataService, ArenaService, notifyRemote, challengeRemote)
 ChallengeService.BuildGate()
 MasteryService.Init(DataService, ProgressionService, AbilityService, GameEvents, notifyRemote, fxRemote, incarnationRemote)
+
+-- Phase 8: music / effects volume (saved in data.Settings, shown as attributes)
+local function pushSettings(player)
+	local data = DataService.GetData(player)
+	if data and type(data.Settings) == "table" then
+		player:SetAttribute("MusicVolume", tonumber(data.Settings.MusicVolume) or 0.5)
+		player:SetAttribute("SfxVolume", tonumber(data.Settings.SfxVolume) or 0.8)
+	end
+end
+settingsRemote.OnServerEvent:Connect(function(player, key, value)
+	local data = DataService.GetData(player)
+	if not data or (key ~= "MusicVolume" and key ~= "SfxVolume") or type(value) ~= "number" or value ~= value then
+		return
+	end
+	if type(data.Settings) ~= "table" then
+		data.Settings = {}
+	end
+	data.Settings[key] = math.clamp(value, 0, 1)
+	pushSettings(player)
+end)
 AscensionService.Init(DataService, ProgressionService, ArenaService, notifyRemote, fxRemote, ascensionRemote, if GameConfig.Debug.Diagnostics then DiagnosticsService else nil)
 AscensionService.BuildChamber()
 InventoryService.Init(DataService, ProgressionService, notifyRemote, weaponRemote)
@@ -3366,6 +3597,7 @@ local function onPlayerAdded(player)
 	QuestService.SetupPlayer(player)
 	ChallengeService.SetupPlayer(player)
 	MasteryService.SetupPlayer(player)
+	pushSettings(player)
 	player:SetAttribute("DataLoaded", true)
 	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
 end
@@ -3437,11 +3669,11 @@ end)
 ]]></string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="28">
+    <Item class="Folder" referent="31">
       <Properties>
         <string name="Name">Services</string>
       </Properties>
-      <Item class="ModuleScript" referent="29">
+      <Item class="ModuleScript" referent="32">
         <Properties>
           <string name="Name">AbilityService</string>
           <string name="Source"><![CDATA[-- AbilityService (ModuleScript)
@@ -4105,7 +4337,7 @@ return AbilityService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="30">
+      <Item class="ModuleScript" referent="33">
         <Properties>
           <string name="Name">ArenaService</string>
           <string name="Source"><![CDATA[-- ArenaService (ModuleScript)
@@ -4804,7 +5036,7 @@ return ArenaService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="31">
+      <Item class="ModuleScript" referent="34">
         <Properties>
           <string name="Name">AscensionService</string>
           <string name="Source"><![CDATA[-- AscensionService (ModuleScript)
@@ -5154,7 +5386,7 @@ return AscensionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="32">
+      <Item class="ModuleScript" referent="35">
         <Properties>
           <string name="Name">ChallengeService</string>
           <string name="Source"><![CDATA[-- ChallengeService (ModuleScript)
@@ -5355,7 +5587,7 @@ return ChallengeService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="33">
+      <Item class="ModuleScript" referent="36">
         <Properties>
           <string name="Name">CombatService</string>
           <string name="Source"><![CDATA[-- CombatService (ModuleScript)
@@ -5820,7 +6052,7 @@ return CombatService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="34">
+      <Item class="ModuleScript" referent="37">
         <Properties>
           <string name="Name">DataService</string>
           <string name="Source"><![CDATA[-- DataService (ModuleScript)
@@ -6204,7 +6436,7 @@ return DataService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="35">
+      <Item class="ModuleScript" referent="38">
         <Properties>
           <string name="Name">DiagnosticsService</string>
           <string name="Source"><![CDATA[-- DiagnosticsService (ModuleScript)
@@ -6312,7 +6544,7 @@ return DiagnosticsService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="36">
+      <Item class="ModuleScript" referent="39">
         <Properties>
           <string name="Name">EnemyService</string>
           <string name="Source"><![CDATA[-- EnemyService (ModuleScript)
@@ -7498,7 +7730,299 @@ return EnemyService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="37">
+      <Item class="ModuleScript" referent="40">
+        <Properties>
+          <string name="Name">EnvironmentService</string>
+          <string name="Source"><![CDATA[-- EnvironmentService (ModuleScript)
+-- Location: ServerScriptService > Services > EnvironmentService
+--
+-- Phase 8: the look of Mount Olympus.
+--   * Lighting: golden late-afternoon sun, atmosphere haze, bloom, sun rays,
+--     colour grading and drifting sky clouds.
+--   * Terrain: the summit of Mount Olympus right under the plaza, practice
+--     field and temple district (a rocky plateau with grass, cliffs falling
+--     away, snow on the upper slopes), plus distant peaks rising out of the
+--     clouds.
+--   * A sea of clouds far below that stretches to the horizon.
+-- Everything is generated when the server starts (nothing to upload).
+-- Settings are at the top of this file.
+
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+
+local EnvironmentService = {}
+
+local SUMMIT_CENTER = Vector3.new(0, 0, 90)  -- under the plaza + temple district
+local SUMMIT_RADIUS = 390                    -- flat top covers everything built
+local SUMMIT_TOP = -4.5                      -- under the floors (terrain voxels round up ~2.5 studs)
+local MOUNTAIN_DEPTH = 300                   -- the cliffs go down into the clouds
+local CLOUD_Y = -270                         -- height of the cloud sea
+local CLOUD_EXTENT = 7000                    -- how far the cloud sea reaches
+
+-- Distant peaks (X, Z, height above the clouds, base radius). Kept away from
+-- the arenas (which float at Z = 1500).
+local PEAKS = {
+	{ -1300, 600, 380, 420 },
+	{ 1250, 300, 300, 360 },
+	{ -700, -1200, 260, 330 },
+	{ 1100, -1000, 420, 460 },
+	{ -1800, -300, 220, 300 },
+	{ 2000, 1300, 340, 380 },
+	{ -1400, 2100, 300, 360 },
+}
+
+--------------------------------------------------------------------------
+-- Lighting and sky
+--------------------------------------------------------------------------
+local function setupLighting()
+	Lighting.ClockTime = 16.6               -- golden late afternoon
+	Lighting.GeographicLatitude = 38          -- Greece
+	Lighting.Brightness = 3
+	Lighting.Ambient = Color3.fromRGB(70, 60, 75)
+	Lighting.OutdoorAmbient = Color3.fromRGB(150, 135, 150)
+	Lighting.EnvironmentDiffuseScale = 1
+	Lighting.EnvironmentSpecularScale = 1
+	Lighting.GlobalShadows = true
+	Lighting.ExposureCompensation = 0.15
+
+	for _, item in Lighting:GetChildren() do
+		if item:IsA("Sky") or item:IsA("Atmosphere") or item:IsA("PostEffect") then
+			item:Destroy()
+		end
+	end
+
+	local sky = Instance.new("Sky")
+	sky.Name = "OlympusSky"
+	sky.SunAngularSize = 14
+	sky.MoonAngularSize = 9
+	sky.StarCount = 4000
+	sky.CelestialBodiesShown = true
+	sky.Parent = Lighting
+
+	local atmosphere = Instance.new("Atmosphere")
+	atmosphere.Name = "OlympusAir"
+	atmosphere.Density = 0.32
+	atmosphere.Offset = 0.12
+	atmosphere.Color = Color3.fromRGB(255, 226, 200)   -- warm haze
+	atmosphere.Decay = Color3.fromRGB(150, 120, 190)   -- violet distance
+	atmosphere.Glare = 0.6
+	atmosphere.Haze = 1.6
+	atmosphere.Parent = Lighting
+
+	local bloom = Instance.new("BloomEffect")
+	bloom.Name = "DivineBloom"
+	bloom.Intensity = 0.9
+	bloom.Size = 30
+	bloom.Threshold = 1.6
+	bloom.Parent = Lighting
+
+	local rays = Instance.new("SunRaysEffect")
+	rays.Name = "DivineRays"
+	rays.Intensity = 0.12
+	rays.Spread = 0.8
+	rays.Parent = Lighting
+
+	local grade = Instance.new("ColorCorrectionEffect")
+	grade.Name = "DivineGrade"
+	grade.Brightness = 0.02
+	grade.Contrast = 0.12
+	grade.Saturation = 0.12
+	grade.TintColor = Color3.fromRGB(255, 246, 236)
+	grade.Parent = Lighting
+
+	-- Drifting clouds in the sky above
+	local terrain = Workspace.Terrain
+	local clouds = terrain:FindFirstChildOfClass("Clouds") or Instance.new("Clouds")
+	clouds.Cover = 0.55
+	clouds.Density = 0.5
+	clouds.Color = Color3.fromRGB(255, 240, 235)
+	clouds.Parent = terrain
+end
+
+--------------------------------------------------------------------------
+-- Terrain
+--------------------------------------------------------------------------
+local rng = Random.new(1821) -- fixed seed: the mountain looks the same every server
+
+local function ball(terrain, position, radius, material)
+	terrain:FillBall(position, radius, material)
+end
+
+-- A craggy cone made of overlapping rock balls (only the outer shell is
+-- filled, so it stays light): from `topY` down to `bottomY`.
+local function craggyCone(terrain, center, topY, bottomY, topRadius, bottomRadius, materials)
+	local height = topY - bottomY
+	local layers = math.max(3, math.floor(height / 26))
+	for layer = 0, layers do
+		local t = layer / layers -- 0 at the top, 1 at the bottom
+		local y = topY - t * height
+		local radius = topRadius + (bottomRadius - topRadius) * (t ^ 0.8)
+		local blob = 18 + 14 * t + rng:NextNumber(0, 6)
+		local count = math.max(6, math.floor(2 * math.pi * radius / (blob * 1.6)))
+		local twist = rng:NextNumber(0, math.pi * 2)
+		for i = 1, count do
+			local angle = twist + i / count * math.pi * 2
+			local wobble = rng:NextNumber(-0.06, 0.08) * radius
+			local r = radius + wobble
+			local position = Vector3.new(center.X + math.cos(angle) * r, y + rng:NextNumber(-6, 6), center.Z + math.sin(angle) * r)
+			local material = materials(t, rng)
+			ball(terrain, position, blob * rng:NextNumber(0.85, 1.2), material)
+		end
+	end
+end
+
+local function summitMaterial(t, random)
+	if t < 0.12 then
+		return if random:NextNumber() < 0.55 then Enum.Material.Grass else Enum.Material.Rock
+	elseif t < 0.45 then
+		local roll = random:NextNumber()
+		if roll < 0.35 then
+			return Enum.Material.Snow
+		elseif roll < 0.5 then
+			return Enum.Material.Glacier
+		end
+		return Enum.Material.Rock
+	elseif t < 0.75 then
+		return if random:NextNumber() < 0.6 then Enum.Material.Slate else Enum.Material.Rock
+	end
+	return Enum.Material.Basalt
+end
+
+local function peakMaterial(t, random)
+	if t < 0.3 then
+		return if random:NextNumber() < 0.7 then Enum.Material.Snow else Enum.Material.Glacier
+	elseif t < 0.6 then
+		return if random:NextNumber() < 0.3 then Enum.Material.Snow else Enum.Material.Rock
+	end
+	return Enum.Material.Slate
+end
+
+local function buildTerrain()
+	local terrain = Workspace.Terrain
+	terrain:Clear()
+	terrain.WaterWaveSize = 0
+	terrain.Decoration = true -- grass blades on Grass
+	terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromRGB(120, 160, 80))
+	terrain:SetMaterialColor(Enum.Material.Rock, Color3.fromRGB(150, 140, 130))
+	terrain:SetMaterialColor(Enum.Material.Slate, Color3.fromRGB(120, 115, 120))
+	terrain:SetMaterialColor(Enum.Material.Snow, Color3.fromRGB(245, 248, 255))
+
+	-- The summit plateau: a flat slab with a grassy top, under everything.
+	local c = SUMMIT_CENTER
+	local slabThickness = 24
+	terrain:FillCylinder(CFrame.new(c.X, SUMMIT_TOP - slabThickness / 2, c.Z), slabThickness, SUMMIT_RADIUS, Enum.Material.Rock)
+	terrain:FillCylinder(CFrame.new(c.X, SUMMIT_TOP - 2, c.Z), 4, SUMMIT_RADIUS - 6, Enum.Material.Grass)
+	-- Worn paths of stone in the grass
+	for _ = 1, 40 do
+		local angle = rng:NextNumber(0, math.pi * 2)
+		local r = rng:NextNumber(60, SUMMIT_RADIUS - 30)
+		terrain:FillCylinder(CFrame.new(c.X + math.cos(angle) * r, SUMMIT_TOP - 2, c.Z + math.sin(angle) * r), 4.2, rng:NextNumber(8, 22), Enum.Material.Rock)
+	end
+	task.wait()
+
+	-- Boulders and a rocky rim around the edge of the plateau
+	for i = 1, 70 do
+		local angle = i / 70 * math.pi * 2 + rng:NextNumber(-0.03, 0.03)
+		local r = SUMMIT_RADIUS + rng:NextNumber(-2, 10)
+		local size = rng:NextNumber(8, 18)
+		ball(terrain, Vector3.new(c.X + math.cos(angle) * r, SUMMIT_TOP + size * 0.25, c.Z + math.sin(angle) * r), size, if rng:NextNumber() < 0.3 then Enum.Material.Snow else Enum.Material.Rock)
+	end
+	task.wait()
+
+	-- The mountain falling away below the plateau, down into the clouds
+	craggyCone(terrain, c, SUMMIT_TOP - 10, SUMMIT_TOP - MOUNTAIN_DEPTH, SUMMIT_RADIUS + 8, SUMMIT_RADIUS + 360, summitMaterial)
+	task.wait()
+
+	-- Distant peaks
+	for _, peak in PEAKS do
+		local center = Vector3.new(peak[1], 0, peak[2])
+		local top = CLOUD_Y + peak[3]
+		craggyCone(terrain, center, top, CLOUD_Y - 25, 18, peak[4], peakMaterial)
+		ball(terrain, Vector3.new(center.X, top + 6, center.Z), 26, Enum.Material.Snow) -- the snowy tip
+		task.wait()
+	end
+end
+
+--------------------------------------------------------------------------
+-- Sea of clouds
+--------------------------------------------------------------------------
+local function buildCloudSea()
+	local old = Workspace:FindFirstChild("CloudSea")
+	if old then
+		old:Destroy()
+	end
+	local folder = Instance.new("Folder")
+	folder.Name = "CloudSea"
+
+	local function cloudPart(size, position, transparency, color)
+		local part = Instance.new("Part")
+		part.Name = "Cloud"
+		part.Shape = Enum.PartType.Ball
+		part.Size = size
+		part.Position = position
+		part.Anchored = true
+		part.CanCollide = false
+		part.CanQuery = false
+		part.CanTouch = false
+		part.CastShadow = false
+		part.Material = Enum.Material.SmoothPlastic
+		part.Color = color
+		part.Transparency = transparency
+		part.Parent = folder
+		return part
+	end
+
+	-- A flat floor of cloud so there are never holes (parts max 2048 studs).
+	local tile = 2048
+	local tiles = math.ceil(CLOUD_EXTENT * 2 / tile)
+	for ix = 0, tiles - 1 do
+		for iz = 0, tiles - 1 do
+			local part = Instance.new("Part")
+			part.Name = "CloudFloor"
+			part.Size = Vector3.new(tile, 2, tile)
+			part.Position = Vector3.new(-CLOUD_EXTENT + tile / 2 + ix * tile, CLOUD_Y - 22, 900 - CLOUD_EXTENT + tile / 2 + iz * tile)
+			part.Anchored = true
+			part.CanCollide = false
+			part.CanQuery = false
+			part.CanTouch = false
+			part.CastShadow = false
+			part.Material = Enum.Material.SmoothPlastic
+			part.Color = Color3.fromRGB(246, 236, 240)
+			part.Parent = folder
+		end
+	end
+
+	-- Puffy cloud mounds: big near the mountain, spread to the horizon.
+	local cloudRng = Random.new(77)
+	local colors = { Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 244, 238), Color3.fromRGB(246, 236, 248), Color3.fromRGB(255, 236, 220) }
+	for _ = 1, 420 do
+		local distance = 300 + cloudRng:NextNumber() ^ 1.4 * (CLOUD_EXTENT - 400)
+		local angle = cloudRng:NextNumber(0, math.pi * 2)
+		local width = cloudRng:NextNumber(160, 420) * (1 + distance / 4000)
+		local position = Vector3.new(math.cos(angle) * distance, CLOUD_Y + cloudRng:NextNumber(-18, 22), 90 + math.sin(angle) * distance)
+		cloudPart(Vector3.new(width, width * cloudRng:NextNumber(0.18, 0.3), width), position, cloudRng:NextNumber(0, 0.15), colors[cloudRng:NextInteger(1, #colors)])
+	end
+	-- Wisps hugging the mountain's sides
+	for i = 1, 60 do
+		local angle = i / 60 * math.pi * 2
+		local distance = SUMMIT_RADIUS + cloudRng:NextNumber(120, 380)
+		local width = cloudRng:NextNumber(90, 200)
+		cloudPart(Vector3.new(width, width * 0.25, width * 0.7), Vector3.new(math.cos(angle) * distance, CLOUD_Y + cloudRng:NextNumber(20, 120), 90 + math.sin(angle) * distance), cloudRng:NextNumber(0.35, 0.6), colors[1])
+	end
+	folder.Parent = Workspace
+end
+
+function EnvironmentService.Build()
+	setupLighting()
+	buildCloudSea()
+	task.spawn(buildTerrain) -- takes a few seconds; players can already play
+end
+
+return EnvironmentService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="41">
         <Properties>
           <string name="Name">GameEvents</string>
           <string name="Source"><![CDATA[-- GameEvents (ModuleScript)
@@ -7532,7 +8056,7 @@ return GameEvents
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="38">
+      <Item class="ModuleScript" referent="42">
         <Properties>
           <string name="Name">GodService</string>
           <string name="Source"><![CDATA[-- GodService (ModuleScript)
@@ -7997,7 +8521,7 @@ return GodService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="39">
+      <Item class="ModuleScript" referent="43">
         <Properties>
           <string name="Name">InventoryService</string>
           <string name="Source"><![CDATA[-- InventoryService (ModuleScript)
@@ -8346,7 +8870,7 @@ return InventoryService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="40">
+      <Item class="ModuleScript" referent="44">
         <Properties>
           <string name="Name">MasteryService</string>
           <string name="Source"><![CDATA[-- MasteryService (ModuleScript)
@@ -8813,7 +9337,7 @@ return MasteryService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="41">
+      <Item class="ModuleScript" referent="45">
         <Properties>
           <string name="Name">PlotService</string>
           <string name="Source"><![CDATA[-- PlotService (ModuleScript)
@@ -8941,7 +9465,7 @@ return PlotService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="42">
+      <Item class="ModuleScript" referent="46">
         <Properties>
           <string name="Name">ProgressionService</string>
           <string name="Source"><![CDATA[-- ProgressionService (ModuleScript)
@@ -9220,7 +9744,7 @@ return ProgressionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="43">
+      <Item class="ModuleScript" referent="47">
         <Properties>
           <string name="Name">QuestService</string>
           <string name="Source"><![CDATA[-- QuestService (ModuleScript)
@@ -9523,7 +10047,7 @@ return QuestService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="44">
+      <Item class="ModuleScript" referent="48">
         <Properties>
           <string name="Name">TempleModels</string>
           <string name="Source"><![CDATA[-- TempleModels (ModuleScript)
@@ -10135,7 +10659,7 @@ return TempleModels
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="45">
+      <Item class="ModuleScript" referent="49">
         <Properties>
           <string name="Name">TempleService</string>
           <string name="Source"><![CDATA[-- TempleService (ModuleScript)
@@ -10591,7 +11115,7 @@ return TempleService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="46">
+      <Item class="ModuleScript" referent="50">
         <Properties>
           <string name="Name">WorldBuilder</string>
           <string name="Source"><![CDATA[-- WorldBuilder (ModuleScript)
@@ -10831,16 +11355,22 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="47">
+  <Item class="SoundService" referent="51">
+    <Properties>
+      <string name="Name">SoundService</string>
+      <bool name="RespectFilteringEnabled">true</bool>
+    </Properties>
+  </Item>
+  <Item class="StarterPlayer" referent="52">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <token name="AvatarJointUpgrade_SerializedRollout">1</token>
     </Properties>
-    <Item class="StarterCharacterScripts" referent="48">
+    <Item class="StarterCharacterScripts" referent="53">
       <Properties>
         <string name="Name">StarterCharacterScripts</string>
       </Properties>
-      <Item class="Script" referent="49">
+      <Item class="Script" referent="54">
         <Properties>
           <string name="Name">Health</string>
           <token name="RunContext">0</token>
@@ -10854,11 +11384,11 @@ return WorldBuilder
         </Properties>
       </Item>
     </Item>
-    <Item class="StarterPlayerScripts" referent="50">
+    <Item class="StarterPlayerScripts" referent="55">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="51">
+      <Item class="LocalScript" referent="56">
         <Properties>
           <string name="Name">AbilityController</string>
           <string name="Source"><![CDATA[-- AbilityController (LocalScript)
@@ -11408,7 +11938,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="52">
+      <Item class="LocalScript" referent="57">
         <Properties>
           <string name="Name">AimDot</string>
           <string name="Source"><![CDATA[-- AimDot (LocalScript)
@@ -11463,7 +11993,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="53">
+      <Item class="LocalScript" referent="58">
         <Properties>
           <string name="Name">ArenaUI</string>
           <string name="Source"><![CDATA[-- ArenaUI (LocalScript)
@@ -11820,7 +12350,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="54">
+      <Item class="LocalScript" referent="59">
         <Properties>
           <string name="Name">AscensionUI</string>
           <string name="Source"><![CDATA[-- AscensionUI (LocalScript)
@@ -12132,7 +12662,330 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="55">
+      <Item class="LocalScript" referent="60">
+        <Properties>
+          <string name="Name">AudioController</string>
+          <string name="Source"><![CDATA[-- AudioController (LocalScript)
+-- Location: StarterPlayer > StarterPlayerScripts > AudioController
+--
+-- Phase 8: music, ambience and sound effects.
+--   * Music zones (SoundConfig.Music): Olympus (ethereal) everywhere, Battle
+--     during an arena/trial/challenge run, Boss while a boss of your run is
+--     alive. Tracks are shuffled and crossfaded.
+--   * Soft mountain wind under the Olympus music.
+--   * Sound effects for every combat effect the server sends (hits, crits,
+--     blocks, deaths, god abilities...), level ups, arena waves, bosses
+--     appearing, rewards and button clicks.
+--   * Two small buttons (bottom left): Music and Effects on/off, saved.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local SoundConfig = require(Shared:WaitForChild("SoundConfig"))
+local Sfx = require(Shared:WaitForChild("Sfx"))
+
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local fxRemote = Remotes:WaitForChild("CombatFX")
+local notifyRemote = Remotes:WaitForChild("Notify")
+local arenaEvent = Remotes:WaitForChild("ArenaEvent")
+local settingsRemote = Remotes:WaitForChild("SettingsAction")
+
+Sfx.Preload()
+
+local function musicSetting()
+	local value = player:GetAttribute("MusicVolume")
+	return if type(value) == "number" then value else 0.5
+end
+
+--------------------------------------------------------------------------
+-- Music
+--------------------------------------------------------------------------
+local musicGroup = Instance.new("SoundGroup")
+musicGroup.Name = "OlympusMusic"
+musicGroup.Parent = SoundService
+
+local random = Random.new()
+local zone = nil
+local current = nil -- the Sound playing now
+local playlistIndex = {}
+local FADE = 2.5
+
+local function fadeOut(sound)
+	if not sound then
+		return
+	end
+	local tween = TweenService:Create(sound, TweenInfo.new(FADE), { Volume = 0 })
+	tween:Play()
+	tween.Completed:Connect(function()
+		sound:Destroy()
+	end)
+end
+
+local function nextTrack(zoneName)
+	local cfg = SoundConfig.Music[zoneName]
+	local order = playlistIndex[zoneName]
+	if not order or order.Position > #order.List then
+		local list = table.clone(cfg.Tracks)
+		for i = #list, 2, -1 do
+			local j = random:NextInteger(1, i)
+			list[i], list[j] = list[j], list[i]
+		end
+		order = { List = list, Position = 1 }
+		playlistIndex[zoneName] = order
+	end
+	local id = order.List[order.Position]
+	order.Position += 1
+	return id, cfg.Volume
+end
+
+local playTrack
+playTrack = function(zoneName)
+	local id, volume = nextTrack(zoneName)
+	local sound = Instance.new("Sound")
+	sound.Name = "Music_" .. zoneName
+	sound.SoundId = id
+	sound.Volume = 0
+	sound.SoundGroup = musicGroup
+	sound:SetAttribute("BaseVolume", volume)
+	sound.Parent = SoundService
+	sound:Play()
+	TweenService:Create(sound, TweenInfo.new(FADE), { Volume = volume * musicSetting() }):Play()
+	fadeOut(current)
+	current = sound
+	sound.Ended:Connect(function()
+		if current == sound and zone == zoneName then
+			playTrack(zoneName) -- next song in the same zone
+		end
+	end)
+end
+
+local function setZone(newZone)
+	if newZone == zone then
+		return
+	end
+	zone = newZone
+	playTrack(newZone)
+end
+
+local function applyMusicVolume()
+	if current then
+		current.Volume = (current:GetAttribute("BaseVolume") or 0.35) * musicSetting()
+	end
+end
+player:GetAttributeChangedSignal("MusicVolume"):Connect(applyMusicVolume)
+
+-- Wind ambience
+local wind = Instance.new("Sound")
+wind.Name = "MountainWind"
+wind.SoundId = SoundConfig.Ambience.Id
+wind.Looped = true
+wind.Volume = 0
+wind.Parent = SoundService
+wind:Play()
+
+local function myRunId()
+	local id = player:GetAttribute("ArenaRunId")
+	return if id ~= nil and id ~= "" and id ~= 0 then id else nil
+end
+
+local function bossAlive(runId)
+	local enemies = Workspace:FindFirstChild("Enemies")
+	if not enemies then
+		return false
+	end
+	for _, model in enemies:GetChildren() do
+		if model:GetAttribute("IsBoss") and model:GetAttribute("RunId") == runId then
+			local humanoid = model:FindFirstChildOfClass("Humanoid")
+			if humanoid and humanoid.Health > 0 then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+task.spawn(function()
+	while true do
+		local runId = myRunId()
+		local state = player:GetAttribute("ArenaState")
+		local fighting = runId and state ~= "Victory" and state ~= "Failed"
+		if fighting then
+			setZone(if bossAlive(runId) then "Boss" else "Battle")
+		else
+			setZone("Olympus")
+		end
+		local windTarget = if zone == "Olympus" then SoundConfig.Ambience.Volume * musicSetting() * 2 else 0
+		wind.Volume += (windTarget - wind.Volume) * 0.3
+		task.wait(1)
+	end
+end)
+
+--------------------------------------------------------------------------
+-- Sound effects from combat events
+--------------------------------------------------------------------------
+local DAMAGE_SOUNDS = {
+	Enemy = "Hit", Crit = "Crit", Player = "Hurt", Blocked = "Block", Countered = "Block", Dodged = "Whoosh",
+}
+local ABILITY_SOUNDS = {
+	Lightning = "Thunder", Chain = "Thunder", Shockwave = "Slam", Cleave = "HeavySwing", DashTrail = "Dash",
+	Aura = "Magic", Beam = "Fire", Vortex = "Water", Wave = "Water", Dome = "Magic", HealBurst = "Heal",
+}
+
+fxRemote.OnClientEvent:Connect(function(kind, position, a, b)
+	if kind == "Swing" and typeof(position) == "Instance" then
+		local character = position.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		if root then
+			Sfx.Play("Swing", root.Position, 0.7)
+		end
+		return
+	end
+	if typeof(position) ~= "Vector3" then
+		return
+	end
+	if kind == "Damage" then
+		local style = b
+		if a == 0 and style ~= "Dodged" and style ~= "Countered" then
+			return
+		end
+		local name = DAMAGE_SOUNDS[style or "Enemy"]
+		if name then
+			Sfx.Play(name, position)
+		end
+	elseif kind == "Death" then
+		Sfx.Play("Death", position)
+	elseif kind == "EnemyAttack" then
+		local windup = if typeof(b) == "number" then b else 0.5
+		task.delay(math.max(0, windup - 0.05), function()
+			Sfx.Play("HeavySwing", position, 0.6)
+		end)
+	elseif kind == "Reward" then
+		Sfx.Play("Coins", nil, 0.6)
+	elseif ABILITY_SOUNDS[kind] then
+		Sfx.Play(ABILITY_SOUNDS[kind], position)
+	end
+end)
+
+notifyRemote.OnClientEvent:Connect(function(kind)
+	if kind == "LevelUp" then
+		Sfx.Play("Chimes")
+	elseif kind == "RankUp" then
+		Sfx.Play("Gong")
+		task.delay(0.4, Sfx.Play, "Chimes")
+	end
+end)
+
+arenaEvent.OnClientEvent:Connect(function(kind, data)
+	if kind == "Result" and type(data) == "table" then
+		if data.Victory then
+			Sfx.Play("Chimes")
+			Sfx.Play("Coins", nil, 0.8)
+		else
+			Sfx.Play("Gong", nil, 0.6)
+		end
+	end
+end)
+
+player:GetAttributeChangedSignal("ArenaWave"):Connect(function()
+	if myRunId() and (player:GetAttribute("ArenaWave") or 0) > 0 then
+		Sfx.Play("Gong", nil, 0.7)
+	end
+end)
+
+-- A boss of your run appears: a roar.
+task.spawn(function()
+	local enemies = Workspace:WaitForChild("Enemies", 60)
+	if not enemies then
+		return
+	end
+	enemies.ChildAdded:Connect(function(model)
+		task.wait(0.2)
+		if model:GetAttribute("IsBoss") and model:GetAttribute("RunId") == myRunId() then
+			local root = model:FindFirstChild("HumanoidRootPart")
+			Sfx.Play("Roar", root and root.Position)
+		end
+	end)
+end)
+
+--------------------------------------------------------------------------
+-- Button clicks (menus only; not the combat and ability buttons)
+--------------------------------------------------------------------------
+local SILENT_GUIS = { CombatHUD = true, CombatTouchButtons = true, AbilityButtons = true, IncarnationUI = true }
+local function hookButton(button)
+	if not button:IsA("GuiButton") or button:GetAttribute("SfxHooked") then
+		return
+	end
+	local screen = button:FindFirstAncestorWhichIsA("ScreenGui")
+	if screen and SILENT_GUIS[screen.Name] then
+		return
+	end
+	button:SetAttribute("SfxHooked", true)
+	button.Activated:Connect(function()
+		Sfx.Play("Click")
+	end)
+end
+for _, item in playerGui:GetDescendants() do
+	hookButton(item)
+end
+playerGui.DescendantAdded:Connect(hookButton)
+
+--------------------------------------------------------------------------
+-- Music / Effects toggles (bottom left, above the version label)
+--------------------------------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "AudioToggles"
+gui.ResetOnSpawn = false
+gui.DisplayOrder = 6
+gui.Parent = playerGui
+
+local function toggle(label, attribute, x)
+	local b = Instance.new("TextButton")
+	b.Name = attribute
+	b.AnchorPoint = Vector2.new(0, 1)
+	b.Position = UDim2.new(0, x, 1, -26)
+	b.Size = UDim2.fromOffset(86, 26)
+	b.Font = Enum.Font.GothamBold
+	b.TextSize = 13
+	b.TextColor3 = Color3.new(1, 1, 1)
+	b.BackgroundColor3 = Color3.fromRGB(40, 34, 52)
+	b.BackgroundTransparency = 0.25
+	b.AutoButtonColor = true
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = b
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(212, 175, 55)
+	stroke.Thickness = 1
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = b
+	local function refresh()
+		local value = player:GetAttribute(attribute)
+		local on = (if type(value) == "number" then value else 0.5) > 0
+		b.Text = label .. (if on then ": On" else ": Off")
+		stroke.Color = if on then Color3.fromRGB(212, 175, 55) else Color3.fromRGB(120, 120, 130)
+	end
+	b.Activated:Connect(function()
+		local value = player:GetAttribute(attribute)
+		local on = (if type(value) == "number" then value else 0.5) > 0
+		settingsRemote:FireServer(attribute, if on then 0 else (if attribute == "MusicVolume" then 0.5 else 0.8))
+	end)
+	player:GetAttributeChangedSignal(attribute):Connect(refresh)
+	refresh()
+	b.Parent = gui
+end
+toggle("Music", "MusicVolume", 8)
+toggle("Effects", "SfxVolume", 100)
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="LocalScript" referent="61">
         <Properties>
           <string name="Name">CombatController</string>
           <string name="Source"><![CDATA[-- CombatController (LocalScript)
@@ -12172,6 +13025,7 @@ local function weaponType()
 end
 
 local AimHelper = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AimHelper"))
+local Sfx = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Sfx"))
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local attackRemote = Remotes:WaitForChild("CombatAttack")
@@ -12467,6 +13321,7 @@ local function attack()
 	predictHits(root)
 	flashTrail()
 	attackRemote:FireServer(comboIndex, aim)
+	Sfx.Play(if weaponType().Ranged then "Arrow" else (if comboIndex == 3 then "HeavySwing" else "Swing"))
 end
 
 local function setBlock(on)
@@ -12513,6 +13368,7 @@ local function dash()
 
 	burst(root.Position, godColor(), 16, 8)
 	dashRemote:FireServer(direction) -- the server uses it for god dash abilities
+	Sfx.Play("Dash")
 end
 
 --------------------------------------------------------------------------
@@ -12777,7 +13633,7 @@ updateEnabled()
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="56">
+      <Item class="LocalScript" referent="62">
         <Properties>
           <string name="Name">Diagnostics</string>
           <string name="Source"><![CDATA[-- Diagnostics (LocalScript)
@@ -12878,7 +13734,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="57">
+      <Item class="LocalScript" referent="63">
         <Properties>
           <string name="Name">GodUI</string>
           <string name="Source"><![CDATA[-- GodUI (LocalScript)
@@ -13457,7 +14313,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="58">
+      <Item class="LocalScript" referent="64">
         <Properties>
           <string name="Name">HUDController</string>
           <string name="Source"><![CDATA[-- HUDController (LocalScript)
@@ -13934,7 +14790,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="59">
+      <Item class="LocalScript" referent="65">
         <Properties>
           <string name="Name">MasteryUI</string>
           <string name="Source"><![CDATA[-- MasteryUI (LocalScript)
@@ -14265,7 +15121,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="60">
+      <Item class="LocalScript" referent="66">
         <Properties>
           <string name="Name">QuestUI</string>
           <string name="Source"><![CDATA[-- QuestUI (LocalScript)
@@ -14566,7 +15422,7 @@ refresh()
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="61">
+      <Item class="LocalScript" referent="67">
         <Properties>
           <string name="Name">TempleUI</string>
           <string name="Source"><![CDATA[-- TempleUI (LocalScript)
@@ -14981,7 +15837,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="62">
+      <Item class="LocalScript" referent="68">
         <Properties>
           <string name="Name">TitanGateUI</string>
           <string name="Source"><![CDATA[-- TitanGateUI (LocalScript)
@@ -15169,7 +16025,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="63">
+      <Item class="LocalScript" referent="69">
         <Properties>
           <string name="Name">WeaponUI</string>
           <string name="Source"><![CDATA[-- WeaponUI (LocalScript)
@@ -15454,5 +16310,12 @@ end)
         </Properties>
       </Item>
     </Item>
+  </Item>
+  <Item class="Workspace" referent="70">
+    <Properties>
+      <string name="Name">Workspace</string>
+      <float name="FallenPartsDestroyHeight">-1500</float>
+      <bool name="NeedsPivotMigration">false</bool>
+    </Properties>
   </Item>
 </roblox>
