@@ -50,6 +50,9 @@ A Greek mythology RPG / temple tycoon for Roblox.
 | `src/shared/ChallengeConfig.luau` | ReplicatedStorage › Shared › ChallengeConfig | ModuleScript |
 | `src/server/Services/ChallengeService.luau` | ServerScriptService › Services › ChallengeService | ModuleScript |
 | `src/client/TitanGateUI.client.luau`, `AimDot.client.luau` | StarterPlayer › StarterPlayerScripts › (same names) | LocalScript |
+| `src/shared/MasteryConfig.luau`, `AimHelper.luau` | ReplicatedStorage › Shared › (same names) | ModuleScript |
+| `src/server/Services/MasteryService.luau` | ServerScriptService › Services › MasteryService | ModuleScript |
+| `src/client/MasteryUI.client.luau` | StarterPlayer › StarterPlayerScripts › MasteryUI | LocalScript |
 | `src/client/HUDController.client.luau` | StarterPlayer › StarterPlayerScripts › HUDController | LocalScript |
 | `src/client/TempleUI.client.luau` | StarterPlayer › StarterPlayerScripts › TempleUI | LocalScript |
 | `src/client/GodUI.client.luau` | StarterPlayer › StarterPlayerScripts › GodUI | LocalScript |

@@ -93,6 +93,7 @@ local function makeDefaultData()
 		},
 
 		CompletedTrials = {}, -- [TrialId] = true
+		Mastery = {},         -- Phase 7E: [GodId] = { Level, XP }
 		Challenges = {},      -- Phase 7E: ["<challenge>:<difficulty>"] = { Clears, Best (seconds) }
 
 		Stats = {

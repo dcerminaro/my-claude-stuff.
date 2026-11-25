@@ -1019,6 +1019,9 @@ function EnemyService.DamageEnemy(model, amount, player, options)
 	record.LastDamagedAt = now
 	if player then
 		record.LastAttacker = player
+		if not record.Config.Immortal then
+			GameEvents.Fire("HitEnemy", player, record.Type) -- Phase 7E: fills Divine Energy
+		end
 		local info = record.Contributors[player] or { Damage = 0, Last = 0 }
 		info.Damage += amount
 		info.Last = now

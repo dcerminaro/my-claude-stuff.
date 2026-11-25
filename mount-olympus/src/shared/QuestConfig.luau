@@ -111,6 +111,18 @@ table.insert(QuestConfig.Chains, {
 	},
 })
 
+-- Phase 7E part 3: Divine Mastery and Incarnation.
+table.insert(QuestConfig.Chains, {
+	Id = "Mastery", Name = "Divine Mastery", Category = "Mastery",
+	Quests = {
+		q("DM1", "Student of the Gods", "Reach mastery level 5 with your god.", { Type = "MasteryLevel", Count = 5 }, { DivineFavor = 100, Gold = 2000 }),
+		q("DM2", "Adept", "Reach mastery level 10 with your god.", { Type = "MasteryLevel", Count = 10 }, { DivineFavor = 300, Ambrosia = 2 }),
+		q("DM3", "Become the God", "Incarnate for the first time (Elder God).", { Type = "Incarnate", Target = "Any", Count = 1 }, { DivineFavor = 500, Ambrosia = 5 }),
+		q("DM4", "Master", "Reach mastery level 25 with your god.", { Type = "MasteryLevel", Count = 25 }, { DivineFavor = 1500, Ambrosia = 8 }),
+		q("DM5", "Chosen", "Reach mastery level 50 with your god.", { Type = "MasteryLevel", Count = 50 }, { DivineFavor = 6000, Ambrosia = 30 }),
+	},
+})
+
 -- God quests: one small chain per god, only while you worship that god.
 local GOD_IDS = { "Zeus", "Poseidon", "Hades", "Ares", "Athena", "Apollo" }
 for _, god in GOD_IDS do
@@ -156,7 +168,7 @@ end
 -- Objectives that are checked from the save instead of counted.
 QuestConfig.StateObjectives = {
 	ChooseGod = true, ReachLevel = true, ReachRank = true, TempleTier = true,
-	BuildingLevel = true, TotalBuildingLevels = true, BlessingLevels = true, OwnWeapons = true, TemplePrestige = true,
+	BuildingLevel = true, TotalBuildingLevels = true, BlessingLevels = true, OwnWeapons = true, TemplePrestige = true, MasteryLevel = true,
 }
 
 return QuestConfig

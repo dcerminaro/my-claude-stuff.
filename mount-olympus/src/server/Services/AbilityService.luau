@@ -555,6 +555,50 @@ function AbilityService.GetModifiers(player)
 	return activeBuffs(player)
 end
 
+-- Phase 7E (Divine Incarnation): a timed buff from outside the ability system.
+-- buff = { AttackPercent, SpeedPercent, DamageTaken, LifeSteal, RegenPercent }
+function AbilityService.AddBuff(player, id, buff, duration)
+	local st = state[player]
+	if not st then
+		return false
+	end
+	st.Buffs[id] = {
+		Until = os.clock() + duration,
+		AttackPercent = buff.AttackPercent or 0,
+		SpeedPercent = buff.SpeedPercent or 0,
+		DamageTaken = buff.DamageTaken or 1,
+		LifeSteal = buff.LifeSteal or 0,
+		RegenPercent = buff.RegenPercent or 0,
+	}
+	ProgressionService.RefreshStats(player)
+	task.delay(duration + 0.05, function()
+		if state[player] then
+			activeBuffs(player) -- clears it
+			ProgressionService.RefreshStats(player)
+		end
+	end)
+	return true
+end
+
+function AbilityService.BaseDamage(player)
+	return baseDamage(player)
+end
+
+-- Damages every enemy within `radius` of `position`. Returns how many were hit.
+function AbilityService.DamageArea(player, position, radius, amount, knockback)
+	local count = 0
+	for _, record in EnemyService.GetEnemiesInRange(position, radius) do
+		if hit(player, record, amount, knockback) then
+			count += 1
+		end
+	end
+	return count
+end
+
+function AbilityService.Heal(player, amount)
+	healPlayer(player, amount)
+end
+
 function AbilityService.Init(dataService, progressionService, templeService, enemyService, godService, fxRemoteEvent, abilityRemote)
 	DataService = dataService
 	ProgressionService = progressionService

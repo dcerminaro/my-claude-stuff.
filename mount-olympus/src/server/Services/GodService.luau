@@ -19,6 +19,7 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local GodConfig = require(Shared:WaitForChild("GodConfig"))
+local MasteryConfig = require(Shared:WaitForChild("MasteryConfig"))
 local WorldBuilder = require(ServerScriptService:WaitForChild("Services"):WaitForChild("WorldBuilder"))
 
 local GodService = {}
@@ -265,6 +266,11 @@ function GodService.GetBonuses(player)
 			bonuses[stat] += level * blessing.Passive.PerLevel
 		end
 	end
+	-- Phase 7E: Divine Mastery adds a small bonus for this god.
+	local mastery = type(data.Mastery) == "table" and data.Mastery[god.Id]
+	local masteryLevel = if type(mastery) == "table" then math.clamp(tonumber(mastery.Level) or 1, 1, MasteryConfig.MaxLevel) else 1
+	bonuses.AttackPercent += masteryLevel * MasteryConfig.AttackPercentPerLevel
+	bonuses.HealthPercent += masteryLevel * MasteryConfig.HealthPercentPerLevel
 	return bonuses
 end
 

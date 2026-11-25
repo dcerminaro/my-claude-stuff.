@@ -1141,7 +1141,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v45"
+GameConfig.BuildLabel = "v47"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -1516,6 +1516,103 @@ return {
       </Item>
       <Item class="ModuleScript" referent="17">
         <Properties>
+          <string name="Name">MasteryConfig</string>
+          <string name="Source"><![CDATA[-- MasteryConfig (ModuleScript)
+-- Location: ReplicatedStorage > Shared > MasteryConfig
+--
+-- Phase 7E part 3: Divine Mastery and Divine Incarnations.
+--
+-- DIVINE MASTERY: every god has its own mastery level (1-50). Mastery XP is
+-- earned for the god you currently worship by fighting and worshipping.
+-- Each level gives a small, capped bonus and some levels unlock cosmetics.
+--
+-- DIVINE INCARNATION (Elder God only): fill Divine Energy by hitting and
+-- defeating enemies, then transform into your god's divine form for a short
+-- time: an opening blast, glowing form and strong temporary buffs.
+-- All numbers are PLACEHOLDERS, balanced in Phase 8.
+
+local MasteryConfig = {}
+
+MasteryConfig.MaxLevel = 50
+
+-- Mastery XP needed to go from `level` to `level + 1`.
+function MasteryConfig.XPForLevel(level)
+	return math.floor(100 * level ^ 1.8)
+end
+
+-- Where mastery XP comes from.
+MasteryConfig.Sources = {
+	KillXPShare = 0.1,      -- a tenth of the enemy's normal XP (dummies give 0)
+	ArenaXPShare = 0.1,     -- a tenth of the arena's XP reward for a win
+	ChallengeWin = 1500,
+	Worship = 20,
+	UseAbility = 2,
+}
+
+-- Small, capped bonuses (per level; level 50 = +10% attack, +10% health).
+MasteryConfig.AttackPercentPerLevel = 0.2
+MasteryConfig.HealthPercentPerLevel = 0.2
+
+-- Cosmetics unlocked at mastery levels (for the god you worship).
+MasteryConfig.Unlocks = {
+	{ Level = 5, Id = "Sparks", Name = "Divine Sparks", Description = "Sparks of your god's colour drift around you." },
+	{ Level = 10, Id = "Title1", Name = "Title: Adept", Description = "\"<God> Adept\" above your head." },
+	{ Level = 15, Id = "Trail", Name = "Divine Trail", Description = "A glowing trail follows your steps." },
+	{ Level = 25, Id = "Title2", Name = "Title: Master", Description = "\"Master of <God>\" above your head." },
+	{ Level = 30, Id = "Glow", Name = "Inner Light", Description = "You shine with your god's light." },
+	{ Level = 40, Id = "Title3", Name = "Title: Grandmaster", Description = "\"Grandmaster of <God>\" above your head." },
+	{ Level = 50, Id = "Crown", Name = "Crown of Light", Description = "A floating crown of light and the title \"Chosen of <God>\"." },
+}
+
+function MasteryConfig.Title(godName, level)
+	if level >= 50 then
+		return "Chosen of " .. godName
+	elseif level >= 40 then
+		return "Grandmaster of " .. godName
+	elseif level >= 25 then
+		return "Master of " .. godName
+	elseif level >= 10 then
+		return godName .. " Adept"
+	end
+	return nil
+end
+
+--------------------------------------------------------------------------
+-- DIVINE INCARNATION
+--------------------------------------------------------------------------
+MasteryConfig.Incarnation = {
+	RequiredRank = 8,        -- Elder God
+	EnergyMax = 100,
+	EnergyPerHit = 1,        -- each time you damage an enemy
+	EnergyPerKill = 3,
+	EnergyPerBossKill = 25,
+	BaseDuration = 18,       -- seconds
+	DurationPerMastery = 0.2, -- + seconds per mastery level (level 50: 28 s)
+	BlastRadius = 24,        -- opening blast
+	BlastDamage = 8,         -- x your ability damage
+	HealPercent = 30,        -- heals you when you transform
+	Key = Enum.KeyCode.T,    -- keyboard key (phones/tablets get a button)
+}
+
+-- Each god's form. Buff numbers work like ability buffs:
+-- AttackPercent, SpeedPercent, DamageTaken (0.6 = take 40% less),
+-- RegenPercent (% of max health per second), LifeSteal (share of damage).
+MasteryConfig.Forms = {
+	Zeus = { Name = "Avatar of the Storm", AttackPercent = 60, SpeedPercent = 25, DamageTaken = 0.7 },
+	Poseidon = { Name = "Lord of the Deep", AttackPercent = 40, SpeedPercent = 20, DamageTaken = 0.6, RegenPercent = 3 },
+	Hades = { Name = "King of the Dead", AttackPercent = 45, SpeedPercent = 20, DamageTaken = 0.65, LifeSteal = 0.15 },
+	Ares = { Name = "Avatar of War", AttackPercent = 75, SpeedPercent = 25, DamageTaken = 0.75 },
+	Athena = { Name = "Aegis Incarnate", AttackPercent = 35, SpeedPercent = 20, DamageTaken = 0.45 },
+	Apollo = { Name = "The Radiant Sun", AttackPercent = 45, SpeedPercent = 40, DamageTaken = 0.7, RegenPercent = 2 },
+}
+MasteryConfig.DefaultForm = { Name = "Divine Form", AttackPercent = 40, SpeedPercent = 20, DamageTaken = 0.7 }
+
+return MasteryConfig
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="18">
+        <Properties>
           <string name="Name">Progression</string>
           <string name="Source"><![CDATA[-- Progression (ModuleScript)
 -- Location: ReplicatedStorage > Shared > Progression
@@ -1578,7 +1675,7 @@ return Progression
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="18">
+      <Item class="ModuleScript" referent="19">
         <Properties>
           <string name="Name">QuestConfig</string>
           <string name="Source"><![CDATA[-- QuestConfig (ModuleScript)
@@ -1694,6 +1791,18 @@ table.insert(QuestConfig.Chains, {
 	},
 })
 
+-- Phase 7E part 3: Divine Mastery and Incarnation.
+table.insert(QuestConfig.Chains, {
+	Id = "Mastery", Name = "Divine Mastery", Category = "Mastery",
+	Quests = {
+		q("DM1", "Student of the Gods", "Reach mastery level 5 with your god.", { Type = "MasteryLevel", Count = 5 }, { DivineFavor = 100, Gold = 2000 }),
+		q("DM2", "Adept", "Reach mastery level 10 with your god.", { Type = "MasteryLevel", Count = 10 }, { DivineFavor = 300, Ambrosia = 2 }),
+		q("DM3", "Become the God", "Incarnate for the first time (Elder God).", { Type = "Incarnate", Target = "Any", Count = 1 }, { DivineFavor = 500, Ambrosia = 5 }),
+		q("DM4", "Master", "Reach mastery level 25 with your god.", { Type = "MasteryLevel", Count = 25 }, { DivineFavor = 1500, Ambrosia = 8 }),
+		q("DM5", "Chosen", "Reach mastery level 50 with your god.", { Type = "MasteryLevel", Count = 50 }, { DivineFavor = 6000, Ambrosia = 30 }),
+	},
+})
+
 -- God quests: one small chain per god, only while you worship that god.
 local GOD_IDS = { "Zeus", "Poseidon", "Hades", "Ares", "Athena", "Apollo" }
 for _, god in GOD_IDS do
@@ -1739,14 +1848,14 @@ end
 -- Objectives that are checked from the save instead of counted.
 QuestConfig.StateObjectives = {
 	ChooseGod = true, ReachLevel = true, ReachRank = true, TempleTier = true,
-	BuildingLevel = true, TotalBuildingLevels = true, BlessingLevels = true, OwnWeapons = true, TemplePrestige = true,
+	BuildingLevel = true, TotalBuildingLevels = true, BlessingLevels = true, OwnWeapons = true, TemplePrestige = true, MasteryLevel = true,
 }
 
 return QuestConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="19">
+      <Item class="ModuleScript" referent="20">
         <Properties>
           <string name="Name">RankOutfits</string>
           <string name="Source"><![CDATA[-- RankOutfits (ModuleScript)
@@ -1953,7 +2062,7 @@ return RankOutfits
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="20">
+      <Item class="ModuleScript" referent="21">
         <Properties>
           <string name="Name">SwordAnimator</string>
           <string name="Source"><![CDATA[-- SwordAnimator (ModuleScript, used by the client only)
@@ -2270,7 +2379,7 @@ return SwordAnimator
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="21">
+      <Item class="ModuleScript" referent="22">
         <Properties>
           <string name="Name">SwordBuilder</string>
           <string name="Source"><![CDATA[-- SwordBuilder (ModuleScript)
@@ -2482,7 +2591,7 @@ return SwordBuilder
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="22">
+      <Item class="ModuleScript" referent="23">
         <Properties>
           <string name="Name">SwordPoses</string>
           <string name="Source"><![CDATA[-- SwordPoses (ModuleScript)
@@ -2637,7 +2746,7 @@ return Poses
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="23">
+      <Item class="ModuleScript" referent="24">
         <Properties>
           <string name="Name">TempleConfig</string>
           <string name="Source"><![CDATA[-- TempleConfig (ModuleScript)
@@ -2880,7 +2989,7 @@ return TempleConfig
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="24">
+      <Item class="ModuleScript" referent="25">
         <Properties>
           <string name="Name">WeaponConfig</string>
           <string name="Source"><![CDATA[-- WeaponConfig (ModuleScript)
@@ -3021,11 +3130,11 @@ return WeaponConfig
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="25">
+  <Item class="ServerScriptService" referent="26">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Script" referent="26">
+    <Item class="Script" referent="27">
       <Properties>
         <string name="Name">Main</string>
         <token name="RunContext">0</token>
@@ -3062,6 +3171,7 @@ local InventoryService = require(Services:WaitForChild("InventoryService"))
 local GameEvents = require(Services:WaitForChild("GameEvents"))
 local QuestService = require(Services:WaitForChild("QuestService"))
 local ChallengeService = require(Services:WaitForChild("ChallengeService"))
+local MasteryService = require(Services:WaitForChild("MasteryService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -3105,6 +3215,7 @@ local ascensionRemote = newRemote("AscensionAction") -- client -> server "start 
 local weaponRemote = newRemote("WeaponAction") -- client -> server equip / craft / upgrade a weapon
 local questRemote = newRemote("QuestAction") -- client -> server "claim this quest"
 local challengeRemote = newRemote("ChallengeAction") -- client -> server "start this Titan Gate challenge"
+local incarnationRemote = newRemote("IncarnationAction") -- client -> server "transform now"
 
 remotes.Parent = ReplicatedStorage
 
@@ -3129,6 +3240,7 @@ ArenaService.Init(DataService, ProgressionService, PlotService, EnemyService, no
 ArenaService.BuildGate()
 ChallengeService.Init(DataService, ArenaService, notifyRemote, challengeRemote)
 ChallengeService.BuildGate()
+MasteryService.Init(DataService, ProgressionService, AbilityService, GameEvents, notifyRemote, fxRemote, incarnationRemote)
 AscensionService.Init(DataService, ProgressionService, ArenaService, notifyRemote, fxRemote, ascensionRemote, if GameConfig.Debug.Diagnostics then DiagnosticsService else nil)
 AscensionService.BuildChamber()
 InventoryService.Init(DataService, ProgressionService, notifyRemote, weaponRemote)
@@ -3253,6 +3365,7 @@ local function onPlayerAdded(player)
 	AscensionService.SetupPlayer(player)
 	QuestService.SetupPlayer(player)
 	ChallengeService.SetupPlayer(player)
+	MasteryService.SetupPlayer(player)
 	player:SetAttribute("DataLoaded", true)
 	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
 end
@@ -3273,6 +3386,7 @@ Players.PlayerRemoving:Connect(function(player)
 	ArenaService.ReleasePlayer(player)
 	AscensionService.ReleasePlayer(player)
 	QuestService.ReleasePlayer(player)
+	MasteryService.ReleasePlayer(player)
 	PlotService.ReleasePlot(player)
 	DataService.ReleasePlayer(player) -- yields while saving
 end)
@@ -3323,11 +3437,11 @@ end)
 ]]></string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="27">
+    <Item class="Folder" referent="28">
       <Properties>
         <string name="Name">Services</string>
       </Properties>
-      <Item class="ModuleScript" referent="28">
+      <Item class="ModuleScript" referent="29">
         <Properties>
           <string name="Name">AbilityService</string>
           <string name="Source"><![CDATA[-- AbilityService (ModuleScript)
@@ -3887,6 +4001,50 @@ function AbilityService.GetModifiers(player)
 	return activeBuffs(player)
 end
 
+-- Phase 7E (Divine Incarnation): a timed buff from outside the ability system.
+-- buff = { AttackPercent, SpeedPercent, DamageTaken, LifeSteal, RegenPercent }
+function AbilityService.AddBuff(player, id, buff, duration)
+	local st = state[player]
+	if not st then
+		return false
+	end
+	st.Buffs[id] = {
+		Until = os.clock() + duration,
+		AttackPercent = buff.AttackPercent or 0,
+		SpeedPercent = buff.SpeedPercent or 0,
+		DamageTaken = buff.DamageTaken or 1,
+		LifeSteal = buff.LifeSteal or 0,
+		RegenPercent = buff.RegenPercent or 0,
+	}
+	ProgressionService.RefreshStats(player)
+	task.delay(duration + 0.05, function()
+		if state[player] then
+			activeBuffs(player) -- clears it
+			ProgressionService.RefreshStats(player)
+		end
+	end)
+	return true
+end
+
+function AbilityService.BaseDamage(player)
+	return baseDamage(player)
+end
+
+-- Damages every enemy within `radius` of `position`. Returns how many were hit.
+function AbilityService.DamageArea(player, position, radius, amount, knockback)
+	local count = 0
+	for _, record in EnemyService.GetEnemiesInRange(position, radius) do
+		if hit(player, record, amount, knockback) then
+			count += 1
+		end
+	end
+	return count
+end
+
+function AbilityService.Heal(player, amount)
+	healPlayer(player, amount)
+end
+
 function AbilityService.Init(dataService, progressionService, templeService, enemyService, godService, fxRemoteEvent, abilityRemote)
 	DataService = dataService
 	ProgressionService = progressionService
@@ -3947,7 +4105,7 @@ return AbilityService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="29">
+      <Item class="ModuleScript" referent="30">
         <Properties>
           <string name="Name">ArenaService</string>
           <string name="Source"><![CDATA[-- ArenaService (ModuleScript)
@@ -4646,7 +4804,7 @@ return ArenaService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="30">
+      <Item class="ModuleScript" referent="31">
         <Properties>
           <string name="Name">AscensionService</string>
           <string name="Source"><![CDATA[-- AscensionService (ModuleScript)
@@ -4996,7 +5154,7 @@ return AscensionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="31">
+      <Item class="ModuleScript" referent="32">
         <Properties>
           <string name="Name">ChallengeService</string>
           <string name="Source"><![CDATA[-- ChallengeService (ModuleScript)
@@ -5197,7 +5355,7 @@ return ChallengeService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="32">
+      <Item class="ModuleScript" referent="33">
         <Properties>
           <string name="Name">CombatService</string>
           <string name="Source"><![CDATA[-- CombatService (ModuleScript)
@@ -5662,7 +5820,7 @@ return CombatService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="33">
+      <Item class="ModuleScript" referent="34">
         <Properties>
           <string name="Name">DataService</string>
           <string name="Source"><![CDATA[-- DataService (ModuleScript)
@@ -5760,6 +5918,7 @@ local function makeDefaultData()
 		},
 
 		CompletedTrials = {}, -- [TrialId] = true
+		Mastery = {},         -- Phase 7E: [GodId] = { Level, XP }
 		Challenges = {},      -- Phase 7E: ["<challenge>:<difficulty>"] = { Clears, Best (seconds) }
 
 		Stats = {
@@ -6045,7 +6204,7 @@ return DataService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="34">
+      <Item class="ModuleScript" referent="35">
         <Properties>
           <string name="Name">DiagnosticsService</string>
           <string name="Source"><![CDATA[-- DiagnosticsService (ModuleScript)
@@ -6153,7 +6312,7 @@ return DiagnosticsService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="35">
+      <Item class="ModuleScript" referent="36">
         <Properties>
           <string name="Name">EnemyService</string>
           <string name="Source"><![CDATA[-- EnemyService (ModuleScript)
@@ -7177,6 +7336,9 @@ function EnemyService.DamageEnemy(model, amount, player, options)
 	record.LastDamagedAt = now
 	if player then
 		record.LastAttacker = player
+		if not record.Config.Immortal then
+			GameEvents.Fire("HitEnemy", player, record.Type) -- Phase 7E: fills Divine Energy
+		end
 		local info = record.Contributors[player] or { Damage = 0, Last = 0 }
 		info.Damage += amount
 		info.Last = now
@@ -7336,7 +7498,7 @@ return EnemyService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="36">
+      <Item class="ModuleScript" referent="37">
         <Properties>
           <string name="Name">GameEvents</string>
           <string name="Source"><![CDATA[-- GameEvents (ModuleScript)
@@ -7370,7 +7532,7 @@ return GameEvents
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="37">
+      <Item class="ModuleScript" referent="38">
         <Properties>
           <string name="Name">GodService</string>
           <string name="Source"><![CDATA[-- GodService (ModuleScript)
@@ -7394,6 +7556,7 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local GodConfig = require(Shared:WaitForChild("GodConfig"))
+local MasteryConfig = require(Shared:WaitForChild("MasteryConfig"))
 local WorldBuilder = require(ServerScriptService:WaitForChild("Services"):WaitForChild("WorldBuilder"))
 
 local GodService = {}
@@ -7640,6 +7803,11 @@ function GodService.GetBonuses(player)
 			bonuses[stat] += level * blessing.Passive.PerLevel
 		end
 	end
+	-- Phase 7E: Divine Mastery adds a small bonus for this god.
+	local mastery = type(data.Mastery) == "table" and data.Mastery[god.Id]
+	local masteryLevel = if type(mastery) == "table" then math.clamp(tonumber(mastery.Level) or 1, 1, MasteryConfig.MaxLevel) else 1
+	bonuses.AttackPercent += masteryLevel * MasteryConfig.AttackPercentPerLevel
+	bonuses.HealthPercent += masteryLevel * MasteryConfig.HealthPercentPerLevel
 	return bonuses
 end
 
@@ -7829,7 +7997,7 @@ return GodService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="38">
+      <Item class="ModuleScript" referent="39">
         <Properties>
           <string name="Name">InventoryService</string>
           <string name="Source"><![CDATA[-- InventoryService (ModuleScript)
@@ -8178,7 +8346,474 @@ return InventoryService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="39">
+      <Item class="ModuleScript" referent="40">
+        <Properties>
+          <string name="Name">MasteryService</string>
+          <string name="Source"><![CDATA[-- MasteryService (ModuleScript)
+-- Location: ServerScriptService > Services > MasteryService
+--
+-- Phase 7E part 3 (settings in Shared/MasteryConfig):
+--   * Divine Mastery: mastery XP and level per god (data.Mastery[god] =
+--     { Level, XP }), earned for the god you worship from GameEvents (kills,
+--     arena/challenge wins, worship, abilities). Small attack/health bonus
+--     (GodService.GetBonuses reads it) and cosmetics on your character.
+--   * Divine Incarnation (Elder God): Divine Energy from hitting/defeating
+--     enemies; when full, "Activate" transforms you for a while: opening
+--     blast, heal, buffs (through AbilityService.AddBuff) and a glowing form.
+-- Client attributes: MasteryJson, IncarnationUnlocked, DivineEnergy,
+-- IncarnationUntil (server time), IncarnationForm.
+
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local MasteryConfig = require(Shared:WaitForChild("MasteryConfig"))
+local CombatConfig = require(Shared:WaitForChild("CombatConfig"))
+local ArenaConfig = require(Shared:WaitForChild("ArenaConfig"))
+local GodConfig = require(Shared:WaitForChild("GodConfig"))
+
+local GameEvents = require(script.Parent:WaitForChild("GameEvents"))
+
+local MasteryService = {}
+
+local DataService = nil
+local ProgressionService = nil
+local AbilityService = nil
+local notifyRemote = nil
+local fxRemote = nil
+
+local INC = MasteryConfig.Incarnation
+local energy = {} -- [Player] = { Energy, Until }
+
+local function message(player, text)
+	if notifyRemote and player.Parent then
+		notifyRemote:FireClient(player, "Message", text)
+	end
+end
+
+local function masteryOf(data, godId)
+	if type(data.Mastery) ~= "table" then
+		data.Mastery = {}
+	end
+	local entry = data.Mastery[godId]
+	if type(entry) ~= "table" then
+		entry = { Level = 1, XP = 0 }
+		data.Mastery[godId] = entry
+	end
+	entry.Level = math.clamp(math.floor(tonumber(entry.Level) or 1), 1, MasteryConfig.MaxLevel)
+	entry.XP = math.max(0, tonumber(entry.XP) or 0)
+	return entry
+end
+
+-- Mastery level of the god this player worships (0 = no god yet).
+function MasteryService.GetLevel(player)
+	local data = DataService.GetData(player)
+	if not data or data.SelectedGod == "" then
+		return 0
+	end
+	return masteryOf(data, data.SelectedGod).Level
+end
+
+local function push(player, data)
+	local levels = {}
+	for godId in GodConfig.Gods do
+		local entry = type(data.Mastery) == "table" and data.Mastery[godId]
+		levels[godId] = if type(entry) == "table" then entry.Level or 1 else 1
+	end
+	local current = if data.SelectedGod ~= "" then masteryOf(data, data.SelectedGod) else { Level = 0, XP = 0 }
+	player:SetAttribute("MasteryGod", data.SelectedGod)
+	player:SetAttribute("MasteryJson", HttpService:JSONEncode({
+		God = data.SelectedGod,
+		Level = current.Level,
+		XP = math.floor(current.XP),
+		Need = if current.Level >= 1 and current.Level < MasteryConfig.MaxLevel then MasteryConfig.XPForLevel(current.Level) else 0,
+		Levels = levels,
+	}))
+end
+
+--------------------------------------------------------------------------
+-- Cosmetics (all parented to the HumanoidRootPart, which avatar changes
+-- never replace; rebuilt whenever god or level changes)
+--------------------------------------------------------------------------
+local function clearCosmetics(character, prefix)
+	for _, item in character:GetDescendants() do
+		if item.Name:sub(1, #prefix) == prefix then
+			item:Destroy()
+		end
+	end
+end
+
+local function weldedRing(character, root, prefix, offsetY, radius, count, color, thickness)
+	for i = 1, count do
+		local angle = (i / count) * math.pi * 2
+		local part = Instance.new("Part")
+		part.Name = prefix .. i
+		part.Size = Vector3.new(2 * math.pi * radius / count * 1.05, thickness, thickness)
+		part.Material = Enum.Material.Neon
+		part.Color = color
+		part.CanCollide = false
+		part.CanQuery = false
+		part.CanTouch = false
+		part.Massless = true
+		part.CastShadow = false
+		part.CFrame = root.CFrame * CFrame.new(0, offsetY, 0) * CFrame.Angles(0, -angle, 0) * CFrame.new(0, 0, radius)
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = root
+		weld.Part1 = part
+		weld.Parent = part
+		part.Parent = character
+	end
+end
+
+local function applyCosmetics(player)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local data = DataService.GetData(player)
+	if not root or not data then
+		return
+	end
+	local godId = data.SelectedGod
+	local level = if godId ~= "" then masteryOf(data, godId).Level else 0
+	local signature = godId .. "|" .. level
+	if root:GetAttribute("MasteryLook") == signature and root:FindFirstChild("Mastery_Marker") then
+		return
+	end
+	clearCosmetics(character, "Mastery_")
+	root:SetAttribute("MasteryLook", signature)
+	local marker = Instance.new("Folder")
+	marker.Name = "Mastery_Marker"
+	marker.Parent = root
+	if level <= 0 then
+		return
+	end
+	local god = GodConfig.Gods[godId]
+	local colors = GodConfig.GetColors(godId)
+	local glow = colors.Glow or colors.Accent
+
+	if level >= 5 then
+		local sparks = Instance.new("ParticleEmitter")
+		sparks.Name = "Mastery_Sparks"
+		sparks.Color = ColorSequence.new(glow)
+		sparks.LightEmission = 1
+		sparks.Rate = if level >= 25 then 10 else 5
+		sparks.Lifetime = NumberRange.new(1, 1.8)
+		sparks.Speed = NumberRange.new(0.5, 1.5)
+		sparks.SpreadAngle = Vector2.new(180, 180)
+		sparks.Size = NumberSequence.new(0.22, 0)
+		sparks.Parent = root
+	end
+	local title = MasteryConfig.Title(god and god.DisplayName or godId, level)
+	if title then
+		local gui = Instance.new("BillboardGui")
+		gui.Name = "Mastery_Title"
+		gui.Size = UDim2.fromOffset(220, 26)
+		gui.StudsOffset = Vector3.new(0, 4.2, 0)
+		gui.MaxDistance = 90
+		gui.LightInfluence = 0
+		local label = Instance.new("TextLabel")
+		label.BackgroundTransparency = 1
+		label.Size = UDim2.fromScale(1, 1)
+		label.Font = Enum.Font.GothamBold
+		label.TextScaled = true
+		label.TextColor3 = colors.Accent
+		label.TextStrokeTransparency = 0.3
+		label.Text = title
+		label.Parent = gui
+		gui.Parent = root
+	end
+	if level >= 15 then
+		local a0 = Instance.new("Attachment")
+		a0.Name = "Mastery_TrailA"
+		a0.Position = Vector3.new(0, -2.6, 0)
+		a0.Parent = root
+		local a1 = Instance.new("Attachment")
+		a1.Name = "Mastery_TrailB"
+		a1.Position = Vector3.new(0, -1.9, 0)
+		a1.Parent = root
+		local trail = Instance.new("Trail")
+		trail.Name = "Mastery_Trail"
+		trail.Attachment0 = a0
+		trail.Attachment1 = a1
+		trail.Color = ColorSequence.new(glow)
+		trail.LightEmission = 1
+		trail.Lifetime = 0.6
+		trail.Transparency = NumberSequence.new(0.3, 1)
+		trail.Parent = root
+	end
+	if level >= 30 then
+		local light = Instance.new("PointLight")
+		light.Name = "Mastery_Glow"
+		light.Color = glow
+		light.Range = 10
+		light.Brightness = 1.2
+		light.Parent = root
+	end
+	if level >= 50 then
+		weldedRing(character, root, "Mastery_Crown", 3.3, 0.9, 10, colors.Accent, 0.25)
+	end
+end
+
+--------------------------------------------------------------------------
+-- Mastery XP
+--------------------------------------------------------------------------
+function MasteryService.AddXP(player, amount)
+	local data = DataService.GetData(player)
+	amount = tonumber(amount)
+	if not data or data.SelectedGod == "" or not amount or amount <= 0 or amount ~= amount then
+		return
+	end
+	local godId = data.SelectedGod
+	local entry = masteryOf(data, godId)
+	if entry.Level >= MasteryConfig.MaxLevel then
+		return
+	end
+	entry.XP += amount
+	local startLevel = entry.Level
+	while entry.Level < MasteryConfig.MaxLevel and entry.XP >= MasteryConfig.XPForLevel(entry.Level) do
+		entry.XP -= MasteryConfig.XPForLevel(entry.Level)
+		entry.Level += 1
+	end
+	local gained = entry.Level > startLevel
+	if gained then
+		-- One message however many levels were gained at once.
+		local god = GodConfig.Gods[godId]
+		message(player, ("%s Mastery level %d! (+%.1f%% attack and health)"):format(god and god.DisplayName or godId, entry.Level, entry.Level * MasteryConfig.AttackPercentPerLevel))
+		for _, unlock in MasteryConfig.Unlocks do
+			if unlock.Level > startLevel and unlock.Level <= entry.Level then
+				message(player, "Unlocked: " .. unlock.Name .. "!")
+			end
+		end
+	end
+	if entry.Level >= MasteryConfig.MaxLevel then
+		entry.XP = 0
+	end
+	push(player, data)
+	if gained then
+		ProgressionService.RefreshStats(player) -- the attack/health bonus
+		applyCosmetics(player)
+	end
+end
+
+local function onEvent(eventType, player, target, amount)
+	if not player or not player.Parent then
+		return
+	end
+	local src = MasteryConfig.Sources
+	if eventType == "KillEnemy" then
+		local cfg = CombatConfig.Enemies[target]
+		if cfg and (cfg.XP or 0) > 0 then
+			MasteryService.AddXP(player, cfg.XP * src.KillXPShare)
+		end
+		MasteryService.AddEnergy(player, if cfg and cfg.Boss then INC.EnergyPerBossKill else INC.EnergyPerKill)
+	elseif eventType == "HitEnemy" then
+		MasteryService.AddEnergy(player, INC.EnergyPerHit)
+	elseif eventType == "WinArena" then
+		local arena = ArenaConfig.ById[target]
+		if arena and arena.Rewards and arena.Rewards.XP then
+			MasteryService.AddXP(player, arena.Rewards.XP * src.ArenaXPShare)
+		end
+	elseif eventType == "WinChallenge" then
+		MasteryService.AddXP(player, src.ChallengeWin)
+	elseif eventType == "Worship" then
+		MasteryService.AddXP(player, src.Worship)
+	elseif eventType == "UseAbility" then
+		MasteryService.AddXP(player, src.UseAbility * (amount or 1))
+	end
+end
+
+--------------------------------------------------------------------------
+-- Divine Incarnation
+--------------------------------------------------------------------------
+local function unlocked(player)
+	local data = DataService.GetData(player)
+	return data ~= nil and (data.RankIndex or 1) >= INC.RequiredRank
+end
+
+local function pushEnergy(player)
+	local st = energy[player]
+	if st then
+		player:SetAttribute("IncarnationUnlocked", unlocked(player))
+		player:SetAttribute("DivineEnergy", math.floor(st.Energy))
+	end
+end
+
+function MasteryService.AddEnergy(player, amount)
+	local st = energy[player]
+	if not st or not unlocked(player) or os.clock() < st.Until then
+		return -- no charging while transformed
+	end
+	local before = st.Energy
+	st.Energy = math.min(INC.EnergyMax, st.Energy + amount)
+	if math.floor(st.Energy) ~= math.floor(before) then
+		pushEnergy(player)
+		if st.Energy >= INC.EnergyMax and before < INC.EnergyMax then
+			message(player, "Divine Energy full! Incarnate to take your god's form.")
+		end
+	end
+end
+
+local function addFormLook(player, form, colors, duration)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+	clearCosmetics(character, "Incarnation_")
+	local glow = colors.Glow or colors.Accent
+	local aura = Instance.new("ParticleEmitter")
+	aura.Name = "Incarnation_Aura"
+	aura.Color = ColorSequence.new(glow, colors.Accent)
+	aura.LightEmission = 1
+	aura.Rate = 40
+	aura.Lifetime = NumberRange.new(0.6, 1.1)
+	aura.Speed = NumberRange.new(2, 5)
+	aura.SpreadAngle = Vector2.new(180, 180)
+	aura.Size = NumberSequence.new(0.9, 0)
+	aura.Transparency = NumberSequence.new(0.2, 1)
+	aura.Parent = root
+	local light = Instance.new("PointLight")
+	light.Name = "Incarnation_Light"
+	light.Color = glow
+	light.Range = 22
+	light.Brightness = 3
+	light.Parent = root
+	local fire = Instance.new("Fire")
+	fire.Name = "Incarnation_Fire"
+	fire.Color = colors.Fire or glow
+	fire.SecondaryColor = colors.Accent
+	fire.Size = 7
+	fire.Heat = 12
+	fire.Parent = root
+	weldedRing(character, root, "Incarnation_Halo", 3.9, 1.6, 16, colors.Accent, 0.3)
+	weldedRing(character, root, "Incarnation_Wing", 0.6, 2.4, 6, glow, 0.2)
+	player:SetAttribute("IncarnationForm", form.Name)
+	task.delay(duration, function()
+		if character.Parent then
+			clearCosmetics(character, "Incarnation_")
+		end
+	end)
+end
+
+-- Transforms the player if their Divine Energy is full. Returns true if it did.
+function MasteryService.Activate(player)
+	local st = energy[player]
+	local data = DataService.GetData(player)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not st or not data or not root or not humanoid or humanoid.Health <= 0 then
+		return false
+	end
+	if not unlocked(player) then
+		message(player, "Divine Incarnation unlocks at Elder God.")
+		return false
+	end
+	if os.clock() < st.Until then
+		return false
+	end
+	if st.Energy < INC.EnergyMax then
+		message(player, ("Divine Energy %d/%d: keep fighting!"):format(math.floor(st.Energy), INC.EnergyMax))
+		return false
+	end
+	local level = MasteryService.GetLevel(player)
+	local duration = INC.BaseDuration + INC.DurationPerMastery * level
+	local form = MasteryConfig.Forms[data.SelectedGod] or MasteryConfig.DefaultForm
+	local colors = GodConfig.GetColors(data.SelectedGod)
+	st.Energy = 0
+	st.Until = os.clock() + duration
+	player:SetAttribute("IncarnationUntil", Workspace:GetServerTimeNow() + duration)
+	pushEnergy(player)
+
+	AbilityService.AddBuff(player, "Incarnation", form, duration)
+	AbilityService.Heal(player, humanoid.MaxHealth * INC.HealPercent / 100)
+	local blast = AbilityService.BaseDamage(player) * INC.BlastDamage
+	AbilityService.DamageArea(player, root.Position, INC.BlastRadius, blast, 25)
+	if fxRemote then
+		fxRemote:FireAllClients("Shockwave", root.Position, colors.Accent, INC.BlastRadius)
+		fxRemote:FireAllClients("Lightning", root.Position, colors.Glow or colors.Accent, 6, true) -- beam from the sky
+	end
+	addFormLook(player, form, colors, duration)
+	message(player, ("You become the %s!"):format(form.Name))
+	GameEvents.Fire("Incarnate", player, data.SelectedGod)
+	return true
+end
+
+--------------------------------------------------------------------------
+-- Setup
+--------------------------------------------------------------------------
+function MasteryService.Init(dataService, progressionService, abilityService, gameEvents, notifyRemoteEvent, fxRemoteEvent, incarnationRemote)
+	DataService = dataService
+	ProgressionService = progressionService
+	AbilityService = abilityService
+	notifyRemote = notifyRemoteEvent
+	fxRemote = fxRemoteEvent
+	gameEvents.Connect(onEvent)
+	if incarnationRemote then
+		local last = {}
+		incarnationRemote.OnServerEvent:Connect(function(player, action)
+			local t = os.clock()
+			if last[player] and t - last[player] < 0.5 then
+				return
+			end
+			last[player] = t
+			if action == "Activate" then
+				MasteryService.Activate(player)
+			end
+		end)
+	end
+	-- Keep cosmetics right (god change, rank looks rebuilding the avatar...).
+	task.spawn(function()
+		while true do
+			task.wait(3)
+			for _, player in Players:GetPlayers() do
+				if energy[player] then
+					local data = DataService.GetData(player)
+					if data and player:GetAttribute("MasteryGod") ~= data.SelectedGod then
+						push(player, data) -- the player changed god
+					end
+					applyCosmetics(player)
+					pushEnergy(player)
+				end
+			end
+		end
+	end)
+end
+
+function MasteryService.SetupPlayer(player)
+	energy[player] = { Energy = 0, Until = 0 }
+	player:SetAttribute("IncarnationUntil", 0)
+	local data = DataService.GetData(player)
+	if data then
+		push(player, data)
+	end
+	pushEnergy(player)
+	player.CharacterAdded:Connect(function()
+		task.wait(1)
+		applyCosmetics(player)
+	end)
+	task.defer(applyCosmetics, player)
+end
+
+function MasteryService.ReleasePlayer(player)
+	energy[player] = nil
+end
+
+-- Re-sends mastery (e.g. after a god change).
+function MasteryService.Refresh(player)
+	local data = DataService.GetData(player)
+	if data then
+		push(player, data)
+		applyCosmetics(player)
+	end
+end
+
+return MasteryService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="41">
         <Properties>
           <string name="Name">PlotService</string>
           <string name="Source"><![CDATA[-- PlotService (ModuleScript)
@@ -8306,7 +8941,7 @@ return PlotService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="40">
+      <Item class="ModuleScript" referent="42">
         <Properties>
           <string name="Name">ProgressionService</string>
           <string name="Source"><![CDATA[-- ProgressionService (ModuleScript)
@@ -8585,7 +9220,7 @@ return ProgressionService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="41">
+      <Item class="ModuleScript" referent="43">
         <Properties>
           <string name="Name">QuestService</string>
           <string name="Source"><![CDATA[-- QuestService (ModuleScript)
@@ -8706,6 +9341,9 @@ local function progressOf(data, quest)
 		value = data.RankIndex
 	elseif objective.Type == "TempleTier" then
 		value = data.Temple.Tier
+	elseif objective.Type == "MasteryLevel" then
+		local entry = type(data.Mastery) == "table" and data.Mastery[data.SelectedGod]
+		value = if type(entry) == "table" then tonumber(entry.Level) or 1 else 1
 	elseif objective.Type == "TemplePrestige" then
 		value = tonumber(data.Temple.Prestige) or 0
 	elseif objective.Type == "BuildingLevel" then
@@ -8885,7 +9523,7 @@ return QuestService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="42">
+      <Item class="ModuleScript" referent="44">
         <Properties>
           <string name="Name">TempleModels</string>
           <string name="Source"><![CDATA[-- TempleModels (ModuleScript)
@@ -9497,7 +10135,7 @@ return TempleModels
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="43">
+      <Item class="ModuleScript" referent="45">
         <Properties>
           <string name="Name">TempleService</string>
           <string name="Source"><![CDATA[-- TempleService (ModuleScript)
@@ -9953,7 +10591,7 @@ return TempleService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="44">
+      <Item class="ModuleScript" referent="46">
         <Properties>
           <string name="Name">WorldBuilder</string>
           <string name="Source"><![CDATA[-- WorldBuilder (ModuleScript)
@@ -10193,16 +10831,16 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="45">
+  <Item class="StarterPlayer" referent="47">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <token name="AvatarJointUpgrade_SerializedRollout">1</token>
     </Properties>
-    <Item class="StarterCharacterScripts" referent="46">
+    <Item class="StarterCharacterScripts" referent="48">
       <Properties>
         <string name="Name">StarterCharacterScripts</string>
       </Properties>
-      <Item class="Script" referent="47">
+      <Item class="Script" referent="49">
         <Properties>
           <string name="Name">Health</string>
           <token name="RunContext">0</token>
@@ -10216,11 +10854,11 @@ return WorldBuilder
         </Properties>
       </Item>
     </Item>
-    <Item class="StarterPlayerScripts" referent="48">
+    <Item class="StarterPlayerScripts" referent="50">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="49">
+      <Item class="LocalScript" referent="51">
         <Properties>
           <string name="Name">AbilityController</string>
           <string name="Source"><![CDATA[-- AbilityController (LocalScript)
@@ -10770,7 +11408,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="50">
+      <Item class="LocalScript" referent="52">
         <Properties>
           <string name="Name">AimDot</string>
           <string name="Source"><![CDATA[-- AimDot (LocalScript)
@@ -10825,7 +11463,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="51">
+      <Item class="LocalScript" referent="53">
         <Properties>
           <string name="Name">ArenaUI</string>
           <string name="Source"><![CDATA[-- ArenaUI (LocalScript)
@@ -11182,7 +11820,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="52">
+      <Item class="LocalScript" referent="54">
         <Properties>
           <string name="Name">AscensionUI</string>
           <string name="Source"><![CDATA[-- AscensionUI (LocalScript)
@@ -11494,7 +12132,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="53">
+      <Item class="LocalScript" referent="55">
         <Properties>
           <string name="Name">CombatController</string>
           <string name="Source"><![CDATA[-- CombatController (LocalScript)
@@ -12139,7 +12777,7 @@ updateEnabled()
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="54">
+      <Item class="LocalScript" referent="56">
         <Properties>
           <string name="Name">Diagnostics</string>
           <string name="Source"><![CDATA[-- Diagnostics (LocalScript)
@@ -12240,7 +12878,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="55">
+      <Item class="LocalScript" referent="57">
         <Properties>
           <string name="Name">GodUI</string>
           <string name="Source"><![CDATA[-- GodUI (LocalScript)
@@ -12819,7 +13457,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="56">
+      <Item class="LocalScript" referent="58">
         <Properties>
           <string name="Name">HUDController</string>
           <string name="Source"><![CDATA[-- HUDController (LocalScript)
@@ -13296,7 +13934,338 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="57">
+      <Item class="LocalScript" referent="59">
+        <Properties>
+          <string name="Name">MasteryUI</string>
+          <string name="Source"><![CDATA[-- MasteryUI (LocalScript)
+-- Location: StarterPlayer > StarterPlayerScripts > MasteryUI
+--
+-- Phase 7E part 3:
+--   * "Mastery" button (left, under Quests) -> Divine Mastery panel: your
+--     god's mastery level, XP bar, bonuses, cosmetic unlocks, every god's
+--     level, and Divine Incarnation info.
+--   * Incarnate button (Elder God): fills with Divine Energy; when full, tap
+--     it (or press T) to transform. Sits above the ability buttons.
+-- Display only: the server tracks everything.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local MasteryConfig = require(Shared:WaitForChild("MasteryConfig"))
+local GodConfig = require(Shared:WaitForChild("GodConfig"))
+local Progression = require(Shared:WaitForChild("Progression"))
+
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local incarnationRemote = Remotes:WaitForChild("IncarnationAction")
+
+local INC = MasteryConfig.Incarnation
+
+local THEME = {
+	Marble = Color3.fromRGB(246, 242, 232),
+	MarbleDark = Color3.fromRGB(228, 220, 204),
+	Gold = Color3.fromRGB(212, 175, 55),
+	Bronze = Color3.fromRGB(140, 92, 45),
+	Text = Color3.fromRGB(58, 44, 28),
+	SubText = Color3.fromRGB(110, 95, 75),
+	White = Color3.new(1, 1, 1),
+	Ready = Color3.fromRGB(70, 150, 70),
+	Locked = Color3.fromRGB(150, 150, 158),
+	Bar = Color3.fromRGB(200, 190, 170),
+	Mastery = Color3.fromRGB(120, 80, 170),
+	Dark = Color3.fromRGB(35, 30, 45),
+}
+
+local function create(className, props, children)
+	local inst = Instance.new(className)
+	for key, value in props do
+		if key ~= "Parent" then
+			inst[key] = value
+		end
+	end
+	for _, child in children or {} do
+		child.Parent = inst
+	end
+	if props.Parent then
+		inst.Parent = props.Parent
+	end
+	return inst
+end
+local function corner(r)
+	return create("UICorner", { CornerRadius = UDim.new(0, r) })
+end
+local function stroke(color, t)
+	return create("UIStroke", { Color = color, Thickness = t, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+end
+local function padding(px)
+	return create("UIPadding", { PaddingTop = UDim.new(0, px), PaddingBottom = UDim.new(0, px), PaddingLeft = UDim.new(0, px), PaddingRight = UDim.new(0, px) })
+end
+local function text(props)
+	props.BackgroundTransparency = 1
+	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
+	props.TextColor3 = props.TextColor3 or THEME.Text
+	props.Font = props.Font or Enum.Font.Gotham
+	return create("TextLabel", props)
+end
+local function button(props)
+	props.AutoButtonColor = true
+	props.Font = props.Font or Enum.Font.GothamBold
+	props.TextColor3 = props.TextColor3 or THEME.White
+	props.TextSize = props.TextSize or 14
+	return create("TextButton", props, { corner(8) })
+end
+
+
+local gui = create("ScreenGui", { Name = "MasteryUI", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, DisplayOrder = 8, Enabled = false, Parent = playerGui })
+local uiScale = create("UIScale", { Parent = gui })
+local function updateScale()
+	local camera = Workspace.CurrentCamera
+	local viewport = if camera then camera.ViewportSize else Vector2.new(1280, 720)
+	uiScale.Scale = math.clamp(math.min(viewport.X / 1280, viewport.Y / 720), 0.7, 1.2)
+end
+updateScale()
+if Workspace.CurrentCamera then
+	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+end
+local function updateEnabled()
+	gui.Enabled = player:GetAttribute("DataLoaded") == true
+end
+player:GetAttributeChangedSignal("DataLoaded"):Connect(updateEnabled)
+updateEnabled()
+
+
+local function readMastery()
+	local raw = player:GetAttribute("MasteryJson")
+	local ok, decoded = pcall(function()
+		return HttpService:JSONDecode(raw)
+	end)
+	return if ok and type(decoded) == "table" then decoded else { God = "", Level = 0, XP = 0, Need = 0, Levels = {} }
+end
+
+local function godColors()
+	local god = readMastery().God
+	return GodConfig.GetColors(god or "")
+end
+
+--------------------------------------------------------------------------
+-- 1. Mastery button and panel
+--------------------------------------------------------------------------
+local openButton = button({
+	Position = UDim2.fromOffset(12, 306), Size = UDim2.fromOffset(290, 40),
+	BackgroundColor3 = THEME.Mastery, Text = "Divine Mastery", TextSize = 17, Parent = gui,
+})
+stroke(THEME.Bronze, 2).Parent = openButton
+
+local panel = create("Frame", {
+	AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(680, 520),
+	BackgroundColor3 = THEME.Marble, Visible = false, Parent = gui,
+}, { corner(12), stroke(THEME.Mastery, 3), padding(14) })
+local title = text({ Size = UDim2.new(1, -50, 0, 36), Font = Enum.Font.Garamond, TextSize = 32, Text = "Divine Mastery", Parent = panel })
+local closeButton = button({ AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.fromOffset(40, 40), BackgroundColor3 = THEME.Bronze, Text = "X", TextSize = 20, Parent = panel })
+local xpBack = create("Frame", { Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 0, 16), BackgroundColor3 = THEME.Bar, BorderSizePixel = 0, Parent = panel }, { corner(6) })
+local xpFill = create("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = THEME.Mastery, BorderSizePixel = 0, Parent = xpBack }, { corner(6) })
+local xpText = text({ Position = UDim2.fromOffset(0, 62), Size = UDim2.new(1, 0, 0, 18), TextSize = 13, TextColor3 = THEME.SubText, Text = "", Parent = panel })
+local bonusText = text({ Position = UDim2.fromOffset(0, 82), Size = UDim2.new(1, 0, 0, 20), Font = Enum.Font.GothamBold, TextSize = 15, Text = "", Parent = panel })
+
+local list = create("ScrollingFrame", {
+	Position = UDim2.fromOffset(0, 108), Size = UDim2.new(1, 0, 1, -108), BackgroundTransparency = 1, BorderSizePixel = 0,
+	ScrollBarThickness = 6, ScrollBarImageColor3 = THEME.Bronze, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, Parent = panel,
+}, { create("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }), create("UIPadding", { PaddingRight = UDim.new(0, 10) }) })
+
+local function section(name, order)
+	text({ Size = UDim2.new(1, 0, 0, 24), Font = Enum.Font.Garamond, TextSize = 22, TextColor3 = THEME.Bronze, Text = name, LayoutOrder = order, Parent = list })
+end
+
+local function renderPanel()
+	for _, child in list:GetChildren() do
+		if child:IsA("GuiObject") then
+			child:Destroy()
+		end
+	end
+	local m = readMastery()
+	local god = GodConfig.Gods[m.God]
+	local godName = if god then god.DisplayName else "your god"
+	if not god then
+		title.Text = "Divine Mastery"
+		xpFill.Size = UDim2.fromScale(0, 1)
+		xpText.Text = "Choose a god in the Hall of the Gods to start earning mastery."
+		bonusText.Text = ""
+		return
+	end
+	title.Text = ("%s Mastery   Lv %d/%d"):format(godName, m.Level, MasteryConfig.MaxLevel)
+	if m.Level >= MasteryConfig.MaxLevel then
+		xpFill.Size = UDim2.fromScale(1, 1)
+		xpText.Text = "Mastery complete!"
+	else
+		xpFill.Size = UDim2.fromScale(math.clamp(m.XP / math.max(1, m.Need), 0, 1), 1)
+		xpText.Text = ("%s / %s mastery XP · earn it by defeating enemies, winning arenas and challenges, worshipping and using %s's abilities"):format(
+			Progression.FormatNumber(m.XP), Progression.FormatNumber(m.Need), godName)
+	end
+	xpFill.BackgroundColor3 = godColors().Accent
+	bonusText.Text = ("Bonus: +%.1f%% attack, +%.1f%% health (max +%d%% at level %d)"):format(
+		m.Level * MasteryConfig.AttackPercentPerLevel, m.Level * MasteryConfig.HealthPercentPerLevel,
+		MasteryConfig.MaxLevel * MasteryConfig.AttackPercentPerLevel, MasteryConfig.MaxLevel)
+
+	local order = 0
+	order += 1
+	section("Unlocks for " .. godName, order)
+	for _, unlock in MasteryConfig.Unlocks do
+		order += 1
+		local done = m.Level >= unlock.Level
+		local row = create("Frame", { Size = UDim2.new(1, 0, 0, 44), BackgroundColor3 = THEME.MarbleDark, LayoutOrder = order, Parent = list }, { corner(8), padding(6) })
+		text({ Size = UDim2.new(1, -110, 0, 18), Font = Enum.Font.GothamBold, TextSize = 15, Text = unlock.Name, Parent = row })
+		text({ Position = UDim2.fromOffset(0, 18), Size = UDim2.new(1, -110, 0, 16), TextSize = 12, TextColor3 = THEME.SubText, TextTruncate = Enum.TextTruncate.AtEnd, Text = unlock.Description:gsub("<God>", godName), Parent = row })
+		text({ AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.fromOffset(105, 20), Font = Enum.Font.GothamBold, TextSize = 14,
+			TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = if done then THEME.Ready else THEME.Locked,
+			Text = if done then "Unlocked" else ("Level %d"):format(unlock.Level), Parent = row })
+	end
+
+	order += 1
+	section("Divine Incarnation", order)
+	local form = MasteryConfig.Forms[m.God] or MasteryConfig.DefaultForm
+	local unlocked = player:GetAttribute("IncarnationUnlocked") == true
+	local seconds = INC.BaseDuration + INC.DurationPerMastery * m.Level
+	order += 1
+	text({
+		Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextSize = 14, TextWrapped = true, LayoutOrder = order, Parent = list,
+		Text = ("%s: %s\nFill Divine Energy by hitting and defeating enemies (bosses give a lot), then press Incarnate%s. You transform for %.0f seconds: an opening blast, +%d%% health back, +%d%% attack, +%d%% speed, %d%% less damage taken. Higher mastery = longer."):format(
+			form.Name, if unlocked then "unlocked!" else "unlocks at Elder God",
+			if UserInputService.KeyboardEnabled then " (or press T)" else "",
+			seconds, INC.HealPercent, form.AttackPercent or 0, form.SpeedPercent or 0, math.floor((1 - (form.DamageTaken or 1)) * 100 + 0.5)),
+	})
+
+	order += 1
+	section("All gods", order)
+	for godId, info in GodConfig.Gods do
+		order += 1
+		local level = (m.Levels and m.Levels[godId]) or 1
+		text({ Size = UDim2.new(1, 0, 0, 20), TextSize = 14, LayoutOrder = order, Parent = list,
+			Text = ("%s  ·  mastery level %d%s"):format(info.DisplayName, level, if godId == m.God then "  (current)" else "") })
+	end
+end
+
+openButton.Activated:Connect(function()
+	panel.Visible = not panel.Visible
+	if panel.Visible then
+		renderPanel()
+	end
+end)
+closeButton.Activated:Connect(function()
+	panel.Visible = false
+end)
+player:GetAttributeChangedSignal("MasteryJson"):Connect(function()
+	if panel.Visible then
+		renderPanel()
+	end
+end)
+
+--------------------------------------------------------------------------
+-- 2. Incarnate button (above the ability buttons)
+--------------------------------------------------------------------------
+local incGui = create("ScreenGui", { Name = "IncarnationUI", ResetOnSpawn = false, DisplayOrder = 7, Parent = playerGui })
+local incButton = create("TextButton", {
+	AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = THEME.Dark, AutoButtonColor = false, Text = "", Visible = false, Parent = incGui,
+}, { corner(10), stroke(THEME.Gold, 2) })
+local incFill = create("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = THEME.Gold, BackgroundTransparency = 0.35, BorderSizePixel = 0, Parent = incButton }, { corner(10) })
+local incLabel = create("TextLabel", {
+	Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Font = Enum.Font.GothamBold, TextScaled = true, TextColor3 = THEME.White,
+	TextStrokeTransparency = 0.4, Text = "", ZIndex = 2, Parent = incButton,
+}, { create("UIPadding", { PaddingTop = UDim.new(0.18, 0), PaddingBottom = UDim.new(0.18, 0), PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6) }) })
+
+local function layout()
+	local camera = Workspace.CurrentCamera
+	local viewport = if camera then camera.ViewportSize else Vector2.new(1280, 720)
+	if UserInputService.TouchEnabled then
+		-- Same geometry as AbilityController's touch buttons, one row above them.
+		local big = math.min(viewport.X, viewport.Y) > 500
+		local jumpSize = if big then 120 else 70
+		local jumpLeft = if big then 170 else 95
+		local jumpTop = if big then 210 else 90
+		local jumpCenterY = jumpTop - jumpSize / 2
+		local gap = if big then 16 else 10
+		local attackSize = math.floor(jumpSize * 1.05)
+		local size = math.floor(jumpSize * 0.75)
+		local qX = jumpLeft + gap + attackSize + gap + size / 2
+		local rX = qX + size + gap
+		local highY = jumpCenterY + size + gap
+		local height = math.floor(size * 0.55)
+		incButton.Size = UDim2.fromOffset(size * 2 + gap, height)
+		incButton.Position = UDim2.new(1, -(qX + rX) / 2, 1, -(highY + size / 2 + gap + height / 2))
+	else
+		incButton.Size = UDim2.fromOffset(220, 40)
+		incButton.Position = UDim2.new(0.5, 0, 1, -(24 + 24 + 14 + 68 + 12 + 20))
+	end
+end
+layout()
+if Workspace.CurrentCamera then
+	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(layout)
+end
+
+local function activate()
+	if player:GetAttribute("IncarnationUnlocked") == true then
+		incarnationRemote:FireServer("Activate")
+	end
+end
+incButton.Activated:Connect(activate)
+UserInputService.InputBegan:Connect(function(input, processed)
+	if not processed and input.KeyCode == INC.Key then
+		activate()
+	end
+end)
+
+RunService.Heartbeat:Connect(function()
+	local unlocked = player:GetAttribute("IncarnationUnlocked") == true and player:GetAttribute("DataLoaded") == true
+	incButton.Visible = unlocked
+	if not unlocked then
+		return
+	end
+	local left = (player:GetAttribute("IncarnationUntil") or 0) - Workspace:GetServerTimeNow()
+	local colors = godColors()
+	if left > 0 then
+		incFill.Size = UDim2.fromScale(math.clamp(left / (INC.BaseDuration + INC.DurationPerMastery * MasteryConfig.MaxLevel), 0, 1), 1)
+		incFill.BackgroundColor3 = colors.Glow or colors.Accent
+		incLabel.Text = ("%s  %ds"):format(player:GetAttribute("IncarnationForm") or "Divine Form", math.ceil(left))
+		return
+	end
+	local value = player:GetAttribute("DivineEnergy") or 0
+	local full = value >= INC.EnergyMax
+	incFill.Size = UDim2.fromScale(math.clamp(value / INC.EnergyMax, 0, 1), 1)
+	incFill.BackgroundColor3 = if full then THEME.Gold else colors.Accent
+	incFill.BackgroundTransparency = if full then 0.1 + 0.25 * math.abs(math.sin(os.clock() * 4)) else 0.35
+	incLabel.Text = if full then "INCARNATE!" else ("Divine Energy %d%%"):format(math.floor(value / INC.EnergyMax * 100))
+end)
+
+-- Big title when you transform
+local banner = create("TextLabel", {
+	AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.3), Size = UDim2.fromOffset(700, 70),
+	BackgroundTransparency = 1, Font = Enum.Font.Garamond, TextSize = 56, TextColor3 = THEME.Gold, TextStrokeTransparency = 0.2,
+	TextTransparency = 1, TextStrokeColor3 = Color3.new(0, 0, 0), Text = "", Parent = incGui,
+})
+local lastUntil = 0
+player:GetAttributeChangedSignal("IncarnationUntil"):Connect(function()
+	local untilTime = player:GetAttribute("IncarnationUntil") or 0
+	if untilTime > lastUntil and untilTime > Workspace:GetServerTimeNow() then
+		local colors = godColors()
+		banner.Text = string.upper(player:GetAttribute("IncarnationForm") or "Divine Form")
+		banner.TextColor3 = colors.Accent
+		banner.TextTransparency = 0
+		banner.TextStrokeTransparency = 0.2
+		TweenService:Create(banner, TweenInfo.new(2.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+	end
+	lastUntil = untilTime
+end)
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="LocalScript" referent="60">
         <Properties>
           <string name="Name">QuestUI</string>
           <string name="Source"><![CDATA[-- QuestUI (LocalScript)
@@ -13335,7 +14304,7 @@ local THEME = {
 	Daily = Color3.fromRGB(170, 90, 150),
 }
 
-local CATEGORY_ORDER = { "Daily", "Story", "Combat", "Boss", "Temple", "Worship", "Forge", "Challenge", "God" }
+local CATEGORY_ORDER = { "Daily", "Story", "Combat", "Boss", "Temple", "Worship", "Forge", "Challenge", "Mastery", "God" }
 local CATEGORY_NAMES = {
 	Daily = "Daily Quests (new ones every day)",
 	Story = "Story",
@@ -13345,6 +14314,7 @@ local CATEGORY_NAMES = {
 	Worship = "Devotion",
 	Forge = "The Forge",
 	Challenge = "Olympian Challenges",
+	Mastery = "Divine Mastery",
 	God = "Your God",
 }
 local CURRENCY_NAMES = { XP = "XP", Gold = "Gold", DivineFavor = "Favor", Ambrosia = "Ambrosia" }
@@ -13596,7 +14566,7 @@ refresh()
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="58">
+      <Item class="LocalScript" referent="61">
         <Properties>
           <string name="Name">TempleUI</string>
           <string name="Source"><![CDATA[-- TempleUI (LocalScript)
@@ -14011,7 +14981,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="59">
+      <Item class="LocalScript" referent="62">
         <Properties>
           <string name="Name">TitanGateUI</string>
           <string name="Source"><![CDATA[-- TitanGateUI (LocalScript)
@@ -14199,7 +15169,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="60">
+      <Item class="LocalScript" referent="63">
         <Properties>
           <string name="Name">WeaponUI</string>
           <string name="Source"><![CDATA[-- WeaponUI (LocalScript)

@@ -31,6 +31,7 @@ local InventoryService = require(Services:WaitForChild("InventoryService"))
 local GameEvents = require(Services:WaitForChild("GameEvents"))
 local QuestService = require(Services:WaitForChild("QuestService"))
 local ChallengeService = require(Services:WaitForChild("ChallengeService"))
+local MasteryService = require(Services:WaitForChild("MasteryService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -74,6 +75,7 @@ local ascensionRemote = newRemote("AscensionAction") -- client -> server "start 
 local weaponRemote = newRemote("WeaponAction") -- client -> server equip / craft / upgrade a weapon
 local questRemote = newRemote("QuestAction") -- client -> server "claim this quest"
 local challengeRemote = newRemote("ChallengeAction") -- client -> server "start this Titan Gate challenge"
+local incarnationRemote = newRemote("IncarnationAction") -- client -> server "transform now"
 
 remotes.Parent = ReplicatedStorage
 
@@ -98,6 +100,7 @@ ArenaService.Init(DataService, ProgressionService, PlotService, EnemyService, no
 ArenaService.BuildGate()
 ChallengeService.Init(DataService, ArenaService, notifyRemote, challengeRemote)
 ChallengeService.BuildGate()
+MasteryService.Init(DataService, ProgressionService, AbilityService, GameEvents, notifyRemote, fxRemote, incarnationRemote)
 AscensionService.Init(DataService, ProgressionService, ArenaService, notifyRemote, fxRemote, ascensionRemote, if GameConfig.Debug.Diagnostics then DiagnosticsService else nil)
 AscensionService.BuildChamber()
 InventoryService.Init(DataService, ProgressionService, notifyRemote, weaponRemote)
@@ -222,6 +225,7 @@ local function onPlayerAdded(player)
 	AscensionService.SetupPlayer(player)
 	QuestService.SetupPlayer(player)
 	ChallengeService.SetupPlayer(player)
+	MasteryService.SetupPlayer(player)
 	player:SetAttribute("DataLoaded", true)
 	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
 end
@@ -242,6 +246,7 @@ Players.PlayerRemoving:Connect(function(player)
 	ArenaService.ReleasePlayer(player)
 	AscensionService.ReleasePlayer(player)
 	QuestService.ReleasePlayer(player)
+	MasteryService.ReleasePlayer(player)
 	PlotService.ReleasePlot(player)
 	DataService.ReleasePlayer(player) -- yields while saving
 end)

@@ -116,6 +116,9 @@ local function progressOf(data, quest)
 		value = data.RankIndex
 	elseif objective.Type == "TempleTier" then
 		value = data.Temple.Tier
+	elseif objective.Type == "MasteryLevel" then
+		local entry = type(data.Mastery) == "table" and data.Mastery[data.SelectedGod]
+		value = if type(entry) == "table" then tonumber(entry.Level) or 1 else 1
 	elseif objective.Type == "TemplePrestige" then
 		value = tonumber(data.Temple.Prestige) or 0
 	elseif objective.Type == "BuildingLevel" then

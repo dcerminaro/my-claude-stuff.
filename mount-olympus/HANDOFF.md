@@ -51,7 +51,7 @@ Follow the master specification in **Part C** exactly, including its section 19
 | 4B. God abilities | **Confirmed** ("Phase 4 confirmed") |
 | 5. Arenas | **Accepted** — developer said "move on to phase 6" (v25) |
 | 6. Ascension | **Accepted** — developer: "we can work on how it looks later, next phase" (v30) |
-| 7. Content Expansion | In progress: 7A gods (v33) · 7B arenas/bosses/trials (v35) · 7C weapons/forge (v36) · 7D quests (v39) · **7E part 1 (aim dot, Titan Gate / Olympian Challenges) server-tested, live (v43)** · **7E part 2 Divine Citadel + Temple Prestige + boss/trial nerf server-tested, live (v45)** · 7E part 3 Divine Mastery + Incarnations |
+| 7. Content Expansion | In progress: 7A gods (v33) · 7B arenas/bosses/trials (v35) · 7C weapons/forge (v36) · 7D quests (v39) · **7E part 1 (aim dot, Titan Gate / Olympian Challenges) server-tested, live (v43)** · **7E part 2 Divine Citadel + Temple Prestige + boss/trial nerf server-tested, live (v45)** · **7E part 3 Divine Mastery + Incarnations server-tested, live (v47)**. Phase 7 complete pending developer check. |
 | 5–8 | Not started |
 
 ### How to set up Phase 1 on a Mac (or Windows PC)
@@ -488,6 +488,25 @@ environment, so a session can `rojo build` and publish via
    `BossDamageScale = 0.9` apply to every boss everywhere. Ascension trials
    additionally: `BossHealth = 0.7` (Gauntlet 0.85) and lower wave health
    (Spartan 0.8/0.9/1.0, Divine 0.55/0.55/0.7).
+
+### Design decisions made in Phase 7E part 3
+1. **Divine Mastery** (`Shared/MasteryConfig`, `Services/MasteryService`):
+   per god, levels 1-50, XP to next = 100 x level^1.8 (~2M total). Earned for
+   the worshipped god: kills = 10% of enemy XP (dummies 0), arena wins = 10%
+   of arena XP, challenge win 1500, worship 20, ability 2. Bonus +0.2% attack
+   and +0.2% health per level (added in `GodService.GetBonuses`). Cosmetics on
+   the HumanoidRootPart (rebuilt every 3 s if missing/outdated): 5 sparks,
+   10/25/40/50 titles, 15 trail, 30 glow, 50 crown of light. Saved in
+   `data.Mastery[god] = { Level, XP }`. UI: "Divine Mastery" button (left,
+   under Quests). Quests DM1-DM5.
+2. **Divine Incarnation** (Elder God): Divine Energy (session only) +1 per
+   enemy hit (`GameEvents` "HitEnemy", fired in `EnemyService.DamageEnemy`,
+   not for dummies), +3 per kill, +25 per boss; 100 = full. Activate (button
+   above the ability buttons, or T): 18 s + 0.2 s per mastery level; heal 30%,
+   blast 8 x ability damage in 24 studs, buff per god (`MasteryConfig.Forms`,
+   applied through new `AbilityService.AddBuff`), aura/fire/halo/light on
+   the character, big title on screen. No charging while transformed.
+   Character size is NOT changed (it would fight the rank looks system).
 
 ### Ideas from the developer for later (not built yet)
 - **Rank outfits and physique (Phase 6, Ascension):** each ascension rank gets

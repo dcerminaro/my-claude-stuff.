@@ -52,6 +52,9 @@
         },
         "TitanGateUI": {
           "$path": "src/client/TitanGateUI.client.luau"
+        },
+        "MasteryUI": {
+          "$path": "src/client/MasteryUI.client.luau"
         }
       },
       "StarterCharacterScripts": {
