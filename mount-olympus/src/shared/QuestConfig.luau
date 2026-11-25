@@ -74,6 +74,10 @@ QuestConfig.Chains = {
 			q("T5", "Blessed Temple", "Raise your temple to tier 4.", { Type = "TempleTier", Count = 4 }, { Gold = 40000, DivineFavor = 150, Ambrosia = 2 }),
 			q("T6", "Grand Pantheon", "Raise your temple to tier 5.", { Type = "TempleTier", Count = 5 }, { Gold = 150000, DivineFavor = 300, Ambrosia = 4 }),
 			q("T7", "Celestial Palace", "Raise your temple to tier 6.", { Type = "TempleTier", Count = 6 }, { Gold = 500000, DivineFavor = 600, Ambrosia = 8 }),
+			q("T8", "Divine Citadel", "Raise your temple to tier 7, the Divine Citadel (Elder God).", { Type = "TempleTier", Count = 7 }, { Gold = 1500000, DivineFavor = 1000, Ambrosia = 12 }),
+			q("T9", "Prestigious", "Reach Temple Prestige 1.", { Type = "TemplePrestige", Count = 1 }, { DivineFavor = 1500, Ambrosia = 10 }),
+			q("T10", "Wonder of Olympus", "Reach Temple Prestige 5.", { Type = "TemplePrestige", Count = 5 }, { DivineFavor = 4000, Ambrosia = 25 }),
+			q("T11", "Radiant Citadel", "Reach Temple Prestige 10.", { Type = "TemplePrestige", Count = 10 }, { DivineFavor = 10000, Ambrosia = 60 }),
 		},
 	},
 	{
@@ -152,7 +156,7 @@ end
 -- Objectives that are checked from the save instead of counted.
 QuestConfig.StateObjectives = {
 	ChooseGod = true, ReachLevel = true, ReachRank = true, TempleTier = true,
-	BuildingLevel = true, TotalBuildingLevels = true, BlessingLevels = true, OwnWeapons = true,
+	BuildingLevel = true, TotalBuildingLevels = true, BlessingLevels = true, OwnWeapons = true, TemplePrestige = true,
 }
 
 return QuestConfig

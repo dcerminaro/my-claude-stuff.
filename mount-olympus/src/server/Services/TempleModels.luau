@@ -2,8 +2,8 @@
 -- Location: ServerScriptService > Services > TempleModels
 --
 -- Builds the PLACEHOLDER 3D models for the Temple Tycoon out of simple parts:
---   TempleModels.Temple(tier, origin, colors)               -> the main temple (tiers 1-7)
---   TempleModels.Building(buildingId, level, origin, colors) -> one of the 5 buildings (levels 1-5)
+--   TempleModels.Temple(tier, origin, colors, prestige)     -> the main temple (tiers 1-7; prestige 0-10 decorations)
+--   TempleModels.Building(buildingId, level, origin, colors) -> one of the 5 buildings (levels 1-6)
 -- `colors` = the god's { Accent, Glow, Fire } from GodConfig (optional).
 --   TempleModels.AnimateIn(model)                    -> "rise from the ground" construction effect
 -- `origin` is a CFrame at ground level in the centre of the building's slot.
@@ -149,10 +149,127 @@ local TEMPLE_STYLES = {
 	[4] = { W = 24, D = 28, ColH = 14, Spacing = 5, Cella = true, Roof = true, GoldTrim = true, Braziers = true },
 	[5] = { W = 26, D = 28, ColH = 15, Spacing = 4.6, Cella = true, Roof = true, GoldTrim = true, Braziers = true, Dome = true, Statues = true },
 	[6] = { W = 26, D = 28, ColH = 15, Spacing = 4.6, Cella = true, Roof = true, GoldTrim = true, Braziers = true, Dome = true, Statues = true, Floating = true },
-	[7] = { W = 28, D = 30, ColH = 17, Spacing = 4.4, Cella = true, Roof = true, GoldTrim = true, Braziers = true, Dome = true, Statues = true, Floating = true, GoldColumns = true },
+	[7] = { W = 32, D = 34, ColH = 19, Spacing = 4.4, Cella = true, Roof = true, GoldTrim = true, Braziers = true, Dome = true, Statues = true, Floating = true, GoldColumns = true, Citadel = true },
 }
 
-local function buildTempleStyle(model, origin, s)
+-- Phase 7E: ring of small blocks (a halo) centred at `center`, flat.
+local function ring(model, origin, name, center, radius, count, props)
+	for i = 1, count do
+		local angle = (i / count) * math.pi * 2
+		local arc = 2 * math.pi * radius / count
+		local p = {
+			Name = name .. i,
+			Size = Vector3.new(arc * 1.05, 0.5, 0.9),
+			CFrame = origin * CFrame.new(center) * CFrame.Angles(0, -angle, 0) * CFrame.new(0, 0, radius) ,
+			CanCollide = false,
+		}
+		for key, value in props or {} do
+			p[key] = value
+		end
+		WorldBuilder.MakePart(model, p)
+	end
+end
+
+-- Divine Citadel extras (tier 7): corner towers, a central spire and crown.
+local function buildCitadel(model, origin, s, topY)
+	local W, D = s.W, s.D
+	local towerH = s.ColH + 14
+	local gold = { Material = Enum.Material.Metal, Color = pal.Accent }
+	for i, c in { { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } } do
+		local x, z = c[1] * (W / 2 - 1), c[2] * (D / 2 - 1)
+		column(model, origin, "Tower" .. i, x, 0, z, towerH, 5, { Color = MARBLE, Material = Enum.Material.Marble })
+		disc(model, origin, "TowerRim" .. i, x, towerH, z, 1, 6.4, gold)
+		column(model, origin, "TowerRoof" .. i, x, towerH + 0.5, z, 4, 3.2, gold)
+		local orb = ball(model, origin, "TowerOrb" .. i, 2.2, Vector3.new(x, towerH + 6, z), { Material = Enum.Material.Neon, Color = pal.Glow })
+		addLight(orb, pal.Glow, 20, 2)
+	end
+	-- Walls between the towers at the back and sides (front stays open)
+	block(model, origin, "WallBack", Vector3.new(W - 4, 8, 1.6), Vector3.new(0, 4, D / 2 - 1))
+	block(model, origin, "WallLeft", Vector3.new(1.6, 8, D - 4), Vector3.new(-W / 2 + 1, 4, 0))
+	block(model, origin, "WallRight", Vector3.new(1.6, 8, D - 4), Vector3.new(W / 2 - 1, 4, 0))
+	-- Central spire rising out of the dome with a glowing crown
+	local spireBase = topY + W * 0.2
+	column(model, origin, "Spire", 0, spireBase, 4, 16, 2, gold)
+	ring(model, origin, "Crown", Vector3.new(0, spireBase + 16.5, 4), 2.6, 10, { Material = Enum.Material.Neon, Color = pal.Accent })
+	local crown = ball(model, origin, "CrownGem", 2.6, Vector3.new(0, spireBase + 18, 4), { Material = Enum.Material.Neon, Color = pal.Glow })
+	addLight(crown, pal.Glow, 40, 3)
+	-- Grand stairway at the front
+	block(model, origin, "Stair1", Vector3.new(12, 0.6, 3), Vector3.new(0, 0.3, -D / 2 - 3.5))
+	block(model, origin, "Stair2", Vector3.new(10, 0.6, 2), Vector3.new(0, 0.9, -D / 2 - 2.5))
+	return spireBase + 18
+end
+
+-- Temple Prestige decorations (Phase 7E). See TempleConfig.Prestige.Looks.
+local function buildPrestige(model, origin, s, topY, crownY, prestige)
+	local W, D = s.W, s.D
+	local gold = { Material = Enum.Material.Metal, Color = pal.Accent }
+	local glow = { Material = Enum.Material.Neon, Color = pal.Glow, CanCollide = false }
+	if prestige >= 1 then -- banners
+		for i, x in { -W / 2 + 4, -W / 6, W / 6, W / 2 - 4 } do
+			block(model, origin, "Banner" .. i, Vector3.new(2.4, 7, 0.2), Vector3.new(x, s.ColH - 2, -D / 2 - 0.4), { Color = pal.Accent, Material = Enum.Material.Fabric, CanCollide = false })
+		end
+	end
+	if prestige >= 2 then -- ring of glowing pillars
+		for i = 1, 8 do
+			local angle = i / 8 * math.pi * 2
+			local x, z = math.cos(angle) * (W / 2 + 6), math.sin(angle) * (D / 2 + 6) + 0
+			if z > -D / 2 - 2 then -- keep the entrance clear
+				column(model, origin, "PrestigePillar" .. i, x, 0, z, 6, 1, glow)
+			end
+		end
+	end
+	if prestige >= 3 then
+		ring(model, origin, "Halo", Vector3.new(0, topY + W * 0.35, 4), W * 0.3, 20, glow)
+	end
+	if prestige >= 4 then -- stars on the front
+		for i = 1, math.min(prestige, 10) do
+			local x = (i - (math.min(prestige, 10) + 1) / 2) * 2.2
+			ball(model, origin, "Star" .. i, 1.2, Vector3.new(x, s.ColH + 4.2, -D / 2 - 0.6), glow)
+		end
+	end
+	if prestige >= 5 then -- beam of light into the sky
+		column(model, origin, "SkyBeam", 0, crownY, 4, 120, 3, { Material = Enum.Material.Neon, Color = pal.Glow, Transparency = 0.6, CanCollide = false, CastShadow = false })
+	end
+	if prestige >= 6 then
+		local skyY = topY + 12
+		for i, pos in { Vector3.new(-22, skyY + 4, 16), Vector3.new(22, skyY + 6, 16) } do
+			block(model, origin, "PrestigeIsland" .. i, Vector3.new(7, 1.2, 7), pos)
+			block(model, origin, "PrestigeIslandGold" .. i, Vector3.new(7.4, 0.4, 7.4), pos - Vector3.new(0, 0.8, 0), gold)
+			local orb = ball(model, origin, "PrestigeOrb" .. i, 1.6, pos + Vector3.new(0, 3, 0), glow)
+			addLight(orb, pal.Glow, 14, 2)
+		end
+	end
+	if prestige >= 7 then -- flames on the towers
+		for _, item in model:GetChildren() do
+			if item.Name:match("^TowerRoof") then
+				addFire(item, 6)
+			end
+		end
+	end
+	if prestige >= 8 then
+		ring(model, origin, "GreatHalo", Vector3.new(0, topY + W * 0.55, 4), W * 0.5, 28, { Material = Enum.Material.Neon, Color = pal.Accent, CanCollide = false })
+	end
+	if prestige >= 9 then -- golden statues at the gates
+		for i, x in { -9, 9 } do
+			block(model, origin, "GatePedestal" .. i, Vector3.new(3, 2, 3), Vector3.new(x, 1, -D / 2 - 7))
+			block(model, origin, "GateStatueBody" .. i, Vector3.new(2, 5, 1.4), Vector3.new(x, 4.5, -D / 2 - 7), gold)
+			ball(model, origin, "GateStatueHead" .. i, 1.6, Vector3.new(x, 7.8, -D / 2 - 7), gold)
+		end
+	end
+	if prestige >= 10 then -- radiant: marble glows faintly in the god's colour
+		for _, item in model:GetChildren() do
+			if item:IsA("BasePart") and item.Material == Enum.Material.Marble then
+				item.Color = item.Color:Lerp(pal.Glow, 0.25)
+			end
+		end
+		local radiance = model:FindFirstChild("CrownGem")
+		if radiance then
+			addLight(radiance, pal.Accent, 60, 4)
+		end
+	end
+end
+
+local function buildTempleStyle(model, origin, s, prestige)
 	local W, D = s.W, s.D
 
 	-- Two-step platform
@@ -234,6 +351,11 @@ local function buildTempleStyle(model, origin, s)
 		end
 	end
 
+	if s.Citadel then
+		local crownY = buildCitadel(model, origin, s, topY)
+		buildPrestige(model, origin, s, topY, crownY, prestige or 0)
+	end
+
 	if s.Floating then
 		local skyY = topY + 8
 		for i, pos in { Vector3.new(-16, skyY, -4), Vector3.new(16, skyY + 2, -4), Vector3.new(0, skyY + 5, 20) } do
@@ -246,14 +368,14 @@ local function buildTempleStyle(model, origin, s)
 	end
 end
 
-function TempleModels.Temple(tier, origin, colors)
+function TempleModels.Temple(tier, origin, colors, prestige)
 	pal = colors or DEFAULT_COLORS
 	local model = Instance.new("Model")
 	model.Name = "Temple"
 	if tier <= 1 then
 		buildRuinedShrine(model, origin)
 	else
-		buildTempleStyle(model, origin, TEMPLE_STYLES[math.min(tier, 7)])
+		buildTempleStyle(model, origin, TEMPLE_STYLES[math.min(tier, 7)], prestige)
 	end
 	return model
 end
@@ -417,6 +539,14 @@ function TempleModels.Building(buildingId, level, origin, colors)
 	local model = Instance.new("Model")
 	model.Name = buildingId
 	builder(model, origin, math.clamp(level, 1, 5))
+	if level >= 6 then
+		-- Phase 7E "Divine" level: a floating halo and glow above the building.
+		local _, size = model:GetBoundingBox()
+		local height = size.Y + 2.5
+		ring(model, origin, "DivineHalo", Vector3.new(0, height, 0), 4, 14, { Material = Enum.Material.Neon, Color = pal.Accent })
+		local gem = ball(model, origin, "DivineGem", 1.4, Vector3.new(0, height + 1.5, 0), { Material = Enum.Material.Neon, Color = pal.Glow, CanCollide = false })
+		addLight(gem, pal.Glow, 16, 2)
+	end
 	return model
 end
 

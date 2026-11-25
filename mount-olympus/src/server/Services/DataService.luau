@@ -77,6 +77,7 @@ local function makeDefaultData()
 		Temple = {            -- Phase 2
 			Tier = 1,
 			Buildings = {},   -- [BuildingId] = level
+			Prestige = 0,     -- Phase 7E: Temple Prestige level (0-10)
 		},
 
 		Inventory = {         -- Phase 7

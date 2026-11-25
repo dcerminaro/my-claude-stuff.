@@ -267,6 +267,29 @@ for order, id in TempleConfig.BuildingOrder do
 	rows[id] = { Name = nameLabel, Effect = effectLabel, Status = statusLabel, Button = button }
 end
 
+-- Phase 7E: Temple Prestige row (after the Divine Citadel)
+local prestigeRow = create("Frame", {
+	Name = "Prestige",
+	Size = UDim2.new(1, 0, 0, 84),
+	BackgroundColor3 = Color3.fromRGB(240, 226, 180),
+	LayoutOrder = #TempleConfig.BuildingOrder + 1,
+	Parent = list,
+}, { corner(8), padding(8), stroke(THEME.Gold, 2) })
+local prestigeName = text({ Size = UDim2.new(1, -150, 0, 22), Font = BODY_FONT, TextSize = 18, Text = "Temple Prestige", Parent = prestigeRow })
+text({
+	Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, -150, 0, 18), Font = SMALL_FONT, TextSize = 13, TextColor3 = THEME.SubText,
+	TextTruncate = Enum.TextTruncate.AtEnd, Text = "Keep improving your Divine Citadel. Nothing resets.", Parent = prestigeRow,
+})
+local prestigeEffect = text({ Position = UDim2.fromOffset(0, 41), Size = UDim2.new(1, -150, 0, 18), Font = SMALL_FONT, TextSize = 14, TextTruncate = Enum.TextTruncate.AtEnd, Text = "", Parent = prestigeRow })
+local prestigeStatus = text({ Position = UDim2.fromOffset(0, 59), Size = UDim2.new(1, -150, 0, 16), Font = BODY_FONT, TextSize = 13, TextColor3 = THEME.Warning, TextTruncate = Enum.TextTruncate.AtEnd, Text = "", Parent = prestigeRow })
+local prestigeButton = create("TextButton", {
+	AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.fromOffset(136, 56),
+	BackgroundColor3 = THEME.Locked, Text = "", Font = BODY_FONT, TextSize = 14, TextColor3 = THEME.White, Parent = prestigeRow,
+}, { corner(8) })
+prestigeButton.Activated:Connect(function()
+	upgradeRemote:FireServer("Prestige") -- the server checks everything
+end)
+
 --------------------------------------------------------------------------
 -- Refresh from attributes
 --------------------------------------------------------------------------
@@ -291,6 +314,7 @@ local function refresh()
 	local tier = player:GetAttribute("TempleTier") or 1
 	local gold = player:GetAttribute("Gold") or 0
 	local playerLevel = player:GetAttribute("Level") or 1
+	local rankIndex = player:GetAttribute("RankIndex") or 1
 
 	tierLabel.Text = ("Tier %d: %s"):format(tier, TempleConfig.GetTierName(tier))
 	incomeLabel.Text = ("Income while you play: +%s Gold/min   +%s Favor/min"):format(
@@ -301,7 +325,7 @@ local function refresh()
 	for id, row in rows do
 		local info = TempleConfig.Buildings[id]
 		local level = player:GetAttribute("Temple_" .. id) or 0
-		local upgrade = TempleConfig.GetUpgradeInfo(id, level, tier, playerLevel)
+		local upgrade = TempleConfig.GetUpgradeInfo(id, level, tier, playerLevel, rankIndex)
 
 		row.Name.Text = ("%s   Lv %d/%d"):format(info.DisplayName, level, TempleConfig.MaxBuildingLevel)
 		row.Effect.Text = formatEffect(id, level)
@@ -326,14 +350,50 @@ local function refresh()
 	end
 end
 
-local watched = { "TempleTier", "Gold", "Level", "GoldPerMinute", "FavorPerMinute" }
+local function refreshPrestige()
+	local tier = player:GetAttribute("TempleTier") or 1
+	local prestige = player:GetAttribute("TemplePrestige") or 0
+	local buildings = {}
+	for _, id in TempleConfig.BuildingOrder do
+		buildings[id] = player:GetAttribute("Temple_" .. id) or 0
+	end
+	local info = TempleConfig.GetPrestigeInfo(prestige, tier, buildings)
+	local p = TempleConfig.Prestige
+	prestigeName.Text = ("Temple Prestige   %d/%d"):format(prestige, p.MaxLevel)
+	local bonus = prestige * p.IncomeBonusPercent
+	if info.Maxed then
+		prestigeEffect.Text = ("Temple income +%d%%  ·  Radiant Citadel"):format(bonus)
+		prestigeStatus.Text = ""
+		prestigeButton.Text = "MAX"
+		prestigeButton.BackgroundColor3 = THEME.Gold
+		prestigeButton.AutoButtonColor = false
+		return
+	end
+	prestigeEffect.Text = ("Income +%d%% -> +%d%%  ·  New: %s"):format(bonus, bonus + p.IncomeBonusPercent, p.Looks[info.NextLevel] or "")
+	if info.Blocked then
+		prestigeStatus.Text = "Locked: " .. info.Blocked
+		prestigeButton.Text = "Locked"
+		prestigeButton.BackgroundColor3 = THEME.Locked
+		prestigeButton.AutoButtonColor = false
+	else
+		local canAfford = (player:GetAttribute("Gold") or 0) >= info.Gold and (player:GetAttribute("Ambrosia") or 0) >= info.Ambrosia
+		prestigeStatus.Text = if canAfford then "" else "Not enough Gold or Ambrosia yet"
+		prestigeButton.Text = ("Prestige\n%s Gold + %d Amb."):format(Progression.FormatNumber(info.Gold), info.Ambrosia)
+		prestigeButton.BackgroundColor3 = if canAfford then THEME.Ready else THEME.TooExpensive
+		prestigeButton.AutoButtonColor = true
+	end
+end
+
+local watched = { "TempleTier", "Gold", "Level", "GoldPerMinute", "FavorPerMinute", "RankIndex", "TemplePrestige", "Ambrosia" }
 for _, id in TempleConfig.BuildingOrder do
 	table.insert(watched, "Temple_" .. id)
 end
 for _, attribute in watched do
 	player:GetAttributeChangedSignal(attribute):Connect(refresh)
+	player:GetAttributeChangedSignal(attribute):Connect(refreshPrestige)
 end
 refresh()
+refreshPrestige()
 
 --------------------------------------------------------------------------
 -- Open / close

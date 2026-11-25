@@ -116,6 +116,8 @@ local function progressOf(data, quest)
 		value = data.RankIndex
 	elseif objective.Type == "TempleTier" then
 		value = data.Temple.Tier
+	elseif objective.Type == "TemplePrestige" then
+		value = tonumber(data.Temple.Prestige) or 0
 	elseif objective.Type == "BuildingLevel" then
 		value = tonumber(data.Temple.Buildings[objective.Target]) or 0
 	elseif objective.Type == "TotalBuildingLevels" then
@@ -200,7 +202,7 @@ function QuestService.Record(player, eventType, target, amount)
 			end
 		end
 	end
-	if changed or eventType == "UpgradeBuilding" or eventType == "UpgradeBlessing" or eventType == "CraftWeapon" then
+	if changed or eventType == "UpgradeBuilding" or eventType == "TemplePrestige" or eventType == "UpgradeBlessing" or eventType == "CraftWeapon" then
 		push(player, data) -- state quests (building levels, weapons owned...) may have moved too
 	end
 end

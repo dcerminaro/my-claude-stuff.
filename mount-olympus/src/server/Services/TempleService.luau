@@ -56,7 +56,7 @@ local function getLevel(data, buildingId)
 	return tonumber(data.Temple.Buildings[buildingId]) or 0
 end
 
--- Makes sure saved temple data is valid (whole numbers, 0-5) and the tier matches the Core.
+-- Makes sure saved temple data is valid (whole numbers, 0-6) and the tier matches the Core.
 local function sanitizeTemple(data)
 	local buildings = data.Temple.Buildings
 	for id in TempleConfig.Buildings do
@@ -64,6 +64,7 @@ local function sanitizeTemple(data)
 		buildings[id] = if level > 0 then level else nil
 	end
 	data.Temple.Tier = TempleConfig.TierFromCoreLevel(buildings.TempleCore)
+	data.Temple.Prestige = math.clamp(math.floor(tonumber(data.Temple.Prestige) or 0), 0, TempleConfig.Prestige.MaxLevel)
 end
 
 local function slotCFrame(plot, offset)
@@ -79,8 +80,10 @@ local function pushAttributes(player, data)
 	for id in TempleConfig.Buildings do
 		player:SetAttribute("Temple_" .. id, getLevel(data, id))
 	end
-	player:SetAttribute("GoldPerMinute", TempleConfig.GetEffectValue("GoldTreasury", getLevel(data, "GoldTreasury")))
-	player:SetAttribute("FavorPerMinute", TempleConfig.GetEffectValue("MainAltar", getLevel(data, "MainAltar")))
+	local multiplier = TempleConfig.PrestigeMultiplier(data.Temple.Prestige)
+	player:SetAttribute("TemplePrestige", data.Temple.Prestige or 0)
+	player:SetAttribute("GoldPerMinute", math.floor(TempleConfig.GetEffectValue("GoldTreasury", getLevel(data, "GoldTreasury")) * multiplier))
+	player:SetAttribute("FavorPerMinute", math.floor(TempleConfig.GetEffectValue("MainAltar", getLevel(data, "MainAltar")) * multiplier))
 end
 
 --------------------------------------------------------------------------
@@ -94,7 +97,7 @@ local function placeTemple(player, data, animate)
 		old:Destroy()
 	end
 	local colors = if colorProvider then colorProvider(player) else nil
-	local model = TempleModels.Temple(data.Temple.Tier, slotCFrame(st.Plot, TempleConfig.Buildings.TempleCore.Slot), colors)
+	local model = TempleModels.Temple(data.Temple.Tier, slotCFrame(st.Plot, TempleConfig.Buildings.TempleCore.Slot), colors, data.Temple.Prestige)
 	if animate then
 		TempleModels.AnimateIn(model, 1.8)
 	end
@@ -144,7 +147,7 @@ local function refreshPads(player)
 	for id, pad in st.Pads do
 		local info = TempleConfig.Buildings[id]
 		local level = getLevel(data, id)
-		local upgrade = TempleConfig.GetUpgradeInfo(id, level, data.Temple.Tier, data.Level)
+		local upgrade = TempleConfig.GetUpgradeInfo(id, level, data.Temple.Tier, data.Level, data.RankIndex)
 		local name = info.DisplayName
 
 		if upgrade.Maxed then
@@ -229,6 +232,10 @@ function TempleService.Init(dataService, progressionService, plotService, notify
 	-- Upgrade requests from the menu. Never trust the client: check everything.
 	if upgradeRemote then
 		upgradeRemote.OnServerEvent:Connect(function(player, buildingId)
+			if buildingId == "Prestige" then
+				TempleService.RequestPrestige(player)
+				return
+			end
 			if type(buildingId) ~= "string" or not TempleConfig.Buildings[buildingId] then
 				return
 			end
@@ -274,7 +281,7 @@ function TempleService.SetupPlayer(player, plot)
 
 	-- Keep pad colours/labels in sync when Gold or level changes from anywhere.
 	local st = state[player]
-	for _, attribute in { "Gold", "Level" } do
+	for _, attribute in { "Gold", "Level", "RankIndex" } do
 		table.insert(st.Connections, player:GetAttributeChangedSignal(attribute):Connect(function()
 			refreshPads(player)
 		end))
@@ -328,7 +335,7 @@ function TempleService.RequestUpgrade(player, buildingId)
 	st.LastRequest = now
 
 	local level = getLevel(data, buildingId)
-	local upgrade = TempleConfig.GetUpgradeInfo(buildingId, level, data.Temple.Tier, data.Level)
+	local upgrade = TempleConfig.GetUpgradeInfo(buildingId, level, data.Temple.Tier, data.Level, data.RankIndex)
 	if upgrade.Maxed then
 		notify(player, info.DisplayName .. " is already at max level.")
 		return false
@@ -362,6 +369,45 @@ function TempleService.RequestUpgrade(player, buildingId)
 	return true
 end
 
+-- Phase 7E: buys the next Temple Prestige level. Returns true if it happened.
+function TempleService.RequestPrestige(player)
+	local st = state[player]
+	local data = DataService.GetData(player)
+	if not st or not data then
+		return false
+	end
+	local now = os.clock()
+	if now - st.LastRequest < TempleConfig.UpgradeCooldown then
+		return false
+	end
+	st.LastRequest = now
+	local info = TempleConfig.GetPrestigeInfo(data.Temple.Prestige, data.Temple.Tier, data.Temple.Buildings)
+	if info.Maxed then
+		notify(player, "Your temple is at maximum Prestige!")
+		return false
+	end
+	if info.Blocked then
+		notify(player, info.Blocked .. " to raise Temple Prestige.")
+		return false
+	end
+	local gold, ambrosia = data.Currencies.Gold or 0, data.Currencies.Ambrosia or 0
+	if gold < info.Gold or ambrosia < info.Ambrosia then
+		notify(player, ("Prestige %d needs %s Gold and %d Ambrosia."):format(info.NextLevel, Progression.FormatNumber(info.Gold), info.Ambrosia))
+		return false
+	end
+	-- Both checked above with no yield in between, then both spent.
+	ProgressionService.SpendCurrency(player, "Gold", info.Gold)
+	ProgressionService.SpendCurrency(player, "Ambrosia", info.Ambrosia)
+	data.Temple.Prestige = info.NextLevel
+	placeTemple(player, data, true)
+	pushAttributes(player, data)
+	refreshPads(player)
+	local look = TempleConfig.Prestige.Looks[info.NextLevel]
+	notify(player, ("Temple Prestige %d! +%d%% temple income%s"):format(info.NextLevel, TempleConfig.Prestige.IncomeBonusPercent, if look then (". New: " .. look) else ""))
+	GameEvents.Fire("TemplePrestige", player, nil, 1)
+	return true
+end
+
 -- Total of one effect across all buildings, e.g. "CombatBonusPercent".
 function TempleService.GetEffect(player, effect)
 	local data = DataService.GetData(player)
@@ -382,9 +428,10 @@ function TempleService.PayIncome(seconds)
 	for player, st in state do
 		local data = DataService.GetData(player)
 		if data and player.Parent then
+			local multiplier = TempleConfig.PrestigeMultiplier(data.Temple.Prestige)
 			local rates = {
-				Gold = TempleService.GetEffect(player, "GoldPerMinute"),
-				DivineFavor = TempleService.GetEffect(player, "FavorPerMinute"),
+				Gold = TempleService.GetEffect(player, "GoldPerMinute") * multiplier,
+				DivineFavor = TempleService.GetEffect(player, "FavorPerMinute") * multiplier,
 			}
 			for currency, perMinute in rates do
 				if perMinute > 0 then

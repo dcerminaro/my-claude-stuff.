@@ -6,6 +6,8 @@
 -- To rank up: reach the top level of your rank, then win the trial for the
 -- NEXT rank. Trials are short solo arena runs (see ArenaService.StartTrial).
 -- All numbers are PLACEHOLDERS, balanced in Phase 8.
+-- Phase 7E nerf: trial bosses have BossHealth 0.7 (on top of
+-- CombatConfig.BossHealthScale), and trial wave enemies have less health.
 
 local AscensionConfig = {}
 
@@ -19,6 +21,7 @@ AscensionConfig.Trials = {
 		Available = true,
 		Color = Color3.fromRGB(205, 150, 60),
 		Waves = { { Boss = "TrainingChampion" } },
+		BossHealth = 0.7,
 	},
 	[3] = {
 		Id = "SpartanArena",
@@ -32,8 +35,9 @@ AscensionConfig.Trials = {
 			{ SpartanSoldier = 5, WarHound = 3 },
 			{ Boss = "SpartanWarlord", SpartanSoldier = 2 },
 		},
-		WaveHealth = { 1.2, 1.4, 1.5 },
-		WaveDamage = { 1.1, 1.2, 1.3 },
+		WaveHealth = { 0.8, 0.9, 1.0 }, -- Phase 7E: lowered from 1.2 / 1.4 / 1.5
+		WaveDamage = { 1.0, 1.1, 1.2 },
+		BossHealth = 0.7,
 	},
 	[4] = {
 		Id = "Minotaur",
@@ -44,6 +48,7 @@ AscensionConfig.Trials = {
 		Theme = { Floor = Color3.fromRGB(120, 115, 105), Wall = Color3.fromRGB(95, 90, 82), Fire = Color3.fromRGB(255, 160, 60) },
 		Radius = 50,
 		Waves = { { Boss = "Minotaur" } },
+		BossHealth = 0.7,
 	},
 	[5] = {
 		Id = "DivineTrial",
@@ -59,8 +64,9 @@ AscensionConfig.Trials = {
 			{ UndeadSoldier = 3, HellHound = 2 },
 			{ Boss = "DivineAvatar" },
 		},
-		WaveHealth = { 0.8, 0.8, 1 },
+		WaveHealth = { 0.55, 0.55, 0.7 }, -- Phase 7E: lowered from 0.8 / 0.8 / 1
 		WaveDamage = { 0.8, 0.8, 1 },
+		BossHealth = 0.7,
 	},
 	[6] = {
 		Id = "Cerberus",
@@ -71,6 +77,7 @@ AscensionConfig.Trials = {
 		Theme = { Floor = Color3.fromRGB(50, 40, 55), Wall = Color3.fromRGB(35, 28, 40), Fire = Color3.fromRGB(160, 80, 255) },
 		Radius = 55,
 		Waves = { { Boss = "Cerberus" } },
+		BossHealth = 0.7,
 	},
 	[7] = {
 		Id = "OlympianGauntlet",
@@ -81,7 +88,7 @@ AscensionConfig.Trials = {
 		Theme = { Floor = Color3.fromRGB(235, 230, 215), Wall = Color3.fromRGB(200, 170, 90), Fire = Color3.fromRGB(255, 220, 120) },
 		Radius = 55,
 		Waves = { { Boss = "Minotaur" }, { Boss = "Medusa" }, { Boss = "Cerberus" } },
-		BossHealth = 1.2,
+		BossHealth = 0.85, -- Phase 7E: lowered from 1.2
 	},
 	[8] = {
 		Id = "TitanKing",
@@ -92,6 +99,7 @@ AscensionConfig.Trials = {
 		Theme = { Floor = Color3.fromRGB(200, 185, 150), Wall = Color3.fromRGB(170, 150, 110), Fire = Color3.fromRGB(255, 200, 80) },
 		Radius = 65,
 		Waves = { { Boss = "TitanKing" } },
+		BossHealth = 0.7,
 	},
 }
 

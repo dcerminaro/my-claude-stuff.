@@ -456,6 +456,8 @@ return ArenaConfig
 -- To rank up: reach the top level of your rank, then win the trial for the
 -- NEXT rank. Trials are short solo arena runs (see ArenaService.StartTrial).
 -- All numbers are PLACEHOLDERS, balanced in Phase 8.
+-- Phase 7E nerf: trial bosses have BossHealth 0.7 (on top of
+-- CombatConfig.BossHealthScale), and trial wave enemies have less health.
 
 local AscensionConfig = {}
 
@@ -469,6 +471,7 @@ AscensionConfig.Trials = {
 		Available = true,
 		Color = Color3.fromRGB(205, 150, 60),
 		Waves = { { Boss = "TrainingChampion" } },
+		BossHealth = 0.7,
 	},
 	[3] = {
 		Id = "SpartanArena",
@@ -482,8 +485,9 @@ AscensionConfig.Trials = {
 			{ SpartanSoldier = 5, WarHound = 3 },
 			{ Boss = "SpartanWarlord", SpartanSoldier = 2 },
 		},
-		WaveHealth = { 1.2, 1.4, 1.5 },
-		WaveDamage = { 1.1, 1.2, 1.3 },
+		WaveHealth = { 0.8, 0.9, 1.0 }, -- Phase 7E: lowered from 1.2 / 1.4 / 1.5
+		WaveDamage = { 1.0, 1.1, 1.2 },
+		BossHealth = 0.7,
 	},
 	[4] = {
 		Id = "Minotaur",
@@ -494,6 +498,7 @@ AscensionConfig.Trials = {
 		Theme = { Floor = Color3.fromRGB(120, 115, 105), Wall = Color3.fromRGB(95, 90, 82), Fire = Color3.fromRGB(255, 160, 60) },
 		Radius = 50,
 		Waves = { { Boss = "Minotaur" } },
+		BossHealth = 0.7,
 	},
 	[5] = {
 		Id = "DivineTrial",
@@ -509,8 +514,9 @@ AscensionConfig.Trials = {
 			{ UndeadSoldier = 3, HellHound = 2 },
 			{ Boss = "DivineAvatar" },
 		},
-		WaveHealth = { 0.8, 0.8, 1 },
+		WaveHealth = { 0.55, 0.55, 0.7 }, -- Phase 7E: lowered from 0.8 / 0.8 / 1
 		WaveDamage = { 0.8, 0.8, 1 },
+		BossHealth = 0.7,
 	},
 	[6] = {
 		Id = "Cerberus",
@@ -521,6 +527,7 @@ AscensionConfig.Trials = {
 		Theme = { Floor = Color3.fromRGB(50, 40, 55), Wall = Color3.fromRGB(35, 28, 40), Fire = Color3.fromRGB(160, 80, 255) },
 		Radius = 55,
 		Waves = { { Boss = "Cerberus" } },
+		BossHealth = 0.7,
 	},
 	[7] = {
 		Id = "OlympianGauntlet",
@@ -531,7 +538,7 @@ AscensionConfig.Trials = {
 		Theme = { Floor = Color3.fromRGB(235, 230, 215), Wall = Color3.fromRGB(200, 170, 90), Fire = Color3.fromRGB(255, 220, 120) },
 		Radius = 55,
 		Waves = { { Boss = "Minotaur" }, { Boss = "Medusa" }, { Boss = "Cerberus" } },
-		BossHealth = 1.2,
+		BossHealth = 0.85, -- Phase 7E: lowered from 1.2
 	},
 	[8] = {
 		Id = "TitanKing",
@@ -542,6 +549,7 @@ AscensionConfig.Trials = {
 		Theme = { Floor = Color3.fromRGB(200, 185, 150), Wall = Color3.fromRGB(170, 150, 110), Fire = Color3.fromRGB(255, 200, 80) },
 		Radius = 65,
 		Waves = { { Boss = "TitanKing" } },
+		BossHealth = 0.7,
 	},
 }
 
@@ -1008,6 +1016,11 @@ CombatConfig.Enemies = {
 -- PRACTICE FIELD (behind the plaza spawn) — a place to fight before arenas
 -- exist. Offsets are relative to Center (Y = floor top).
 --------------------------------------------------------------------------
+-- Phase 7E balance: every boss's health and damage (arenas, trials,
+-- challenges) is multiplied by these. 1 = the numbers above.
+CombatConfig.BossHealthScale = 0.75 -- 25% less health
+CombatConfig.BossDamageScale = 0.9  -- 10% less damage
+
 CombatConfig.PracticeField = {
 	Center = Vector3.new(0, 1, -125),
 	Size = Vector3.new(90, 1, 70),
@@ -1128,7 +1141,7 @@ GameConfig.Teleport = {
 
 -- Shown small in the corner so you can tell which update a server is running.
 -- Bump this with every publish.
-GameConfig.BuildLabel = "v43"
+GameConfig.BuildLabel = "v45"
 
 GameConfig.Debug = {
 	-- Chat commands like "!xp 500". They ONLY work inside Roblox Studio,
@@ -1644,6 +1657,10 @@ QuestConfig.Chains = {
 			q("T5", "Blessed Temple", "Raise your temple to tier 4.", { Type = "TempleTier", Count = 4 }, { Gold = 40000, DivineFavor = 150, Ambrosia = 2 }),
 			q("T6", "Grand Pantheon", "Raise your temple to tier 5.", { Type = "TempleTier", Count = 5 }, { Gold = 150000, DivineFavor = 300, Ambrosia = 4 }),
 			q("T7", "Celestial Palace", "Raise your temple to tier 6.", { Type = "TempleTier", Count = 6 }, { Gold = 500000, DivineFavor = 600, Ambrosia = 8 }),
+			q("T8", "Divine Citadel", "Raise your temple to tier 7, the Divine Citadel (Elder God).", { Type = "TempleTier", Count = 7 }, { Gold = 1500000, DivineFavor = 1000, Ambrosia = 12 }),
+			q("T9", "Prestigious", "Reach Temple Prestige 1.", { Type = "TemplePrestige", Count = 1 }, { DivineFavor = 1500, Ambrosia = 10 }),
+			q("T10", "Wonder of Olympus", "Reach Temple Prestige 5.", { Type = "TemplePrestige", Count = 5 }, { DivineFavor = 4000, Ambrosia = 25 }),
+			q("T11", "Radiant Citadel", "Reach Temple Prestige 10.", { Type = "TemplePrestige", Count = 10 }, { DivineFavor = 10000, Ambrosia = 60 }),
 		},
 	},
 	{
@@ -1722,7 +1739,7 @@ end
 -- Objectives that are checked from the save instead of counted.
 QuestConfig.StateObjectives = {
 	ChooseGod = true, ReachLevel = true, ReachRank = true, TempleTier = true,
-	BuildingLevel = true, TotalBuildingLevels = true, BlessingLevels = true, OwnWeapons = true,
+	BuildingLevel = true, TotalBuildingLevels = true, BlessingLevels = true, OwnWeapons = true, TemplePrestige = true,
 }
 
 return QuestConfig
@@ -2636,14 +2653,14 @@ return Poses
 
 local TempleConfig = {}
 
-TempleConfig.MaxBuildingLevel = 5
+TempleConfig.MaxBuildingLevel = 6     -- level 6 ("Divine") needs the Divine Citadel (Phase 7E)
 TempleConfig.IncomeInterval = 5      -- seconds between passive income payments
 TempleConfig.UpgradeCooldown = 0.5   -- seconds between purchase requests per player
 
 --------------------------------------------------------------------------
 -- TEMPLE TIERS
--- Tier = 1 + Temple Core level. Core has 5 levels, so tiers 1-6 are
--- reachable now. Tier 7 (Divine Citadel) unlocks in Phase 7.
+-- Tier = 1 + Temple Core level. Core has 6 levels -> tiers 1-7.
+-- Tier 7 (Divine Citadel, Phase 7E) needs character level 100 and Elder God.
 --------------------------------------------------------------------------
 TempleConfig.Tiers = {
 	{ Name = "Ruined Shrine" },
@@ -2679,58 +2696,59 @@ TempleConfig.Buildings = {
 		Description = "Earns Gold automatically while you play.",
 		Slot = Vector3.new(-28, 0, -16),
 		Pad = Vector3.new(-28, 0, -30),
-		Costs = { 100, 600, 3000, 15000, 75000 },
+		Costs = { 100, 600, 3000, 15000, 75000, 400000 },
 		Effect = "GoldPerMinute",
 		EffectLabel = "Gold per minute",
-		EffectValues = { 30, 75, 180, 420, 900 },
+		EffectValues = { 30, 75, 180, 420, 900, 2000 },
 	},
 	MainAltar = {
 		DisplayName = "Main Altar",
 		Description = "Earns Divine Favor. Unlocks higher blessing tiers (Phase 3).",
 		Slot = Vector3.new(0, 0, -20),
 		Pad = Vector3.new(-9, 0, -30),
-		Costs = { 250, 1500, 7500, 35000, 150000 },
+		Costs = { 250, 1500, 7500, 35000, 150000, 750000 },
 		Effect = "FavorPerMinute",
 		EffectLabel = "Favor per minute",
-		EffectValues = { 5, 12, 25, 50, 100 },
+		EffectValues = { 5, 12, 25, 50, 100, 200 },
 	},
 	DivineFountain = {
 		DisplayName = "Divine Fountain",
 		Description = "Improves health and energy regeneration (used from Phase 4).",
 		Slot = Vector3.new(28, 0, -16),
 		Pad = Vector3.new(28, 0, -30),
-		Costs = { 300, 2000, 10000, 45000, 180000 },
+		Costs = { 300, 2000, 10000, 45000, 180000, 900000 },
 		Effect = "RegenBonusPercent",
 		EffectLabel = "Regeneration bonus %",
-		EffectValues = { 10, 20, 35, 50, 75 },
+		EffectValues = { 10, 20, 35, 50, 75, 100 },
 	},
 	TrainingGrounds = {
 		DisplayName = "Training Grounds",
 		Description = "Boosts combat and equipment progression (used from Phase 4).",
 		Slot = Vector3.new(-28, 0, 20),
 		Pad = Vector3.new(-28, 0, 5),
-		Costs = { 400, 2500, 12000, 50000, 200000 },
+		Costs = { 400, 2500, 12000, 50000, 200000, 1000000 },
 		Effect = "CombatBonusPercent",
 		EffectLabel = "Combat bonus %",
-		EffectValues = { 2, 4, 7, 10, 15 },
+		EffectValues = { 2, 4, 7, 10, 15, 20 },
 	},
 	StatueHall = {
 		DisplayName = "Statue Hall",
 		Description = "Displays statues and improves worship rewards (used from Phase 3).",
 		Slot = Vector3.new(28, 0, 20),
 		Pad = Vector3.new(28, 0, 5),
-		Costs = { 500, 3000, 15000, 60000, 250000 },
+		Costs = { 500, 3000, 15000, 60000, 250000, 1250000 },
 		Effect = "WorshipBonusPercent",
 		EffectLabel = "Worship bonus %",
-		EffectValues = { 5, 10, 20, 30, 50 },
+		EffectValues = { 5, 10, 20, 30, 50, 75 },
 	},
 	TempleCore = {
 		DisplayName = "Temple Core",
 		Description = "Raises your temple tier, changes its look, and unlocks stronger buildings.",
 		Slot = Vector3.new(0, 0, 12), -- the main temple itself
 		Pad = Vector3.new(9, 0, -30),
-		Costs = { 1000, 8000, 40000, 160000, 600000 },
-		RequiredLevel = { 5, 10, 25, 45, 70 }, -- character level needed for each Core level
+		Costs = { 1000, 8000, 40000, 160000, 600000, 3000000 },
+		RequiredLevel = { 5, 10, 25, 45, 70, 100 }, -- character level needed for each Core level
+		RequiredRank = { [6] = 8 }, -- Core level 6 (Divine Citadel) also needs Elder God
 		IsCore = true,
 	},
 }
@@ -2758,7 +2776,12 @@ end
 
 -- What the next upgrade of a building needs.
 -- Returns a table: { Maxed = bool, NextLevel = n, Cost = gold, Blocked = "reason" or nil }
-function TempleConfig.GetUpgradeInfo(buildingId, currentLevel, templeTier, playerLevel)
+-- Temple tier needed for each building level (level 6 needs the Divine Citadel).
+TempleConfig.BuildingTierNeeded = { 1, 2, 3, 4, 5, 7 }
+
+local RANK_NAMES = { "Mortal", "Warrior", "Champion", "Hero", "Demigod", "Lesser God", "Olympian", "Elder God" }
+
+function TempleConfig.GetUpgradeInfo(buildingId, currentLevel, templeTier, playerLevel, rankIndex)
 	local building = TempleConfig.Buildings[buildingId]
 	if not building then
 		return nil
@@ -2771,11 +2794,17 @@ function TempleConfig.GetUpgradeInfo(buildingId, currentLevel, templeTier, playe
 	local blocked = nil
 	if building.IsCore then
 		local required = building.RequiredLevel[nextLevel]
+		local rankNeeded = building.RequiredRank and building.RequiredRank[nextLevel]
 		if playerLevel < required then
 			blocked = ("Reach character level %d"):format(required)
+		elseif rankNeeded and (rankIndex or 1) < rankNeeded then
+			blocked = ("Ascend to %s"):format(RANK_NAMES[rankNeeded])
 		end
-	elseif templeTier < nextLevel then
-		blocked = ("Needs temple tier %d (%s)"):format(nextLevel, TempleConfig.GetTierName(nextLevel))
+	else
+		local tierNeeded = TempleConfig.BuildingTierNeeded[nextLevel] or nextLevel
+		if templeTier < tierNeeded then
+			blocked = ("Needs temple tier %d (%s)"):format(tierNeeded, TempleConfig.GetTierName(tierNeeded))
+		end
 	end
 
 	return {
@@ -2784,6 +2813,67 @@ function TempleConfig.GetUpgradeInfo(buildingId, currentLevel, templeTier, playe
 		Cost = building.Costs[nextLevel],
 		Blocked = blocked,
 	}
+end
+
+--------------------------------------------------------------------------
+-- TEMPLE PRESTIGE (Phase 7E)
+-- After the Divine Citadel with every building at level 6, keep improving
+-- the temple: 10 Prestige levels. Nothing resets. Each level adds
+-- IncomeBonusPercent to temple Gold and Favor income and new decorations.
+--------------------------------------------------------------------------
+TempleConfig.Prestige = {
+	MaxLevel = 10,
+	IncomeBonusPercent = 5, -- per Prestige level
+	BaseGold = 2000000,   -- Prestige 1 costs 2M Gold; each level x1.4 (Prestige 10: ~41M)
+	GoldGrowth = 1.4,
+	BaseAmbrosia = 5,     -- Prestige 1 costs 5 Ambrosia; +3 per level
+	AmbrosiaPerLevel = 3,
+	-- New look at each level (shown in the menu).
+	Looks = {
+		[1] = "Golden banners on the citadel",
+		[2] = "A ring of glowing pillars around the citadel",
+		[3] = "A divine halo above the dome",
+		[4] = "Prestige stars on the citadel",
+		[5] = "A beam of light into the sky",
+		[6] = "Two more floating sky islands",
+		[7] = "Flames of the gods on every tower",
+		[8] = "A second, larger halo",
+		[9] = "Golden statues of you at the gates",
+		[10] = "Radiant Citadel: everything glows",
+	},
+}
+
+-- What the next Prestige level needs.
+-- Returns { Maxed, NextLevel, Gold, Ambrosia, Blocked }.
+function TempleConfig.GetPrestigeInfo(prestige, templeTier, buildings)
+	local p = TempleConfig.Prestige
+	prestige = tonumber(prestige) or 0
+	if prestige >= p.MaxLevel then
+		return { Maxed = true }
+	end
+	local nextLevel = prestige + 1
+	local blocked = nil
+	if templeTier < #TempleConfig.Tiers then
+		blocked = "Build the Divine Citadel first"
+	else
+		for _, id in TempleConfig.BuildingOrder do
+			if (tonumber(buildings[id]) or 0) < TempleConfig.MaxBuildingLevel then
+				blocked = ("Raise every building to level %d first"):format(TempleConfig.MaxBuildingLevel)
+				break
+			end
+		end
+	end
+	return {
+		Maxed = false,
+		NextLevel = nextLevel,
+		Gold = math.floor(p.BaseGold * p.GoldGrowth ^ prestige / 1000) * 1000,
+		Ambrosia = p.BaseAmbrosia + p.AmbrosiaPerLevel * prestige,
+		Blocked = blocked,
+	}
+end
+
+function TempleConfig.PrestigeMultiplier(prestige)
+	return 1 + (tonumber(prestige) or 0) * TempleConfig.Prestige.IncomeBonusPercent / 100
 end
 
 return TempleConfig
@@ -5654,6 +5744,7 @@ local function makeDefaultData()
 		Temple = {            -- Phase 2
 			Tier = 1,
 			Buildings = {},   -- [BuildingId] = level
+			Prestige = 0,     -- Phase 7E: Temple Prestige level (0-10)
 		},
 
 		Inventory = {         -- Phase 7
@@ -6993,6 +7084,9 @@ function EnemyService.Spawn(enemyType, cframe, options)
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
 	local root = model:FindFirstChild("HumanoidRootPart")
 	local healthMultiplier = options.HealthMultiplier or 1
+	if cfg.Boss then
+		healthMultiplier *= CombatConfig.BossHealthScale or 1 -- Phase 7E nerf, one place to tune
+	end
 	humanoid.MaxHealth = math.floor(cfg.MaxHealth * healthMultiplier)
 	humanoid.Health = humanoid.MaxHealth
 	humanoid.WalkSpeed = cfg.WalkSpeed * (options.SpeedMultiplier or 1)
@@ -7036,7 +7130,7 @@ function EnemyService.Spawn(enemyType, cframe, options)
 		LastAttacker = nil,
 		Contributors = {}, -- [Player] = { Damage, Last }
 		Dead = false,
-		DamageMultiplier = options.DamageMultiplier or 1,
+		DamageMultiplier = (options.DamageMultiplier or 1) * (if cfg.Boss then CombatConfig.BossDamageScale or 1 else 1),
 		RewardMultiplier = options.RewardMultiplier or 1,
 		OnDeath = options.OnDeath,
 		OnPhase2 = options.OnPhase2,
@@ -8612,6 +8706,8 @@ local function progressOf(data, quest)
 		value = data.RankIndex
 	elseif objective.Type == "TempleTier" then
 		value = data.Temple.Tier
+	elseif objective.Type == "TemplePrestige" then
+		value = tonumber(data.Temple.Prestige) or 0
 	elseif objective.Type == "BuildingLevel" then
 		value = tonumber(data.Temple.Buildings[objective.Target]) or 0
 	elseif objective.Type == "TotalBuildingLevels" then
@@ -8696,7 +8792,7 @@ function QuestService.Record(player, eventType, target, amount)
 			end
 		end
 	end
-	if changed or eventType == "UpgradeBuilding" or eventType == "UpgradeBlessing" or eventType == "CraftWeapon" then
+	if changed or eventType == "UpgradeBuilding" or eventType == "TemplePrestige" or eventType == "UpgradeBlessing" or eventType == "CraftWeapon" then
 		push(player, data) -- state quests (building levels, weapons owned...) may have moved too
 	end
 end
@@ -8796,8 +8892,8 @@ return QuestService
 -- Location: ServerScriptService > Services > TempleModels
 --
 -- Builds the PLACEHOLDER 3D models for the Temple Tycoon out of simple parts:
---   TempleModels.Temple(tier, origin, colors)               -> the main temple (tiers 1-7)
---   TempleModels.Building(buildingId, level, origin, colors) -> one of the 5 buildings (levels 1-5)
+--   TempleModels.Temple(tier, origin, colors, prestige)     -> the main temple (tiers 1-7; prestige 0-10 decorations)
+--   TempleModels.Building(buildingId, level, origin, colors) -> one of the 5 buildings (levels 1-6)
 -- `colors` = the god's { Accent, Glow, Fire } from GodConfig (optional).
 --   TempleModels.AnimateIn(model)                    -> "rise from the ground" construction effect
 -- `origin` is a CFrame at ground level in the centre of the building's slot.
@@ -8943,10 +9039,127 @@ local TEMPLE_STYLES = {
 	[4] = { W = 24, D = 28, ColH = 14, Spacing = 5, Cella = true, Roof = true, GoldTrim = true, Braziers = true },
 	[5] = { W = 26, D = 28, ColH = 15, Spacing = 4.6, Cella = true, Roof = true, GoldTrim = true, Braziers = true, Dome = true, Statues = true },
 	[6] = { W = 26, D = 28, ColH = 15, Spacing = 4.6, Cella = true, Roof = true, GoldTrim = true, Braziers = true, Dome = true, Statues = true, Floating = true },
-	[7] = { W = 28, D = 30, ColH = 17, Spacing = 4.4, Cella = true, Roof = true, GoldTrim = true, Braziers = true, Dome = true, Statues = true, Floating = true, GoldColumns = true },
+	[7] = { W = 32, D = 34, ColH = 19, Spacing = 4.4, Cella = true, Roof = true, GoldTrim = true, Braziers = true, Dome = true, Statues = true, Floating = true, GoldColumns = true, Citadel = true },
 }
 
-local function buildTempleStyle(model, origin, s)
+-- Phase 7E: ring of small blocks (a halo) centred at `center`, flat.
+local function ring(model, origin, name, center, radius, count, props)
+	for i = 1, count do
+		local angle = (i / count) * math.pi * 2
+		local arc = 2 * math.pi * radius / count
+		local p = {
+			Name = name .. i,
+			Size = Vector3.new(arc * 1.05, 0.5, 0.9),
+			CFrame = origin * CFrame.new(center) * CFrame.Angles(0, -angle, 0) * CFrame.new(0, 0, radius) ,
+			CanCollide = false,
+		}
+		for key, value in props or {} do
+			p[key] = value
+		end
+		WorldBuilder.MakePart(model, p)
+	end
+end
+
+-- Divine Citadel extras (tier 7): corner towers, a central spire and crown.
+local function buildCitadel(model, origin, s, topY)
+	local W, D = s.W, s.D
+	local towerH = s.ColH + 14
+	local gold = { Material = Enum.Material.Metal, Color = pal.Accent }
+	for i, c in { { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } } do
+		local x, z = c[1] * (W / 2 - 1), c[2] * (D / 2 - 1)
+		column(model, origin, "Tower" .. i, x, 0, z, towerH, 5, { Color = MARBLE, Material = Enum.Material.Marble })
+		disc(model, origin, "TowerRim" .. i, x, towerH, z, 1, 6.4, gold)
+		column(model, origin, "TowerRoof" .. i, x, towerH + 0.5, z, 4, 3.2, gold)
+		local orb = ball(model, origin, "TowerOrb" .. i, 2.2, Vector3.new(x, towerH + 6, z), { Material = Enum.Material.Neon, Color = pal.Glow })
+		addLight(orb, pal.Glow, 20, 2)
+	end
+	-- Walls between the towers at the back and sides (front stays open)
+	block(model, origin, "WallBack", Vector3.new(W - 4, 8, 1.6), Vector3.new(0, 4, D / 2 - 1))
+	block(model, origin, "WallLeft", Vector3.new(1.6, 8, D - 4), Vector3.new(-W / 2 + 1, 4, 0))
+	block(model, origin, "WallRight", Vector3.new(1.6, 8, D - 4), Vector3.new(W / 2 - 1, 4, 0))
+	-- Central spire rising out of the dome with a glowing crown
+	local spireBase = topY + W * 0.2
+	column(model, origin, "Spire", 0, spireBase, 4, 16, 2, gold)
+	ring(model, origin, "Crown", Vector3.new(0, spireBase + 16.5, 4), 2.6, 10, { Material = Enum.Material.Neon, Color = pal.Accent })
+	local crown = ball(model, origin, "CrownGem", 2.6, Vector3.new(0, spireBase + 18, 4), { Material = Enum.Material.Neon, Color = pal.Glow })
+	addLight(crown, pal.Glow, 40, 3)
+	-- Grand stairway at the front
+	block(model, origin, "Stair1", Vector3.new(12, 0.6, 3), Vector3.new(0, 0.3, -D / 2 - 3.5))
+	block(model, origin, "Stair2", Vector3.new(10, 0.6, 2), Vector3.new(0, 0.9, -D / 2 - 2.5))
+	return spireBase + 18
+end
+
+-- Temple Prestige decorations (Phase 7E). See TempleConfig.Prestige.Looks.
+local function buildPrestige(model, origin, s, topY, crownY, prestige)
+	local W, D = s.W, s.D
+	local gold = { Material = Enum.Material.Metal, Color = pal.Accent }
+	local glow = { Material = Enum.Material.Neon, Color = pal.Glow, CanCollide = false }
+	if prestige >= 1 then -- banners
+		for i, x in { -W / 2 + 4, -W / 6, W / 6, W / 2 - 4 } do
+			block(model, origin, "Banner" .. i, Vector3.new(2.4, 7, 0.2), Vector3.new(x, s.ColH - 2, -D / 2 - 0.4), { Color = pal.Accent, Material = Enum.Material.Fabric, CanCollide = false })
+		end
+	end
+	if prestige >= 2 then -- ring of glowing pillars
+		for i = 1, 8 do
+			local angle = i / 8 * math.pi * 2
+			local x, z = math.cos(angle) * (W / 2 + 6), math.sin(angle) * (D / 2 + 6) + 0
+			if z > -D / 2 - 2 then -- keep the entrance clear
+				column(model, origin, "PrestigePillar" .. i, x, 0, z, 6, 1, glow)
+			end
+		end
+	end
+	if prestige >= 3 then
+		ring(model, origin, "Halo", Vector3.new(0, topY + W * 0.35, 4), W * 0.3, 20, glow)
+	end
+	if prestige >= 4 then -- stars on the front
+		for i = 1, math.min(prestige, 10) do
+			local x = (i - (math.min(prestige, 10) + 1) / 2) * 2.2
+			ball(model, origin, "Star" .. i, 1.2, Vector3.new(x, s.ColH + 4.2, -D / 2 - 0.6), glow)
+		end
+	end
+	if prestige >= 5 then -- beam of light into the sky
+		column(model, origin, "SkyBeam", 0, crownY, 4, 120, 3, { Material = Enum.Material.Neon, Color = pal.Glow, Transparency = 0.6, CanCollide = false, CastShadow = false })
+	end
+	if prestige >= 6 then
+		local skyY = topY + 12
+		for i, pos in { Vector3.new(-22, skyY + 4, 16), Vector3.new(22, skyY + 6, 16) } do
+			block(model, origin, "PrestigeIsland" .. i, Vector3.new(7, 1.2, 7), pos)
+			block(model, origin, "PrestigeIslandGold" .. i, Vector3.new(7.4, 0.4, 7.4), pos - Vector3.new(0, 0.8, 0), gold)
+			local orb = ball(model, origin, "PrestigeOrb" .. i, 1.6, pos + Vector3.new(0, 3, 0), glow)
+			addLight(orb, pal.Glow, 14, 2)
+		end
+	end
+	if prestige >= 7 then -- flames on the towers
+		for _, item in model:GetChildren() do
+			if item.Name:match("^TowerRoof") then
+				addFire(item, 6)
+			end
+		end
+	end
+	if prestige >= 8 then
+		ring(model, origin, "GreatHalo", Vector3.new(0, topY + W * 0.55, 4), W * 0.5, 28, { Material = Enum.Material.Neon, Color = pal.Accent, CanCollide = false })
+	end
+	if prestige >= 9 then -- golden statues at the gates
+		for i, x in { -9, 9 } do
+			block(model, origin, "GatePedestal" .. i, Vector3.new(3, 2, 3), Vector3.new(x, 1, -D / 2 - 7))
+			block(model, origin, "GateStatueBody" .. i, Vector3.new(2, 5, 1.4), Vector3.new(x, 4.5, -D / 2 - 7), gold)
+			ball(model, origin, "GateStatueHead" .. i, 1.6, Vector3.new(x, 7.8, -D / 2 - 7), gold)
+		end
+	end
+	if prestige >= 10 then -- radiant: marble glows faintly in the god's colour
+		for _, item in model:GetChildren() do
+			if item:IsA("BasePart") and item.Material == Enum.Material.Marble then
+				item.Color = item.Color:Lerp(pal.Glow, 0.25)
+			end
+		end
+		local radiance = model:FindFirstChild("CrownGem")
+		if radiance then
+			addLight(radiance, pal.Accent, 60, 4)
+		end
+	end
+end
+
+local function buildTempleStyle(model, origin, s, prestige)
 	local W, D = s.W, s.D
 
 	-- Two-step platform
@@ -9028,6 +9241,11 @@ local function buildTempleStyle(model, origin, s)
 		end
 	end
 
+	if s.Citadel then
+		local crownY = buildCitadel(model, origin, s, topY)
+		buildPrestige(model, origin, s, topY, crownY, prestige or 0)
+	end
+
 	if s.Floating then
 		local skyY = topY + 8
 		for i, pos in { Vector3.new(-16, skyY, -4), Vector3.new(16, skyY + 2, -4), Vector3.new(0, skyY + 5, 20) } do
@@ -9040,14 +9258,14 @@ local function buildTempleStyle(model, origin, s)
 	end
 end
 
-function TempleModels.Temple(tier, origin, colors)
+function TempleModels.Temple(tier, origin, colors, prestige)
 	pal = colors or DEFAULT_COLORS
 	local model = Instance.new("Model")
 	model.Name = "Temple"
 	if tier <= 1 then
 		buildRuinedShrine(model, origin)
 	else
-		buildTempleStyle(model, origin, TEMPLE_STYLES[math.min(tier, 7)])
+		buildTempleStyle(model, origin, TEMPLE_STYLES[math.min(tier, 7)], prestige)
 	end
 	return model
 end
@@ -9211,6 +9429,14 @@ function TempleModels.Building(buildingId, level, origin, colors)
 	local model = Instance.new("Model")
 	model.Name = buildingId
 	builder(model, origin, math.clamp(level, 1, 5))
+	if level >= 6 then
+		-- Phase 7E "Divine" level: a floating halo and glow above the building.
+		local _, size = model:GetBoundingBox()
+		local height = size.Y + 2.5
+		ring(model, origin, "DivineHalo", Vector3.new(0, height, 0), 4, 14, { Material = Enum.Material.Neon, Color = pal.Accent })
+		local gem = ball(model, origin, "DivineGem", 1.4, Vector3.new(0, height + 1.5, 0), { Material = Enum.Material.Neon, Color = pal.Glow, CanCollide = false })
+		addLight(gem, pal.Glow, 16, 2)
+	end
 	return model
 end
 
@@ -9332,7 +9558,7 @@ local function getLevel(data, buildingId)
 	return tonumber(data.Temple.Buildings[buildingId]) or 0
 end
 
--- Makes sure saved temple data is valid (whole numbers, 0-5) and the tier matches the Core.
+-- Makes sure saved temple data is valid (whole numbers, 0-6) and the tier matches the Core.
 local function sanitizeTemple(data)
 	local buildings = data.Temple.Buildings
 	for id in TempleConfig.Buildings do
@@ -9340,6 +9566,7 @@ local function sanitizeTemple(data)
 		buildings[id] = if level > 0 then level else nil
 	end
 	data.Temple.Tier = TempleConfig.TierFromCoreLevel(buildings.TempleCore)
+	data.Temple.Prestige = math.clamp(math.floor(tonumber(data.Temple.Prestige) or 0), 0, TempleConfig.Prestige.MaxLevel)
 end
 
 local function slotCFrame(plot, offset)
@@ -9355,8 +9582,10 @@ local function pushAttributes(player, data)
 	for id in TempleConfig.Buildings do
 		player:SetAttribute("Temple_" .. id, getLevel(data, id))
 	end
-	player:SetAttribute("GoldPerMinute", TempleConfig.GetEffectValue("GoldTreasury", getLevel(data, "GoldTreasury")))
-	player:SetAttribute("FavorPerMinute", TempleConfig.GetEffectValue("MainAltar", getLevel(data, "MainAltar")))
+	local multiplier = TempleConfig.PrestigeMultiplier(data.Temple.Prestige)
+	player:SetAttribute("TemplePrestige", data.Temple.Prestige or 0)
+	player:SetAttribute("GoldPerMinute", math.floor(TempleConfig.GetEffectValue("GoldTreasury", getLevel(data, "GoldTreasury")) * multiplier))
+	player:SetAttribute("FavorPerMinute", math.floor(TempleConfig.GetEffectValue("MainAltar", getLevel(data, "MainAltar")) * multiplier))
 end
 
 --------------------------------------------------------------------------
@@ -9370,7 +9599,7 @@ local function placeTemple(player, data, animate)
 		old:Destroy()
 	end
 	local colors = if colorProvider then colorProvider(player) else nil
-	local model = TempleModels.Temple(data.Temple.Tier, slotCFrame(st.Plot, TempleConfig.Buildings.TempleCore.Slot), colors)
+	local model = TempleModels.Temple(data.Temple.Tier, slotCFrame(st.Plot, TempleConfig.Buildings.TempleCore.Slot), colors, data.Temple.Prestige)
 	if animate then
 		TempleModels.AnimateIn(model, 1.8)
 	end
@@ -9420,7 +9649,7 @@ local function refreshPads(player)
 	for id, pad in st.Pads do
 		local info = TempleConfig.Buildings[id]
 		local level = getLevel(data, id)
-		local upgrade = TempleConfig.GetUpgradeInfo(id, level, data.Temple.Tier, data.Level)
+		local upgrade = TempleConfig.GetUpgradeInfo(id, level, data.Temple.Tier, data.Level, data.RankIndex)
 		local name = info.DisplayName
 
 		if upgrade.Maxed then
@@ -9505,6 +9734,10 @@ function TempleService.Init(dataService, progressionService, plotService, notify
 	-- Upgrade requests from the menu. Never trust the client: check everything.
 	if upgradeRemote then
 		upgradeRemote.OnServerEvent:Connect(function(player, buildingId)
+			if buildingId == "Prestige" then
+				TempleService.RequestPrestige(player)
+				return
+			end
 			if type(buildingId) ~= "string" or not TempleConfig.Buildings[buildingId] then
 				return
 			end
@@ -9550,7 +9783,7 @@ function TempleService.SetupPlayer(player, plot)
 
 	-- Keep pad colours/labels in sync when Gold or level changes from anywhere.
 	local st = state[player]
-	for _, attribute in { "Gold", "Level" } do
+	for _, attribute in { "Gold", "Level", "RankIndex" } do
 		table.insert(st.Connections, player:GetAttributeChangedSignal(attribute):Connect(function()
 			refreshPads(player)
 		end))
@@ -9604,7 +9837,7 @@ function TempleService.RequestUpgrade(player, buildingId)
 	st.LastRequest = now
 
 	local level = getLevel(data, buildingId)
-	local upgrade = TempleConfig.GetUpgradeInfo(buildingId, level, data.Temple.Tier, data.Level)
+	local upgrade = TempleConfig.GetUpgradeInfo(buildingId, level, data.Temple.Tier, data.Level, data.RankIndex)
 	if upgrade.Maxed then
 		notify(player, info.DisplayName .. " is already at max level.")
 		return false
@@ -9638,6 +9871,45 @@ function TempleService.RequestUpgrade(player, buildingId)
 	return true
 end
 
+-- Phase 7E: buys the next Temple Prestige level. Returns true if it happened.
+function TempleService.RequestPrestige(player)
+	local st = state[player]
+	local data = DataService.GetData(player)
+	if not st or not data then
+		return false
+	end
+	local now = os.clock()
+	if now - st.LastRequest < TempleConfig.UpgradeCooldown then
+		return false
+	end
+	st.LastRequest = now
+	local info = TempleConfig.GetPrestigeInfo(data.Temple.Prestige, data.Temple.Tier, data.Temple.Buildings)
+	if info.Maxed then
+		notify(player, "Your temple is at maximum Prestige!")
+		return false
+	end
+	if info.Blocked then
+		notify(player, info.Blocked .. " to raise Temple Prestige.")
+		return false
+	end
+	local gold, ambrosia = data.Currencies.Gold or 0, data.Currencies.Ambrosia or 0
+	if gold < info.Gold or ambrosia < info.Ambrosia then
+		notify(player, ("Prestige %d needs %s Gold and %d Ambrosia."):format(info.NextLevel, Progression.FormatNumber(info.Gold), info.Ambrosia))
+		return false
+	end
+	-- Both checked above with no yield in between, then both spent.
+	ProgressionService.SpendCurrency(player, "Gold", info.Gold)
+	ProgressionService.SpendCurrency(player, "Ambrosia", info.Ambrosia)
+	data.Temple.Prestige = info.NextLevel
+	placeTemple(player, data, true)
+	pushAttributes(player, data)
+	refreshPads(player)
+	local look = TempleConfig.Prestige.Looks[info.NextLevel]
+	notify(player, ("Temple Prestige %d! +%d%% temple income%s"):format(info.NextLevel, TempleConfig.Prestige.IncomeBonusPercent, if look then (". New: " .. look) else ""))
+	GameEvents.Fire("TemplePrestige", player, nil, 1)
+	return true
+end
+
 -- Total of one effect across all buildings, e.g. "CombatBonusPercent".
 function TempleService.GetEffect(player, effect)
 	local data = DataService.GetData(player)
@@ -9658,9 +9930,10 @@ function TempleService.PayIncome(seconds)
 	for player, st in state do
 		local data = DataService.GetData(player)
 		if data and player.Parent then
+			local multiplier = TempleConfig.PrestigeMultiplier(data.Temple.Prestige)
 			local rates = {
-				Gold = TempleService.GetEffect(player, "GoldPerMinute"),
-				DivineFavor = TempleService.GetEffect(player, "FavorPerMinute"),
+				Gold = TempleService.GetEffect(player, "GoldPerMinute") * multiplier,
+				DivineFavor = TempleService.GetEffect(player, "FavorPerMinute") * multiplier,
 			}
 			for currency, perMinute in rates do
 				if perMinute > 0 then
@@ -13595,6 +13868,29 @@ for order, id in TempleConfig.BuildingOrder do
 	rows[id] = { Name = nameLabel, Effect = effectLabel, Status = statusLabel, Button = button }
 end
 
+-- Phase 7E: Temple Prestige row (after the Divine Citadel)
+local prestigeRow = create("Frame", {
+	Name = "Prestige",
+	Size = UDim2.new(1, 0, 0, 84),
+	BackgroundColor3 = Color3.fromRGB(240, 226, 180),
+	LayoutOrder = #TempleConfig.BuildingOrder + 1,
+	Parent = list,
+}, { corner(8), padding(8), stroke(THEME.Gold, 2) })
+local prestigeName = text({ Size = UDim2.new(1, -150, 0, 22), Font = BODY_FONT, TextSize = 18, Text = "Temple Prestige", Parent = prestigeRow })
+text({
+	Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, -150, 0, 18), Font = SMALL_FONT, TextSize = 13, TextColor3 = THEME.SubText,
+	TextTruncate = Enum.TextTruncate.AtEnd, Text = "Keep improving your Divine Citadel. Nothing resets.", Parent = prestigeRow,
+})
+local prestigeEffect = text({ Position = UDim2.fromOffset(0, 41), Size = UDim2.new(1, -150, 0, 18), Font = SMALL_FONT, TextSize = 14, TextTruncate = Enum.TextTruncate.AtEnd, Text = "", Parent = prestigeRow })
+local prestigeStatus = text({ Position = UDim2.fromOffset(0, 59), Size = UDim2.new(1, -150, 0, 16), Font = BODY_FONT, TextSize = 13, TextColor3 = THEME.Warning, TextTruncate = Enum.TextTruncate.AtEnd, Text = "", Parent = prestigeRow })
+local prestigeButton = create("TextButton", {
+	AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.fromOffset(136, 56),
+	BackgroundColor3 = THEME.Locked, Text = "", Font = BODY_FONT, TextSize = 14, TextColor3 = THEME.White, Parent = prestigeRow,
+}, { corner(8) })
+prestigeButton.Activated:Connect(function()
+	upgradeRemote:FireServer("Prestige") -- the server checks everything
+end)
+
 --------------------------------------------------------------------------
 -- Refresh from attributes
 --------------------------------------------------------------------------
@@ -13619,6 +13915,7 @@ local function refresh()
 	local tier = player:GetAttribute("TempleTier") or 1
 	local gold = player:GetAttribute("Gold") or 0
 	local playerLevel = player:GetAttribute("Level") or 1
+	local rankIndex = player:GetAttribute("RankIndex") or 1
 
 	tierLabel.Text = ("Tier %d: %s"):format(tier, TempleConfig.GetTierName(tier))
 	incomeLabel.Text = ("Income while you play: +%s Gold/min   +%s Favor/min"):format(
@@ -13629,7 +13926,7 @@ local function refresh()
 	for id, row in rows do
 		local info = TempleConfig.Buildings[id]
 		local level = player:GetAttribute("Temple_" .. id) or 0
-		local upgrade = TempleConfig.GetUpgradeInfo(id, level, tier, playerLevel)
+		local upgrade = TempleConfig.GetUpgradeInfo(id, level, tier, playerLevel, rankIndex)
 
 		row.Name.Text = ("%s   Lv %d/%d"):format(info.DisplayName, level, TempleConfig.MaxBuildingLevel)
 		row.Effect.Text = formatEffect(id, level)
@@ -13654,14 +13951,50 @@ local function refresh()
 	end
 end
 
-local watched = { "TempleTier", "Gold", "Level", "GoldPerMinute", "FavorPerMinute" }
+local function refreshPrestige()
+	local tier = player:GetAttribute("TempleTier") or 1
+	local prestige = player:GetAttribute("TemplePrestige") or 0
+	local buildings = {}
+	for _, id in TempleConfig.BuildingOrder do
+		buildings[id] = player:GetAttribute("Temple_" .. id) or 0
+	end
+	local info = TempleConfig.GetPrestigeInfo(prestige, tier, buildings)
+	local p = TempleConfig.Prestige
+	prestigeName.Text = ("Temple Prestige   %d/%d"):format(prestige, p.MaxLevel)
+	local bonus = prestige * p.IncomeBonusPercent
+	if info.Maxed then
+		prestigeEffect.Text = ("Temple income +%d%%  ·  Radiant Citadel"):format(bonus)
+		prestigeStatus.Text = ""
+		prestigeButton.Text = "MAX"
+		prestigeButton.BackgroundColor3 = THEME.Gold
+		prestigeButton.AutoButtonColor = false
+		return
+	end
+	prestigeEffect.Text = ("Income +%d%% -> +%d%%  ·  New: %s"):format(bonus, bonus + p.IncomeBonusPercent, p.Looks[info.NextLevel] or "")
+	if info.Blocked then
+		prestigeStatus.Text = "Locked: " .. info.Blocked
+		prestigeButton.Text = "Locked"
+		prestigeButton.BackgroundColor3 = THEME.Locked
+		prestigeButton.AutoButtonColor = false
+	else
+		local canAfford = (player:GetAttribute("Gold") or 0) >= info.Gold and (player:GetAttribute("Ambrosia") or 0) >= info.Ambrosia
+		prestigeStatus.Text = if canAfford then "" else "Not enough Gold or Ambrosia yet"
+		prestigeButton.Text = ("Prestige\n%s Gold + %d Amb."):format(Progression.FormatNumber(info.Gold), info.Ambrosia)
+		prestigeButton.BackgroundColor3 = if canAfford then THEME.Ready else THEME.TooExpensive
+		prestigeButton.AutoButtonColor = true
+	end
+end
+
+local watched = { "TempleTier", "Gold", "Level", "GoldPerMinute", "FavorPerMinute", "RankIndex", "TemplePrestige", "Ambrosia" }
 for _, id in TempleConfig.BuildingOrder do
 	table.insert(watched, "Temple_" .. id)
 end
 for _, attribute in watched do
 	player:GetAttributeChangedSignal(attribute):Connect(refresh)
+	player:GetAttributeChangedSignal(attribute):Connect(refreshPrestige)
 end
 refresh()
+refreshPrestige()
 
 --------------------------------------------------------------------------
 -- Open / close

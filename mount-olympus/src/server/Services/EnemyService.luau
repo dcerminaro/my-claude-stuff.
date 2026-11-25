@@ -926,6 +926,9 @@ function EnemyService.Spawn(enemyType, cframe, options)
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
 	local root = model:FindFirstChild("HumanoidRootPart")
 	local healthMultiplier = options.HealthMultiplier or 1
+	if cfg.Boss then
+		healthMultiplier *= CombatConfig.BossHealthScale or 1 -- Phase 7E nerf, one place to tune
+	end
 	humanoid.MaxHealth = math.floor(cfg.MaxHealth * healthMultiplier)
 	humanoid.Health = humanoid.MaxHealth
 	humanoid.WalkSpeed = cfg.WalkSpeed * (options.SpeedMultiplier or 1)
@@ -969,7 +972,7 @@ function EnemyService.Spawn(enemyType, cframe, options)
 		LastAttacker = nil,
 		Contributors = {}, -- [Player] = { Damage, Last }
 		Dead = false,
-		DamageMultiplier = options.DamageMultiplier or 1,
+		DamageMultiplier = (options.DamageMultiplier or 1) * (if cfg.Boss then CombatConfig.BossDamageScale or 1 else 1),
 		RewardMultiplier = options.RewardMultiplier or 1,
 		OnDeath = options.OnDeath,
 		OnPhase2 = options.OnPhase2,

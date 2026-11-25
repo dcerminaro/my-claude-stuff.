@@ -314,6 +314,11 @@ CombatConfig.Enemies = {
 -- PRACTICE FIELD (behind the plaza spawn) — a place to fight before arenas
 -- exist. Offsets are relative to Center (Y = floor top).
 --------------------------------------------------------------------------
+-- Phase 7E balance: every boss's health and damage (arenas, trials,
+-- challenges) is multiplied by these. 1 = the numbers above.
+CombatConfig.BossHealthScale = 0.75 -- 25% less health
+CombatConfig.BossDamageScale = 0.9  -- 10% less damage
+
 CombatConfig.PracticeField = {
 	Center = Vector3.new(0, 1, -125),
 	Size = Vector3.new(90, 1, 70),

@@ -51,7 +51,7 @@ Follow the master specification in **Part C** exactly, including its section 19
 | 4B. God abilities | **Confirmed** ("Phase 4 confirmed") |
 | 5. Arenas | **Accepted** — developer said "move on to phase 6" (v25) |
 | 6. Ascension | **Accepted** — developer: "we can work on how it looks later, next phase" (v30) |
-| 7. Content Expansion | In progress: 7A gods (v33) · 7B arenas/bosses/trials (v35) · 7C weapons/forge (v36) · 7D quests (v39) · **7E part 1 (aim dot, Titan Gate / Olympian Challenges) server-tested, live (v43)** · 7E part 2 Divine Citadel + Temple Prestige · 7E part 3 Divine Mastery + Incarnations |
+| 7. Content Expansion | In progress: 7A gods (v33) · 7B arenas/bosses/trials (v35) · 7C weapons/forge (v36) · 7D quests (v39) · **7E part 1 (aim dot, Titan Gate / Olympian Challenges) server-tested, live (v43)** · **7E part 2 Divine Citadel + Temple Prestige + boss/trial nerf server-tested, live (v45)** · 7E part 3 Divine Mastery + Incarnations |
 | 5–8 | Not started |
 
 ### How to set up Phase 1 on a Mac (or Windows PC)
@@ -468,6 +468,26 @@ environment, so a session can `rojo build` and publish via
    God. Solo, run through `ArenaService.StartTrial` (now supports Rewards,
    BossDamage, BossSpeed, ArenaId, DisplayName). Boss weapon drops roll as in
    arenas. Clears/best times in `data.Challenges`; quest chain X1–X3.
+
+### Design decisions made in Phase 7E part 2
+1. **Divine Citadel (tier 7):** Temple Core level 6 (3M Gold, character level
+   100, Elder God). Model: bigger temple, gold columns, 4 tall towers with
+   glowing orbs, walls, central spire and crown, front stairs. Preview:
+   `docs/citadel-preview.png` (tier 6, tier 7, tier 7 + Prestige 5).
+2. **Building level 6 ("Divine")** for every building, needs tier 7
+   (`TempleConfig.BuildingTierNeeded`); costs 400k-1.25M; model gets a
+   floating halo and glowing gem. `MaxBuildingLevel` is now 6.
+3. **Temple Prestige** (`TempleConfig.Prestige`): after the Citadel with all
+   buildings at 6; 10 levels, 2M Gold x1.4 per level + 5 Ambrosia +3 per
+   level; +5% temple Gold/Favor income per level; nothing resets. Each level
+   adds decorations (banners, pillar ring, halo, stars, sky beam, islands,
+   tower flames, great halo, gate statues, radiant). Bought from the Temple
+   Upgrades menu (Prestige row; remote `RequestUpgrade("Prestige")`). Saved as
+   `data.Temple.Prestige`. Quests T8-T11.
+4. **Nerf (developer request):** `CombatConfig.BossHealthScale = 0.75` and
+   `BossDamageScale = 0.9` apply to every boss everywhere. Ascension trials
+   additionally: `BossHealth = 0.7` (Gauntlet 0.85) and lower wave health
+   (Spartan 0.8/0.9/1.0, Divine 0.55/0.55/0.7).
 
 ### Ideas from the developer for later (not built yet)
 - **Rank outfits and physique (Phase 6, Ascension):** each ascension rank gets
