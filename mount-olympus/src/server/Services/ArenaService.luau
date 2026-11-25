@@ -222,12 +222,14 @@ local function spawnEnemy(run, enemyType, position, isBoss)
 	local partyExtra = run.PartySize - 1
 	local party = ArenaConfig.Party
 	local healthMultiplier = 1 + partyExtra * (if isBoss then party.BossHealthPerExtraPlayer else party.HealthPerExtraPlayer)
-	if isBoss then
-		healthMultiplier *= run.Arena.BossHealth or 1 -- e.g. a tougher boss in a trial
-	end
 	-- Waves get harder: normal enemies get more health and damage each wave.
 	local damageMultiplier = 1
 	local speedMultiplier = 1
+	if isBoss then
+		healthMultiplier *= run.Arena.BossHealth or 1 -- e.g. a tougher boss in a trial
+		damageMultiplier = run.Arena.BossDamage or 1 -- e.g. Olympian Challenges (Phase 7E)
+		speedMultiplier = run.Arena.BossSpeed or 1
+	end
 	if not isBoss then
 		local wave = math.max(run.Wave, 1)
 		healthMultiplier *= (run.Arena.WaveHealth and run.Arena.WaveHealth[wave]) or 1
@@ -500,8 +502,8 @@ function ArenaService.StartTrial(player, trial, onVictory)
 		return false
 	end
 	local arena = {
-		Id = "Trial_" .. trial.Id,
-		DisplayName = "Trial: " .. trial.Name,
+		Id = trial.ArenaId or ("Trial_" .. trial.Id),
+		DisplayName = trial.DisplayName or ("Trial: " .. trial.Name),
 		Available = true,
 		MinLevel = 0,
 		Color = trial.Color,
@@ -510,10 +512,12 @@ function ArenaService.StartTrial(player, trial, onVictory)
 		WaveDamage = trial.WaveDamage,
 		WaveSpeed = trial.WaveSpeed,
 		BossHealth = trial.BossHealth,
+		BossDamage = trial.BossDamage,
+		BossSpeed = trial.BossSpeed,
 		BossDisplayName = trial.BossDisplayName,
 		Theme = trial.Theme,
 		Radius = trial.Radius,
-		Rewards = {},
+		Rewards = trial.Rewards or {}, -- trials pay nothing extra; challenges do
 	}
 	leaveQueue(player)
 	local ok, result = startRun(arena, { player }, onVictory)

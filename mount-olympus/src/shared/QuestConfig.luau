@@ -97,6 +97,16 @@ QuestConfig.Chains = {
 	},
 }
 
+-- Phase 7E: Olympian Challenges at the Titan Gate.
+table.insert(QuestConfig.Chains, {
+	Id = "Challenges", Name = "Olympian Trials", Category = "Challenge",
+	Quests = {
+		q("X1", "Through the Titan Gate", "Win any Olympian Challenge at the Titan Gate.", { Type = "WinChallenge", Target = "Any", Count = 1 }, { Gold = 5000, Ambrosia = 2 }),
+		q("X2", "Relentless", "Win 10 Olympian Challenges.", { Type = "WinChallenge", Target = "Any", Count = 10 }, { Gold = 40000, Ambrosia = 5 }),
+		q("X3", "Run the Gauntlet", "Win the Olympian Gauntlet.", { Type = "WinChallenge", Target = "OlympianGauntlet", Count = 1 }, { Gold = 150000, Ambrosia = 15 }),
+	},
+})
+
 -- God quests: one small chain per god, only while you worship that god.
 local GOD_IDS = { "Zeus", "Poseidon", "Hades", "Ares", "Athena", "Apollo" }
 for _, god in GOD_IDS do

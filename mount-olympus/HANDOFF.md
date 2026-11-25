@@ -51,7 +51,7 @@ Follow the master specification in **Part C** exactly, including its section 19
 | 4B. God abilities | **Confirmed** ("Phase 4 confirmed") |
 | 5. Arenas | **Accepted** — developer said "move on to phase 6" (v25) |
 | 6. Ascension | **Accepted** — developer: "we can work on how it looks later, next phase" (v30) |
-| 7. Content Expansion | In progress: 7A gods (v33) · 7B arenas/bosses/trials (v35) · 7C weapons/forge (v36) · **7D quests built and server-tested, live (v39)** · 7E endgame |
+| 7. Content Expansion | In progress: 7A gods (v33) · 7B arenas/bosses/trials (v35) · 7C weapons/forge (v36) · 7D quests (v39) · **7E part 1 (aim dot, Titan Gate / Olympian Challenges) server-tested, live (v41)** · 7E part 2 Divine Citadel + Temple Prestige · 7E part 3 Divine Mastery + Incarnations |
 | 5–8 | Not started |
 
 ### How to set up Phase 1 on a Mac (or Windows PC)
@@ -449,6 +449,23 @@ environment, so a session can `rojo build` and publish via
 5. **UI** (`QuestUI`): "Quests" button (left, under Weapons; turns green with a
    count when something is ready) and a tracker under the god badge showing
    3 quests (finished first, then story). Tap either to open the quest log.
+
+### Design decisions made in Phase 7E part 1
+1. **Aim dot** (`client/AimDot`, developer request): a white dot where attacks
+   land: straight ahead at the equipped weapon type's Range (bows 32 studs),
+   or on the first solid thing in the way. Shown only with a weapon in hand
+   inside a fighting area (an arena/trial/challenge run, or on the Practice
+   Field). Client only.
+2. **Titan Gate** (hub, west, at (-44, 1, 35), replaces the placeholder pad):
+   opens the Olympian Challenges menu (`client/TitanGateUI`).
+3. **Challenges** (`Shared/ChallengeConfig`, `Services/ChallengeService`):
+   one rematch per arena boss (arena's elite wave + boss wave) and the
+   Olympian Gauntlet (all six bosses). Heroic (boss HP x2.5, dmg x1.6; others
+   x2.2 / x1.6; rewards x3, +3 Ambrosia first clear) needs the arena's rank;
+   Mythic (x5 / x2.4, rewards x7, +8 first clear) and the Gauntlet need Elder
+   God. Solo, run through `ArenaService.StartTrial` (now supports Rewards,
+   BossDamage, BossSpeed, ArenaId, DisplayName). Boss weapon drops roll as in
+   arenas. Clears/best times in `data.Challenges`; quest chain X1–X3.
 
 ### Ideas from the developer for later (not built yet)
 - **Rank outfits and physique (Phase 6, Ascension):** each ascension rank gets

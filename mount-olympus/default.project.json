@@ -46,6 +46,12 @@
         },
         "QuestUI": {
           "$path": "src/client/QuestUI.client.luau"
+        },
+        "AimDot": {
+          "$path": "src/client/AimDot.client.luau"
+        },
+        "TitanGateUI": {
+          "$path": "src/client/TitanGateUI.client.luau"
         }
       },
       "StarterCharacterScripts": {

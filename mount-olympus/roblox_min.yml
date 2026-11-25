@@ -20,3 +20,4 @@ globals:
   NumberRange: {any: true}
   NumberSequence: {any: true}
   Random: {any: true}
+  RaycastParams: {any: true}

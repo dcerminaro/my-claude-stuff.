@@ -34,7 +34,7 @@ local THEME = {
 	Daily = Color3.fromRGB(170, 90, 150),
 }
 
-local CATEGORY_ORDER = { "Daily", "Story", "Combat", "Boss", "Temple", "Worship", "Forge", "God" }
+local CATEGORY_ORDER = { "Daily", "Story", "Combat", "Boss", "Temple", "Worship", "Forge", "Challenge", "God" }
 local CATEGORY_NAMES = {
 	Daily = "Daily Quests (new ones every day)",
 	Story = "Story",
@@ -43,6 +43,7 @@ local CATEGORY_NAMES = {
 	Temple = "Temple Building",
 	Worship = "Devotion",
 	Forge = "The Forge",
+	Challenge = "Olympian Challenges",
 	God = "Your God",
 }
 local CURRENCY_NAMES = { XP = "XP", Gold = "Gold", DivineFavor = "Favor", Ambrosia = "Ambrosia" }

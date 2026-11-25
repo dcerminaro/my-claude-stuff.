@@ -30,6 +30,7 @@ local AscensionService = require(Services:WaitForChild("AscensionService"))
 local InventoryService = require(Services:WaitForChild("InventoryService"))
 local GameEvents = require(Services:WaitForChild("GameEvents"))
 local QuestService = require(Services:WaitForChild("QuestService"))
+local ChallengeService = require(Services:WaitForChild("ChallengeService"))
 
 --------------------------------------------------------------------------
 -- 1. Remotes (created by the server so they always exist)
@@ -72,6 +73,7 @@ local arenaEventRemote = newRemote("ArenaEvent") -- server -> client party queue
 local ascensionRemote = newRemote("AscensionAction") -- client -> server "start my ascension trial"
 local weaponRemote = newRemote("WeaponAction") -- client -> server equip / craft / upgrade a weapon
 local questRemote = newRemote("QuestAction") -- client -> server "claim this quest"
+local challengeRemote = newRemote("ChallengeAction") -- client -> server "start this Titan Gate challenge"
 
 remotes.Parent = ReplicatedStorage
 
@@ -94,6 +96,8 @@ CombatService.SetDashHandler(AbilityService.OnDash)
 CombatService.SetCounterHandler(AbilityService.TryCounter)
 ArenaService.Init(DataService, ProgressionService, PlotService, EnemyService, notifyRemote, arenaActionRemote, arenaEventRemote)
 ArenaService.BuildGate()
+ChallengeService.Init(DataService, ArenaService, notifyRemote, challengeRemote)
+ChallengeService.BuildGate()
 AscensionService.Init(DataService, ProgressionService, ArenaService, notifyRemote, fxRemote, ascensionRemote, if GameConfig.Debug.Diagnostics then DiagnosticsService else nil)
 AscensionService.BuildChamber()
 InventoryService.Init(DataService, ProgressionService, notifyRemote, weaponRemote)
@@ -217,6 +221,7 @@ local function onPlayerAdded(player)
 	AbilityService.SetupPlayer(player)
 	AscensionService.SetupPlayer(player)
 	QuestService.SetupPlayer(player)
+	ChallengeService.SetupPlayer(player)
 	player:SetAttribute("DataLoaded", true)
 	print(("[Main] %s ready: Level %d, %d Gold, %s"):format(player.Name, data.Level, data.Currencies.Gold, plot.Name))
 end

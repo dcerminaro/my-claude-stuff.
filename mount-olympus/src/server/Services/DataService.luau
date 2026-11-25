@@ -92,6 +92,7 @@ local function makeDefaultData()
 		},
 
 		CompletedTrials = {}, -- [TrialId] = true
+		Challenges = {},      -- Phase 7E: ["<challenge>:<difficulty>"] = { Clears, Best (seconds) }
 
 		Stats = {
 			JoinCount = 0,

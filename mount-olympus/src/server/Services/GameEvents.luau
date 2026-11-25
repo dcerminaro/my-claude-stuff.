@@ -9,7 +9,7 @@
 -- Events: KillEnemy, KillBoss (target = enemy type), WinArena (arena id),
 -- UpgradeBuilding (building id), Worship (god id), UpgradeBlessing
 -- (blessing id), UseAbility (god id), CraftWeapon, UpgradeWeapon (weapon id),
--- EarnGold (amount).
+-- EarnGold (amount), WinChallenge (challenge id).
 
 local GameEvents = {}
 
