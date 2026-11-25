@@ -175,7 +175,9 @@ local function buildPlaza(hub, folder)
 
 	-- Column capitals, bases and floating flames on the existing column ring
 	for _, column in hub:GetChildren() do
-		if column.Name == "Column" and column:IsA("BasePart") then
+		if column.Name == "Column" and column:IsA("BasePart") and column.Position.X > -56 and column.Position.X < -28 and column.Position.Z > -52 and column.Position.Z < -18 then
+			column:Destroy() -- the Hall of the Gods' roof stands here now
+		elseif column.Name == "Column" and column:IsA("BasePart") then
 			local p = column.Position
 			cyl(folder, "ColumnBase", Vector3.new(p.X, FLOOR_TOP + 0.6, p.Z), 1.2, 5.6, { Color = MARBLE_DARK })
 			MP(folder, { Name = "ColumnCapital", Size = Vector3.new(5.6, 1.2, 5.6), Position = Vector3.new(p.X, p.Y + 12.6, p.Z), Color = MARBLE_WARM })
@@ -716,6 +718,159 @@ local function buildSkyIslands(folder)
 end
 
 --------------------------------------------------------------------------
+-- 7. Plaza buildings: architecture around the working parts
+--------------------------------------------------------------------------
+local function wedgePair(parent, center, width, height, depth, facingX)
+	-- A triangular pediment made of two wedges (facing +X or -X)
+	for _, side in { -1, 1 } do
+		local wedge = Instance.new("WedgePart")
+		wedge.Name = "Pediment"
+		wedge.Anchored = true
+		wedge.Material = M.Marble
+		wedge.Color = MARBLE
+		wedge.Size = Vector3.new(depth, height, width / 2)
+		local yaw = if facingX then (if side < 0 then 0 else 180) else (if side < 0 then 90 else -90)
+		local offset = if facingX then Vector3.new(0, 0, side * width / 4) else Vector3.new(side * width / 4, 0, 0)
+		wedge.CFrame = CFrame.new(center + offset) * CFrame.Angles(0, math.rad(yaw), 0)
+		wedge.Parent = parent
+	end
+end
+
+local function hallOfTheGods(folder)
+	local model = Instance.new("Model")
+	model.Name = "HallArchitecture"
+	local c = Vector3.new(-42, FLOOR_TOP, -35)
+	local height = 15
+	-- Colonnade along the back and the two ends (the front, facing the plaza, stays open)
+	for z = -49, -21, 7 do
+		cyl(model, "HallColumn", Vector3.new(c.X - 11, c.Y + height / 2, z), height, 2, { Color = MARBLE })
+	end
+	for _, z in { -49, -21 } do
+		for _, x in { c.X - 3, c.X + 5, c.X + 11 } do
+			cyl(model, "HallColumn", Vector3.new(x, c.Y + height / 2, z), height, 2, { Color = MARBLE })
+		end
+	end
+	MP(model, { Name = "HallEntablature", Size = Vector3.new(25, 1.8, 31), Position = Vector3.new(c.X, c.Y + height + 0.9, c.Z), Color = MARBLE_WARM })
+	MP(model, { Name = "HallFrieze", Size = Vector3.new(25.4, 0.5, 31.4), Position = Vector3.new(c.X, c.Y + height + 0.1, c.Z), Material = M.Metal, Color = GOLD })
+	MP(model, { Name = "HallRoof", Size = Vector3.new(23, 1.2, 31), Position = Vector3.new(c.X, c.Y + height + 2.4, c.Z), Color = MARBLE })
+	wedgePair(model, Vector3.new(c.X, c.Y + height + 5, c.Z), 31, 4.4, 23, false)
+	for _, z in { -50.5, -19.5 } do
+		brazier(model, Vector3.new(c.X + 13, c.Y, z), Color3.fromRGB(255, 200, 100), Color3.fromRGB(255, 120, 40), 1)
+	end
+	local sign = MP(model, noCollide({ Name = "HallSign", Size = Vector3.new(1, 1, 1), Position = Vector3.new(c.X + 6, c.Y + height + 8, c.Z), Transparency = 1 }))
+	WorldBuilder.AddLabel(sign, "Hall of the Gods", GOLD, 6)
+	model.Parent = folder
+end
+
+local function ascensionRotunda(folder)
+	local model = Instance.new("Model")
+	model.Name = "AscensionRotunda"
+	local c = Vector3.new(44, FLOOR_TOP, 0)
+	local radius, height = 13.5, 20
+	for i = 0, 9 do
+		local angle = i / 10 * math.pi * 2
+		if math.cos(angle) > -0.85 then -- leave the side facing the plaza open
+			local p = Vector3.new(c.X + math.cos(angle) * radius, c.Y + height / 2, c.Z + math.sin(angle) * radius)
+			cyl(model, "RotundaColumn", p, height, 2.2, { Color = MARBLE })
+			MP(model, { Name = "RotundaCapital", Size = Vector3.new(3, 0.8, 3), Position = p + Vector3.new(0, height / 2 + 0.4, 0), Color = MARBLE_WARM })
+		end
+	end
+	ring(model, "RotundaRing", Vector3.new(c.X, c.Y + height + 1.2, c.Z), radius, 30, 1.6, { Color = MARBLE_WARM })
+	ring(model, "RotundaGold", Vector3.new(c.X, c.Y + height + 0.3, c.Z), radius + 0.2, 30, 0.4, { Material = M.Metal, Color = GOLD })
+	local crownCenter = Vector3.new(c.X, c.Y + height + 7, c.Z)
+	local crown = ring(model, "AscensionCrown", crownCenter, 6, 24, 0.5, noCollide({ Material = M.Neon, Color = Color3.fromRGB(150, 210, 255) }), CFrame.Angles(math.rad(12), 0, 0))
+	tag(crown, "OlympusSpin", { Speed = 0.12, Pivot = crownCenter })
+	local crown2 = ring(model, "AscensionCrown2", crownCenter, 4.5, 20, 0.35, noCollide({ Material = M.Neon, Color = GOLD }), CFrame.Angles(math.rad(-20), 0, 0))
+	tag(crown2, "OlympusSpin", { Speed = -0.18, Pivot = crownCenter })
+	local motes = MP(model, noCollide({ Name = "AscensionMotes", Size = Vector3.new(20, 18, 20), Position = c + Vector3.new(0, 10, 0), Transparency = 1 }))
+	local e = sparkles(motes, Color3.fromRGB(170, 220, 255), 10, 0.25, 1.5)
+	e.Shape = Enum.ParticleEmitterShape.Box
+	e.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+	e.EmissionDirection = Enum.NormalId.Top
+	model.Parent = folder
+end
+
+local function arenaGateFrame(folder)
+	local model = Instance.new("Model")
+	model.Name = "ArenaGateFrame"
+	local c = Vector3.new(-44, FLOOR_TOP, 0)
+	local stoneRed = Color3.fromRGB(150, 95, 70)
+	for _, z in { -9.5, 9.5 } do
+		MP(model, { Name = "Pylon", Size = Vector3.new(6, 22, 5), Position = Vector3.new(c.X, c.Y + 11, c.Z + z), Color = Color3.fromRGB(205, 180, 150), Material = M.Sandstone })
+		MP(model, { Name = "PylonCap", Size = Vector3.new(7, 1.4, 6), Position = Vector3.new(c.X, c.Y + 22.7, c.Z + z), Color = stoneRed, Material = M.Sandstone })
+		MP(model, noCollide({ Name = "GateBanner", Size = Vector3.new(0.2, 11, 3.6), Position = Vector3.new(c.X + 3.15, c.Y + 13, c.Z + z), Material = M.Fabric, Color = Color3.fromRGB(190, 45, 35) }))
+		MP(model, noCollide({ Name = "BannerEmblem", Size = Vector3.new(0.25, 2, 2), Position = Vector3.new(c.X + 3.2, c.Y + 15, c.Z + z), Material = M.Metal, Color = GOLD }))
+		brazier(model, Vector3.new(c.X + 6, c.Y, c.Z + z * 1.25), Color3.fromRGB(255, 140, 60), Color3.fromRGB(255, 70, 30), 1.1)
+	end
+	MP(model, { Name = "GateBeam", Size = Vector3.new(5, 3, 25), Position = Vector3.new(c.X, c.Y + 19.5, c.Z), Color = Color3.fromRGB(205, 180, 150), Material = M.Sandstone })
+	-- Steps up to the portal
+	for i = 1, 2 do
+		MP(model, { Name = "GateStep", Size = Vector3.new(3, 0.4 * i, 16 - i * 2), Position = Vector3.new(c.X + 5 - i * 1.5, c.Y + 0.2 * i, c.Z), Color = MARBLE_DARK })
+	end
+	model.Parent = folder
+end
+
+local function forgeSmithy(folder)
+	local model = Instance.new("Model")
+	model.Name = "ForgeSmithy"
+	local c = Vector3.new(42, FLOOR_TOP, -36)
+	local wood = Color3.fromRGB(105, 75, 50)
+	for _, corner in { { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } } do
+		MP(model, { Name = "ForgePost", Size = Vector3.new(1.2, 17, 1.2), Position = Vector3.new(c.X + corner[1] * 9.5, c.Y + 8.5, c.Z + corner[2] * 8.5), Material = M.Wood, Color = wood })
+	end
+	-- Sloped roof (two tilted planks) with a ridge beam
+	for _, side in { -1, 1 } do
+		MP(model, { Name = "ForgeRoof", Size = Vector3.new(21, 0.6, 10.5),
+			CFrame = CFrame.new(c.X, c.Y + 18.4, c.Z + side * 4.7) * CFrame.Angles(math.rad(side * 22), 0, 0),
+			Material = M.WoodPlanks, Color = Color3.fromRGB(140, 70, 50) })
+	end
+	MP(model, { Name = "RidgeBeam", Size = Vector3.new(21.5, 0.8, 0.8), Position = Vector3.new(c.X, c.Y + 20.3, c.Z), Material = M.Wood, Color = wood })
+	-- Chimney with smoke
+	local chimney = MP(model, { Name = "Chimney", Size = Vector3.new(3, 8, 3), Position = Vector3.new(c.X + 6, c.Y + 21.5, c.Z + 4), Material = M.Brick, Color = Color3.fromRGB(130, 80, 60) })
+	local smoke = Instance.new("Smoke")
+	smoke.Color = Color3.fromRGB(90, 85, 85)
+	smoke.Opacity = 0.18
+	smoke.RiseVelocity = 6
+	smoke.Size = 3
+	smoke.Parent = chimney
+	-- Glowing lava trough
+	local trough = MP(model, { Name = "LavaTrough", Size = Vector3.new(2.2, 1.2, 8), Position = Vector3.new(c.X - 7, c.Y + 0.6, c.Z), Material = M.Slate, Color = Color3.fromRGB(70, 60, 60) })
+	local lava = MP(model, noCollide({ Name = "Lava", Size = Vector3.new(1.6, 0.2, 7.4), Position = trough.Position + Vector3.new(0, 0.55, 0), Material = M.Neon, Color = Color3.fromRGB(255, 110, 30) }))
+	light(lava, Color3.fromRGB(255, 120, 50), 16, 2)
+	-- Sparks at the anvil
+	local sparkPoint = MP(model, noCollide({ Name = "AnvilSparks", Size = Vector3.new(1, 1, 1), Position = Vector3.new(42, c.Y + 3.6, -38), Transparency = 1 }))
+	local sp = Instance.new("ParticleEmitter")
+	sp.Color = ColorSequence.new(Color3.fromRGB(255, 200, 90), Color3.fromRGB(255, 90, 20))
+	sp.LightEmission = 1
+	sp.Rate = 8
+	sp.Lifetime = NumberRange.new(0.3, 0.7)
+	sp.Speed = NumberRange.new(6, 12)
+	sp.SpreadAngle = Vector2.new(60, 60)
+	sp.EmissionDirection = Enum.NormalId.Top
+	sp.Acceleration = Vector3.new(0, -30, 0)
+	sp.Size = NumberSequence.new(0.18, 0)
+	sp.Parent = sparkPoint
+	-- Weapon rack with a few weapons on display
+	MP(model, { Name = "Rack", Size = Vector3.new(0.6, 0.6, 9), Position = Vector3.new(c.X + 9, c.Y + 5, c.Z), Material = M.Wood, Color = wood })
+	for i, weaponId in { "IronSword", "HopliteSpear", "MinotaursLabrys", "SilverLongbow" } do
+		local ok, weaponModel = pcall(SwordBuilder.Build, Color3.fromRGB(255, 200, 120), WeaponConfig.Weapons[weaponId])
+		if ok and weaponModel then
+			weaponModel:PivotTo(CFrame.new(c.X + 8.6, c.Y + 3.4, c.Z - 3.6 + (i - 1) * 2.4) * CFrame.Angles(0, 0, math.rad(8)))
+			for _, item in weaponModel:GetDescendants() do
+				if item:IsA("BasePart") then
+					item.Anchored = true
+					item.CanCollide = false
+				elseif item:IsA("Trail") then
+					item.Enabled = false
+				end
+			end
+			weaponModel.Parent = model
+		end
+	end
+	model.Parent = folder
+end
+
+--------------------------------------------------------------------------
 -- 6. Temple plots: border, corner obelisks, entrance arch, walkway
 --------------------------------------------------------------------------
 local function decoratePlot(folder, plot)
@@ -792,6 +947,17 @@ function HubDecor.Build()
 		end
 		task.wait()
 	end
+
+	local buildings = Instance.new("Folder")
+	buildings.Name = "Buildings"
+	buildings.Parent = folder
+	for _, builder in { hallOfTheGods, ascensionRotunda, arenaGateFrame, forgeSmithy } do
+		local ok, err = pcall(builder, buildings)
+		if not ok then
+			warn("[HubDecor] building: " .. tostring(err))
+		end
+	end
+	task.wait()
 
 	local paths = Instance.new("Folder")
 	paths.Name = "Paths"
